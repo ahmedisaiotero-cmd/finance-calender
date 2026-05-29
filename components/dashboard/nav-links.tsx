@@ -37,7 +37,7 @@ export function NavLinks({ onNavigate, className }: NavLinksProps) {
             onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
-              item.active
+              "active" in item && item.active
                 ? "bg-accent text-foreground shadow-sm"
                 : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
             )}
