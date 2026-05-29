@@ -19,3 +19,16 @@ export const navItems = [
   { label: "Budgets", href: "#" },
   { label: "Insights", href: "#" },
 ] as const;
+
+export const dashboardQuickStats = [
+  {
+    label: "Income this month",
+    value: "$6,500",
+    hint: "+8% from April",
+  },
+  {
+    label: "Upcoming bills",
+    value: "3 due",
+    hint: "$412 within 7 days",
+  },
+] as const;
