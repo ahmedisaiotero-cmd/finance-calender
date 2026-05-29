@@ -50,9 +50,35 @@ export function getTransactionCategories(transactions: Transaction[]) {
   return [...new Set([...TRANSACTION_CATEGORIES, ...fromData])].sort();
 }
 
+export function getTransactionDateKey(
+  tx: Transaction,
+  reference = transactionReferenceDate,
+) {
+  return tx.dateISO ?? resolveTransactionDate(tx.date, reference);
+}
+
+export function filterTransactionsForMonth(
+  transactions: Transaction[],
+  year: number,
+  month: number,
+) {
+  return transactions.filter((tx) => {
+    const [y, m] = getTransactionDateKey(tx).split("-").map(Number);
+    return y === year && m - 1 === month;
+  });
+}
+
+export function filterTransactionsForDay(
+  transactions: Transaction[],
+  dateKey: string,
+) {
+  return transactions.filter(
+    (tx) => getTransactionDateKey(tx) === dateKey,
+  );
+}
+
 function transactionTimestamp(tx: Transaction) {
-  const iso = tx.dateISO ?? resolveTransactionDate(tx.date, transactionReferenceDate);
-  return new Date(iso).getTime();
+  return new Date(getTransactionDateKey(tx)).getTime();
 }
 
 export function filterTransactions(

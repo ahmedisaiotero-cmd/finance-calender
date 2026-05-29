@@ -15,8 +15,8 @@ export const monthlySpending = {
 export const navItems = [
   { label: "Dashboard", href: "/" },
   { label: "Calendar", href: "/calendar" },
-  { label: "Transactions", href: "/transactions" },
-  { label: "Budgets", href: "/budgets" },
+  { label: "Transactions", href: "/calendar#transactions" },
+  { label: "Budgets", href: "/calendar#budgets" },
   { label: "Fitness", href: "/fitness" },
   { label: "Insights", href: "#" },
 ] as const;

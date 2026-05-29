@@ -3,17 +3,16 @@
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 
-import { AddTransactionForm } from "@/components/transactions/add-transaction-form";
-import { TransactionSummaryCards } from "@/components/transactions/transaction-summary-cards";
 import { TransactionList } from "@/components/transaction-list";
 import { SurfaceCard } from "@/components/ui/surface-card";
-import { useTransactions } from "@/hooks/use-transactions";
 import {
   filterTransactions,
+  filterTransactionsForDay,
   getTransactionCategories,
   sortTransactions,
   type SortOption,
 } from "@/lib/transaction-utils";
+import type { Transaction } from "@/src/data/transactions";
 import { cn } from "@/lib/utils";
 
 const sortLabels: Record<SortOption, string> = {
@@ -24,42 +23,51 @@ const sortLabels: Record<SortOption, string> = {
   "name-asc": "Name A–Z",
 };
 
-export function TransactionsContent() {
-  const { transactions, addTransaction, ready } = useTransactions();
+type FinanceTransactionListProps = {
+  transactions: Transaction[];
+  selectedDateKey?: string | null;
+  monthLabel: string;
+};
+
+export function FinanceTransactionList({
+  transactions,
+  selectedDateKey,
+  monthLabel,
+}: FinanceTransactionListProps) {
+  const [category, setCategory] = useState("All");
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortOption>("date-desc");
+  const [dayOnly, setDayOnly] = useState(false);
+
   const categories = useMemo(
     () => getTransactionCategories(transactions),
     [transactions],
   );
 
-  const [category, setCategory] = useState("All");
-  const [query, setQuery] = useState("");
-  const [sort, setSort] = useState<SortOption>("date-desc");
+  const baseList = useMemo(() => {
+    if (dayOnly && selectedDateKey) {
+      return filterTransactionsForDay(transactions, selectedDateKey);
+    }
+    return transactions;
+  }, [transactions, selectedDateKey, dayOnly]);
 
   const filtered = useMemo(() => {
-    const matched = filterTransactions(transactions, query, category);
+    const matched = filterTransactions(baseList, query, category);
     return sortTransactions(matched, sort);
-  }, [transactions, query, category, sort]);
-
-  if (!ready) {
-    return (
-      <p className="text-sm text-muted-foreground">Loading transactions…</p>
-    );
-  }
+  }, [baseList, query, category, sort]);
 
   return (
-    <div className="space-y-6">
-      <AddTransactionForm onAdd={addTransaction} />
-      <TransactionSummaryCards transactions={transactions} />
-
+    <section id="transactions" className="scroll-mt-8">
       <SurfaceCard>
         <div className="space-y-4 border-b border-border/60 px-6 py-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h2 className="text-lg font-semibold tracking-tight">
-                All transactions
+                Transactions
               </h2>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                {filtered.length} of {transactions.length} shown
+                {filtered.length} shown · {monthLabel}
+                {dayOnly && selectedDateKey ? " · selected day" : ""}
               </p>
             </div>
 
@@ -70,8 +78,8 @@ export function TransactionsContent() {
                   type="search"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search name or category…"
-                  className="w-full rounded-full border border-border/60 bg-background py-2 pl-9 pr-4 text-sm outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/30 sm:w-56"
+                  placeholder="Search…"
+                  className="w-full rounded-full border border-border/60 bg-background py-2 pl-9 pr-4 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30 sm:w-52"
                 />
               </div>
               <select
@@ -90,7 +98,21 @@ export function TransactionsContent() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedDateKey && (
+              <button
+                type="button"
+                onClick={() => setDayOnly((prev) => !prev)}
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                  dayOnly
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted/60 text-muted-foreground hover:bg-muted",
+                )}
+              >
+                Selected day only
+              </button>
+            )}
             {["All", ...categories].map((item) => (
               <button
                 key={item}
@@ -111,9 +133,9 @@ export function TransactionsContent() {
 
         <TransactionList
           transactions={filtered}
-          emptyMessage="No transactions match your search."
+          emptyMessage="No transactions for this view."
         />
       </SurfaceCard>
-    </div>
+    </section>
   );
 }

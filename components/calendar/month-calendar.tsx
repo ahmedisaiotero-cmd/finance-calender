@@ -7,6 +7,7 @@ import { CalendarGrid } from "@/components/calendar/calendar-grid";
 import { CalendarSourceLegend } from "@/components/calendar/calendar-source-legend";
 import { CalendarToolbar } from "@/components/calendar/calendar-toolbar";
 import { SurfaceCard } from "@/components/ui/surface-card";
+import { useTransactions } from "@/hooks/use-transactions";
 import { getCalendarEventsForMonth } from "@/lib/build-calendar-events";
 import {
   getCalendarCells,
@@ -21,18 +22,21 @@ type MonthCalendarProps = {
   initialMonth?: number;
 };
 
+/** Compact calendar-only view (uses synced transaction store). */
 export function MonthCalendar({
   initialYear,
   initialMonth,
 }: MonthCalendarProps) {
+  const { transactions, ready } = useTransactions();
   const now = new Date();
   const [viewYear, setViewYear] = useState(initialYear ?? now.getFullYear());
   const [viewMonth, setViewMonth] = useState(initialMonth ?? now.getMonth());
   const [selectedKey, setSelectedKey] = useState(toDateKey(now));
 
   const events = useMemo(
-    () => getCalendarEventsForMonth(viewYear, viewMonth),
-    [viewYear, viewMonth],
+    () =>
+      getCalendarEventsForMonth(viewYear, viewMonth, { transactions }),
+    [viewYear, viewMonth, transactions],
   );
 
   const eventsByDate = useMemo(() => groupEventsByDate(events), [events]);
@@ -59,6 +63,12 @@ export function MonthCalendar({
     setViewYear(today.getFullYear());
     setViewMonth(today.getMonth());
     setSelectedKey(toDateKey(today));
+  }
+
+  if (!ready) {
+    return (
+      <p className="text-sm text-muted-foreground">Loading calendar…</p>
+    );
   }
 
   return (

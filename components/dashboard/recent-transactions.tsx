@@ -23,11 +23,11 @@ export function RecentTransactions({ className }: { className?: string }) {
             Recent transactions
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Last 7 days across all accounts
+            Synced with your finance calendar
           </p>
         </div>
         <Link
-          href="/transactions"
+          href="/calendar#transactions"
           className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           View all

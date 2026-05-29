@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { ThemeColorsProvider } from "@/components/theme-colors-provider";
+import { TransactionsProvider } from "@/components/finance/transactions-provider";
 import { ThemeProvider } from "@/components/theme-provider";
 
 import "./globals.css";
@@ -49,7 +50,9 @@ export default function RootLayout({
       </head>
       <body className="min-h-full font-sans">
         <ThemeProvider>
-          <ThemeColorsProvider>{children}</ThemeColorsProvider>
+          <ThemeColorsProvider>
+            <TransactionsProvider>{children}</TransactionsProvider>
+          </ThemeColorsProvider>
         </ThemeProvider>
       </body>
     </html>

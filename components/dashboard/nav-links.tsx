@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   CalendarDays,
@@ -31,12 +32,34 @@ type NavLinksProps = {
   showSectionLabel?: boolean;
 };
 
+function isNavItemActive(pathname: string, hash: string, href: string) {
+  const [path, itemHash] = href.split("#");
+
+  if (itemHash) {
+    return pathname === path && hash === `#${itemHash}`;
+  }
+
+  if (path === "/calendar") {
+    return pathname === "/calendar" && !hash;
+  }
+
+  return pathname === path || (path !== "/" && pathname.startsWith(path));
+}
+
 export function NavLinks({
   onNavigate,
   className,
   showSectionLabel = true,
 }: NavLinksProps) {
   const pathname = usePathname();
+  const [hash, setHash] = useState("");
+
+  useEffect(() => {
+    const updateHash = () => setHash(window.location.hash);
+    updateHash();
+    window.addEventListener("hashchange", updateHash);
+    return () => window.removeEventListener("hashchange", updateHash);
+  }, [pathname]);
 
   return (
     <nav className={cn("flex flex-col gap-0.5", className)}>
@@ -48,10 +71,7 @@ export function NavLinks({
 
       {navItems.map((item) => {
         const Icon = iconMap[item.label as keyof typeof iconMap];
-        const isActive =
-          item.href === "/"
-            ? pathname === "/"
-            : item.href !== "#" && pathname.startsWith(item.href);
+        const isActive = isNavItemActive(pathname, hash, item.href);
 
         return (
           <SidebarNavItem
