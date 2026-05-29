@@ -3,7 +3,10 @@ export type Transaction = {
   name: string;
   category: string;
   amount: number;
+  /** Display label: "Today", "May 26", or ISO `YYYY-MM-DD` */
   date: string;
+  /** Optional fixed ISO date — overrides `date` on the calendar */
+  dateISO?: string;
   /** Optional custom accent (hex, oklch, etc.) — overrides category color */
   color?: string;
 };

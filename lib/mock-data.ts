@@ -13,8 +13,8 @@ export const monthlySpending = {
 };
 
 export const navItems = [
-  { label: "Dashboard", href: "#", active: true },
-  { label: "Calendar", href: "#" },
+  { label: "Dashboard", href: "/" },
+  { label: "Calendar", href: "/calendar" },
   { label: "Transactions", href: "#" },
   { label: "Budgets", href: "#" },
   { label: "Insights", href: "#" },
