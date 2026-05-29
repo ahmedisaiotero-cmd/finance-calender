@@ -1,4 +1,27 @@
+import {
+  resolveTransactionDate,
+  transactionReferenceDate,
+} from "@/lib/build-calendar-events";
 import type { Transaction } from "@/src/data/transactions";
+
+export const TRANSACTION_CATEGORIES = [
+  "Groceries",
+  "Dining",
+  "Transport",
+  "Shopping",
+  "Subscriptions",
+  "Utilities",
+  "Housing",
+  "Income",
+  "Other",
+] as const;
+
+export type SortOption =
+  | "date-desc"
+  | "date-asc"
+  | "amount-desc"
+  | "amount-asc"
+  | "name-asc";
 
 export function summarizeTransactions(transactions: Transaction[]) {
   return transactions.reduce(
@@ -23,5 +46,67 @@ export function formatTransactionTotal(value: number) {
 }
 
 export function getTransactionCategories(transactions: Transaction[]) {
-  return [...new Set(transactions.map((tx) => tx.category))].sort();
+  const fromData = transactions.map((tx) => tx.category);
+  return [...new Set([...TRANSACTION_CATEGORIES, ...fromData])].sort();
+}
+
+function transactionTimestamp(tx: Transaction) {
+  const iso = tx.dateISO ?? resolveTransactionDate(tx.date, transactionReferenceDate);
+  return new Date(iso).getTime();
+}
+
+export function filterTransactions(
+  transactions: Transaction[],
+  query: string,
+  category: string,
+) {
+  const normalized = query.trim().toLowerCase();
+
+  return transactions.filter((tx) => {
+    const matchesCategory = category === "All" || tx.category === category;
+    const matchesQuery =
+      !normalized ||
+      tx.name.toLowerCase().includes(normalized) ||
+      tx.category.toLowerCase().includes(normalized) ||
+      tx.date.toLowerCase().includes(normalized);
+
+    return matchesCategory && matchesQuery;
+  });
+}
+
+export function sortTransactions(
+  transactions: Transaction[],
+  sort: SortOption,
+): Transaction[] {
+  const sorted = [...transactions];
+
+  sorted.sort((a, b) => {
+    switch (sort) {
+      case "date-asc":
+        return transactionTimestamp(a) - transactionTimestamp(b);
+      case "date-desc":
+        return transactionTimestamp(b) - transactionTimestamp(a);
+      case "amount-asc":
+        return a.amount - b.amount;
+      case "amount-desc":
+        return b.amount - a.amount;
+      case "name-asc":
+        return a.name.localeCompare(b.name);
+      default:
+        return 0;
+    }
+  });
+
+  return sorted;
+}
+
+export function spendingByCategory(transactions: Transaction[]) {
+  const map = new Map<string, number>();
+
+  for (const tx of transactions) {
+    if (tx.amount >= 0) continue;
+    map.set(tx.category, (map.get(tx.category) ?? 0) + Math.abs(tx.amount));
+  }
+
+  return map;
 }

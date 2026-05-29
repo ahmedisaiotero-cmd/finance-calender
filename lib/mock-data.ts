@@ -16,7 +16,7 @@ export const navItems = [
   { label: "Dashboard", href: "/" },
   { label: "Calendar", href: "/calendar" },
   { label: "Transactions", href: "/transactions" },
-  { label: "Budgets", href: "#" },
+  { label: "Budgets", href: "/budgets" },
   { label: "Insights", href: "#" },
 ] as const;
 

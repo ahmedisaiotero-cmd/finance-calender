@@ -1,10 +1,15 @@
+"use client";
+
 import Link from "next/link";
 
 import { TransactionList } from "@/components/transaction-list";
-import { recentTransactions } from "@/src/data/transactions";
+import { useTransactions } from "@/hooks/use-transactions";
 import { cn } from "@/lib/utils";
 
 export function RecentTransactions({ className }: { className?: string }) {
+  const { transactions, ready } = useTransactions();
+  const recent = transactions.slice(0, 6);
+
   return (
     <section
       className={cn(
@@ -29,7 +34,13 @@ export function RecentTransactions({ className }: { className?: string }) {
         </Link>
       </div>
 
-      <TransactionList transactions={recentTransactions} />
+      {ready ? (
+        <TransactionList transactions={recent} />
+      ) : (
+        <p className="px-6 py-10 text-center text-sm text-muted-foreground">
+          Loading…
+        </p>
+      )}
     </section>
   );
 }
