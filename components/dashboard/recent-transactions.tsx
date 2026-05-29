@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { TransactionList } from "@/components/transaction-list";
 import { recentTransactions } from "@/src/data/transactions";
 import { cn } from "@/lib/utils";
@@ -19,12 +21,12 @@ export function RecentTransactions({ className }: { className?: string }) {
             Last 7 days across all accounts
           </p>
         </div>
-        <a
-          href="#"
+        <Link
+          href="/transactions"
           className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           View all
-        </a>
+        </Link>
       </div>
 
       <TransactionList transactions={recentTransactions} />
