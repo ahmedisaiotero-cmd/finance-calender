@@ -22,7 +22,9 @@ export function UserProfile({
   return (
     <div
       className={cn(
-        "flex items-center justify-between rounded-2xl bg-accent/50",
+        "group flex items-center justify-between rounded-2xl border border-transparent",
+        "bg-accent/35 transition-all duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]",
+        "hover:border-border/50 hover:bg-accent/60 hover:shadow-sm",
         isCompact ? "gap-3 px-3 py-3" : "px-3 py-2.5",
         className,
       )}
@@ -31,6 +33,8 @@ export function UserProfile({
         <div
           className={cn(
             "flex shrink-0 items-center justify-center rounded-full font-semibold",
+            "ring-2 ring-background/80 transition-transform duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]",
+            "group-hover:scale-105",
             isCompact ? "size-12 text-sm" : "size-9 text-xs",
           )}
           style={{
@@ -41,7 +45,9 @@ export function UserProfile({
           {userProfile.initials}
         </div>
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium">{userProfile.name}</p>
+          <p className="truncate text-sm font-medium tracking-tight">
+            {userProfile.name}
+          </p>
           <p className="truncate text-xs text-muted-foreground">
             {userProfile.plan}
           </p>
@@ -53,7 +59,11 @@ export function UserProfile({
           )}
         </div>
       </div>
-      {showThemeToggle && <ThemeToggle />}
+      {showThemeToggle && (
+        <div className="transition-opacity duration-300 group-hover:opacity-100">
+          <ThemeToggle />
+        </div>
+      )}
     </div>
   );
 }

@@ -182,3 +182,26 @@
     @apply font-sans;
   }
 }
+
+@layer components {
+  .sidebar-glass {
+    @apply relative border-r border-border/40 bg-sidebar/72 backdrop-blur-2xl;
+    box-shadow:
+      inset -1px 0 0 oklch(1 0 0 / 6%),
+      4px 0 24px -12px oklch(0 0 0 / 8%);
+  }
+
+  .dark .sidebar-glass {
+    box-shadow:
+      inset -1px 0 0 oklch(1 0 0 / 4%),
+      4px 0 32px -12px oklch(0 0 0 / 35%);
+  }
+
+  .sidebar-profile-card {
+    @apply bg-accent/30;
+  }
+
+  .sidebar-profile-card:hover {
+    @apply bg-accent/55;
+  }
+}
