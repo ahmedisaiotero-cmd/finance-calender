@@ -1,5 +1,3 @@
-import type { CalendarEvent } from "@/src/data/calendar-events";
-
 export function toDateKey(date: Date) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -50,8 +48,8 @@ export function getCalendarCells(year: number, month: number): CalendarCell[] {
   return cells;
 }
 
-export function groupEventsByDate(events: CalendarEvent[]) {
-  const map = new Map<string, CalendarEvent[]>();
+export function groupEventsByDate<T extends { date: string }>(events: T[]) {
+  const map = new Map<string, T[]>();
   for (const event of events) {
     const list = map.get(event.date) ?? [];
     list.push(event);

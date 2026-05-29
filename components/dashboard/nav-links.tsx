@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   CalendarDays,
   ChartPie,
+  Dumbbell,
   LayoutDashboard,
   Receipt,
   Settings,
@@ -20,6 +21,7 @@ const iconMap = {
   Calendar: CalendarDays,
   Transactions: Receipt,
   Budgets: Wallet,
+  Fitness: Dumbbell,
   Insights: ChartPie,
 } as const;
 

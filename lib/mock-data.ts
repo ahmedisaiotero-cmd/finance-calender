@@ -17,6 +17,7 @@ export const navItems = [
   { label: "Calendar", href: "/calendar" },
   { label: "Transactions", href: "/transactions" },
   { label: "Budgets", href: "/budgets" },
+  { label: "Fitness", href: "/fitness" },
   { label: "Insights", href: "#" },
 ] as const;
 
