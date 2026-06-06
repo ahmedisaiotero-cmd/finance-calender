@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
-import { Settings, X } from "lucide-react";
+import { X } from "lucide-react";
 
 import { NavLinks } from "@/components/dashboard/nav-links";
-import { SidebarNavItemSoon } from "@/components/dashboard/sidebar-nav-item-soon";
+import { SidebarUtilityNav } from "@/components/dashboard/sidebar-utility-nav";
 import { SYNC_PRODUCT } from "@/lib/sync-copy";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -77,7 +77,7 @@ export function MobileNavMenu({ open, onClose }: MobileNavMenuProps) {
         <div className="flex flex-1 flex-col overflow-y-auto px-3 py-4">
           <NavLinks onNavigate={onClose} className="flex-1" />
           <div className="pb-2 pt-4">
-            <SidebarNavItemSoon label="Settings" icon={Settings} />
+            <SidebarUtilityNav onNavigate={onClose} />
           </div>
         </div>
       </aside>

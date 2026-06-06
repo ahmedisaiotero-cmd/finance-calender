@@ -35,7 +35,7 @@ export function MoneyMetricCard({ spent, budget, monthLabel }: MoneyMetricProps)
   return (
     <section>
       <h2 className="mb-4 text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground/65">
-        Money
+        Finance
       </h2>
       <p className="text-[15px] font-medium tabular-nums tracking-[-0.02em] text-foreground/85">
         {formatMoney(spent)}
@@ -56,10 +56,10 @@ export function MoneyMetricCard({ spent, budget, monthLabel }: MoneyMetricProps)
         {formatMoney(budget)} budget
       </p>
       <Link
-        href="/money"
+        href="/finance"
         className="mt-3 inline-block text-[11px] text-muted-foreground/55 transition-colors hover:text-muted-foreground/80"
       >
-        Open Money
+        Open Finance
       </Link>
     </section>
   );

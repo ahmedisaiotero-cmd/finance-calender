@@ -27,13 +27,23 @@ export function SidebarNavItem({
       href={href}
       onClick={onNavigate}
       aria-current={isActive ? "page" : undefined}
-      className={cn("sync-nav-item", isActive && "sync-nav-item--active", className)}
+      className={cn(
+        "sync-nav-item w-full",
+        isActive && "sync-nav-item--active",
+        className,
+      )}
     >
       <Icon
-        className="size-[17px] shrink-0 opacity-90"
-        strokeWidth={isActive ? 2.25 : 2}
+        className={cn(
+          "sync-nav-icon size-[15px] shrink-0",
+          isActive ? "opacity-100" : "opacity-55",
+        )}
+        strokeWidth={isActive ? 2.25 : 1.75}
       />
       <span className="truncate">{label}</span>
+      {isActive ? (
+        <span className="sync-nav-active-dot" aria-hidden />
+      ) : null}
     </Link>
   );
 }

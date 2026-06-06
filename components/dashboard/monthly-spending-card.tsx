@@ -34,7 +34,7 @@ export function MonthlySpendingCard({ className }: { className?: string }) {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-muted-foreground">
-              Money · This month
+              Finance · This month
             </p>
             <p className="mt-1 text-xs text-muted-foreground/80">{monthLabel}</p>
           </div>

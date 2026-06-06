@@ -47,7 +47,7 @@ export const primaryNavItems: PrimaryNavItem[] = [
 export const lifeCategoryNavItems: LifeCategoryNavItem[] = [
   {
     id: "money",
-    label: "Money",
+    label: "Finance",
     icon: Wallet,
     href: "/calendar",
     enabled: true,
@@ -82,6 +82,6 @@ export const lifeCategoryNavItems: LifeCategoryNavItem[] = [
 ];
 
 export const moneySubNavItems: MoneySubNavItem[] = [
-  { label: "Transactions", href: "/money", icon: Receipt },
-  { label: "Budgets", href: "/money", icon: Wallet },
+  { label: "Transactions", href: "/finance", icon: Receipt },
+  { label: "Budgets", href: "/finance", icon: Wallet },
 ];

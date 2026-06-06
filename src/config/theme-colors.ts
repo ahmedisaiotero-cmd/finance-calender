@@ -19,15 +19,15 @@ export type ThemeColorSet = {
 
 export const themeColors: Record<"light" | "dark", ThemeColorSet> = {
   light: {
-    income: "oklch(0.48 0.12 155)",
-    incomeMuted: "oklch(0.55 0.12 155 / 0.14)",
+    income: "oklch(0.52 0.13 92)",
+    incomeMuted: "oklch(0.94 0.06 95 / 0.85)",
     expense: "oklch(0.35 0.02 260)",
     expenseMuted: "oklch(0.96 0.01 260)",
     warning: "oklch(0.55 0.14 65)",
     warningMuted: "oklch(0.55 0.14 65 / 0.12)",
-    progressFrom: "oklch(0.55 0.13 155)",
-    progressTo: "oklch(0.62 0.1 155)",
-    glow: "oklch(0.55 0.12 155 / 0.15)",
+    progressFrom: "oklch(0.58 0.13 92)",
+    progressTo: "oklch(0.65 0.11 90)",
+    glow: "oklch(0.55 0.12 92 / 0.15)",
     avatarFrom: "oklch(0.92 0 0)",
     avatarTo: "oklch(0.75 0 0)",
     avatarText: "oklch(0.3 0 0)",
@@ -62,7 +62,7 @@ export const categoryColors: Record<
     dark: { icon: "oklch(0.75 0.14 300)", muted: "oklch(0.75 0.14 300 / 0.15)" },
   },
   Income: {
-    light: { icon: "oklch(0.52 0.14 155)", muted: "oklch(0.52 0.14 155 / 0.12)" },
+    light: { icon: "oklch(0.55 0.14 92)", muted: "oklch(0.94 0.06 95)" },
     dark: { icon: "oklch(0.72 0.16 155)", muted: "oklch(0.72 0.16 155 / 0.15)" },
   },
   Transport: {

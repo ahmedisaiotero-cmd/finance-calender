@@ -1,67 +1,277 @@
 import { weeklyWorkoutSplit } from "@/components/health/health-mock-data";
+import {
+  isLifeAreaActive,
+  isPulseDomainActive,
+  type ActiveLifeAreas,
+  type PulseLifeDomain,
+} from "@/lib/user-life-areas";
 
-export type PulseKind =
+export type PulseState =
   | "steady"
   | "refocus"
-  | "building-momentum"
-  | "recover";
+  | "build-momentum"
+  | "recover"
+  | "protected"
+  | "opportunity"
+  | "connect";
 
-export type SyncPulse = {
-  kind: PulseKind;
-  label: string;
-  message: string;
+/** @deprecated Use PulseState */
+export type PulseKind = PulseState;
+
+export type PulseSignalDomain = PulseLifeDomain;
+
+export type PulseSignal = {
+  domain: PulseSignalDomain;
+  key: string;
+  weight?: number;
 };
 
-const PULSE_COPY: Record<PulseKind, { label: string; message: string }> = {
-  steady: {
-    label: "Steady",
-    message: "You're keeping up with the habits that matter most.",
-  },
-  refocus: {
-    label: "Refocus",
-    message:
-      "Life has been busy. Start with today's priorities and let the rest wait.",
-  },
-  "building-momentum": {
-    label: "Building Momentum",
-    message: "Small wins are adding up.",
-  },
-  recover: {
-    label: "Recover",
-    message: "Give yourself permission to simplify this week.",
-  },
+export type SyncPulse = {
+  state: PulseState;
+  title: string;
+  message: string;
+  contributingSignals: PulseSignal[];
+};
+
+/** @deprecated Use SyncPulse.state */
+export type LegacySyncPulse = SyncPulse & { kind?: PulseState; label?: string };
+
+const PULSE_TITLES: Record<PulseState, string> = {
+  steady: "Steady",
+  refocus: "Refocus",
+  "build-momentum": "Build Momentum",
+  recover: "Recover",
+  protected: "Protected",
+  opportunity: "Opportunity",
+  connect: "Connect",
 };
 
 export type PulseInput = {
+  activeLifeAreas: ActiveLifeAreas;
+  scheduleFull: boolean;
+  scheduleLight: boolean;
+  topPrioritiesCount: number;
+  calendarConnected: boolean;
+  sleepLight: boolean;
+  recoveryLow: boolean;
+  recoveryStrong: boolean;
   workoutsDone: number;
   workoutsGoal: number;
-  recoveryPercent: number;
+  healthConnected: boolean;
   withinBudget: boolean;
-  budgetUsedPercent: number;
+  budgetTight: boolean;
+  billsUpcoming: boolean;
+  cashFlowHealthy: boolean;
+  moneyConnected: boolean;
+  goalsOnTrack: boolean;
+  goalsNeedAttention: boolean;
+  /** Work area active + heavy work day on calendar. */
+  workCalendarHeavy?: boolean;
+  /** School area active + upcoming school events on timeline. */
+  schoolEventsUpcoming?: boolean;
 };
 
-export function resolvePulse(input: PulseInput): SyncPulse {
-  const {
-    workoutsDone,
-    workoutsGoal,
-    recoveryPercent,
-    withinBudget,
-    budgetUsedPercent,
-  } = input;
+function filterPulseSignals(
+  signals: PulseSignal[],
+  areas: ActiveLifeAreas,
+): PulseSignal[] {
+  return signals.filter((signal) =>
+    isPulseDomainActive(areas, signal.domain),
+  );
+}
 
-  let kind: PulseKind = "steady";
+function priorityPhrase(count: number): string {
+  if (count >= 2) return "your top two priorities";
+  if (count === 1) return "your top priority";
+  return "what matters most today";
+}
 
-  if (recoveryPercent < 65) {
-    kind = "recover";
-  } else if (!withinBudget || budgetUsedPercent > 90) {
-    kind = "refocus";
-  } else if (workoutsDone >= workoutsGoal) {
-    kind = "building-momentum";
-  } else if (workoutsDone < Math.max(2, workoutsGoal - 2)) {
-    kind = "refocus";
+function buildPulse(
+  state: PulseState,
+  message: string,
+  signals: PulseSignal[],
+): SyncPulse {
+  return {
+    state,
+    title: PULSE_TITLES[state],
+    message,
+    contributingSignals: signals,
+  };
+}
+
+function buildHomePulseMessage(state: PulseState, input: PulseInput): string {
+  const priorities = priorityPhrase(input.topPrioritiesCount);
+  const areas = input.activeLifeAreas;
+  const goalsActive = isLifeAreaActive(areas, "goals");
+
+  if (state === "refocus") {
+    if (input.workCalendarHeavy) {
+      return `Work and personal commitments are stacked today. Handle ${priorities} first.`;
+    }
+    if (input.schoolEventsUpcoming) {
+      return `School deadlines are approaching. Handle ${priorities} first, then make room for coursework.`;
+    }
+    if (input.scheduleFull && input.sleepLight) {
+      return `Your schedule is full and sleep was light. Handle ${priorities} first, then protect your evening.`;
+    }
+    if (input.scheduleFull) {
+      return `Your calendar is stacked today. Handle ${priorities} first.`;
+    }
+    if (input.sleepLight) {
+      return `Sleep was lighter than usual. Keep today simple and start with ${priorities}.`;
+    }
+    if (input.budgetTight || !input.withinBudget) {
+      return `Spending needs a lighter touch this month. Stay with ${priorities} and review money when you have a moment.`;
+    }
+    if (goalsActive && input.goalsNeedAttention) {
+      return `A few goals need attention. Focus on ${priorities} before taking on anything new.`;
+    }
+    return `Today calls for a narrower focus. Start with ${priorities} and let the rest wait.`;
   }
 
-  return { kind, ...PULSE_COPY[kind] };
+  if (state === "recover") {
+    if (input.sleepLight) {
+      return `Recovery could use some care. Simplify today and leave room to rest this evening.`;
+    }
+    return `A lighter week will serve you well. Keep only what truly matters on your plate.`;
+  }
+
+  if (state === "build-momentum") {
+    return `Your habits are lining up. Focus on what moves the needle today.`;
+  }
+
+  if (state === "protected") {
+    return `Essentials are covered and your rhythm looks stable. Stay with what's working.`;
+  }
+
+  if (state === "opportunity") {
+    const missing: string[] = [];
+    if (isLifeAreaActive(areas, "calendar") && !input.calendarConnected) {
+      missing.push("calendar");
+    }
+    if (isLifeAreaActive(areas, "finance") && !input.moneyConnected) {
+      missing.push("finance");
+    }
+    if (isLifeAreaActive(areas, "health") && !input.healthConnected) {
+      missing.push("health");
+    }
+    if (missing.length > 0) {
+      return `You have room today. Connect ${missing.join(" and ")} when you're ready — Sync will bring it into your briefing.`;
+    }
+    if (goalsActive && input.goalsOnTrack) {
+      return `Today has some open space. A good moment to advance something that matters to you.`;
+    }
+    return `The day looks open. Use the space intentionally — one meaningful move is enough.`;
+  }
+
+  if (state === "connect") {
+    return `Connect your accounts when you're ready. Sync will fold them into your daily briefing.`;
+  }
+
+  return `You're in a workable rhythm. Keep today's pace calm and intentional.`;
+}
+
+export function resolvePulse(input: PulseInput): SyncPulse {
+  const areas = input.activeLifeAreas;
+  const signals: PulseSignal[] = [];
+
+  if (isLifeAreaActive(areas, "calendar") && input.scheduleFull) {
+    signals.push({ domain: "calendar", key: "schedule-dense", weight: 2 });
+  }
+  if (isLifeAreaActive(areas, "calendar") && input.scheduleLight) {
+    signals.push({ domain: "calendar", key: "schedule-light", weight: 1 });
+  }
+  if (isLifeAreaActive(areas, "finance") && input.billsUpcoming) {
+    signals.push({ domain: "finance", key: "bills-upcoming", weight: 1 });
+  }
+  if (
+    isLifeAreaActive(areas, "finance") &&
+    (input.budgetTight || !input.withinBudget)
+  ) {
+    signals.push({ domain: "finance", key: "financial-pressure", weight: 2 });
+  }
+  if (isLifeAreaActive(areas, "finance") && input.cashFlowHealthy) {
+    signals.push({ domain: "finance", key: "cash-flow-stable", weight: 1 });
+  }
+  if (isLifeAreaActive(areas, "health") && input.sleepLight) {
+    signals.push({ domain: "health", key: "sleep-light", weight: 2 });
+  }
+  if (isLifeAreaActive(areas, "health") && input.recoveryLow) {
+    signals.push({ domain: "health", key: "recovery-low", weight: 2 });
+  }
+  if (isLifeAreaActive(areas, "health") && input.recoveryStrong) {
+    signals.push({ domain: "health", key: "recovery-strong", weight: 1 });
+  }
+  if (
+    isLifeAreaActive(areas, "health") &&
+    input.workoutsDone >= input.workoutsGoal
+  ) {
+    signals.push({ domain: "health", key: "movement-consistent", weight: 1 });
+  }
+  if (isLifeAreaActive(areas, "work") && input.workCalendarHeavy) {
+    signals.push({ domain: "work", key: "work-day-dense", weight: 2 });
+  }
+  if (isLifeAreaActive(areas, "school") && input.schoolEventsUpcoming) {
+    signals.push({ domain: "school", key: "school-upcoming", weight: 2 });
+  }
+  if (isLifeAreaActive(areas, "goals") && input.goalsOnTrack) {
+    signals.push({ domain: "goals", key: "momentum-strong", weight: 1 });
+  }
+  if (isLifeAreaActive(areas, "goals") && input.goalsNeedAttention) {
+    signals.push({ domain: "goals", key: "needs-attention", weight: 2 });
+  }
+
+  const calendarOk =
+    !isLifeAreaActive(areas, "calendar") || input.calendarConnected;
+  const financeOk =
+    !isLifeAreaActive(areas, "finance") || input.moneyConnected;
+  const healthOk =
+    !isLifeAreaActive(areas, "health") || input.healthConnected;
+  const allConnected = calendarOk && financeOk && healthOk;
+
+  let state: PulseState = "steady";
+
+  if (input.recoveryLow) {
+    state = "recover";
+  } else if (
+    input.scheduleFull ||
+    input.workCalendarHeavy ||
+    input.schoolEventsUpcoming ||
+    input.budgetTight ||
+    !input.withinBudget ||
+    input.goalsNeedAttention ||
+    input.sleepLight
+  ) {
+    state = "refocus";
+  } else if (
+    isLifeAreaActive(areas, "health") &&
+    input.workoutsDone >= input.workoutsGoal &&
+    input.withinBudget &&
+    !input.scheduleFull
+  ) {
+    state = "build-momentum";
+  } else if (
+    allConnected &&
+    input.cashFlowHealthy &&
+    input.withinBudget &&
+    !input.billsUpcoming
+  ) {
+    state = "protected";
+  } else if (
+    input.scheduleLight &&
+    input.withinBudget &&
+    (input.recoveryStrong || !input.healthConnected)
+  ) {
+    state = "opportunity";
+  } else if (!allConnected) {
+    state = "opportunity";
+  }
+
+  return buildPulse(
+    state,
+    buildHomePulseMessage(state, input),
+    filterPulseSignals(signals, areas),
+  );
 }
 
 export function buildHealthRhythmMessage(
@@ -83,12 +293,95 @@ export function buildHealthRhythmMessage(
     workoutsDone === 0
       ? "A fresh week is a good time to start small"
       : workoutsDone === 1
-        ? "You've stayed active once this week"
-        : `You've stayed active ${workoutsDone} times this week`;
+        ? "You've moved once this week"
+        : "You've been moving consistently this week";
 
   if (!next) return `${activePhrase}.`;
 
-  return `${activePhrase}. Your next opportunity to move is ${next}.`;
+  return `${activePhrase}. Your next chance to move is ${next}.`;
+}
+
+export type HealthPulseInput = {
+  sleepLight: boolean;
+  recoveryLow: boolean;
+  recoveryStrong: boolean;
+  movementConsistent: boolean;
+  todayIsLight: boolean;
+  healthConnected: boolean;
+};
+
+export function buildHealthPulse(input: HealthPulseInput): SyncPulse {
+  const signals: PulseSignal[] = [];
+
+  if (!input.healthConnected) {
+    return buildPulse(
+      "connect",
+      "Keep your health app. Connect it here and Sync will read sleep, movement, and recovery — only the signals that matter.",
+      [{ domain: "health", key: "disconnected" }],
+    );
+  }
+
+  if (input.sleepLight) {
+    signals.push({ domain: "health", key: "sleep-light", weight: 2 });
+  }
+  if (input.recoveryLow) {
+    signals.push({ domain: "health", key: "recovery-low", weight: 2 });
+  }
+  if (input.recoveryStrong) {
+    signals.push({ domain: "health", key: "recovery-strong", weight: 1 });
+  }
+  if (input.movementConsistent) {
+    signals.push({ domain: "health", key: "movement-consistent", weight: 1 });
+  }
+  if (input.todayIsLight) {
+    signals.push({ domain: "health", key: "light-day", weight: 1 });
+  }
+
+  if (input.recoveryLow) {
+    return buildPulse(
+      "recover",
+      "Recovery is asking for a gentler day. Lighter movement and an earlier wind-down will help.",
+      signals,
+    );
+  }
+
+  if (input.sleepLight) {
+    return buildPulse(
+      "refocus",
+      "Sleep was lighter last night. Keep today gentle and protect rest this evening.",
+      signals,
+    );
+  }
+
+  if (input.movementConsistent && input.recoveryStrong) {
+    return buildPulse(
+      "build-momentum",
+      "You're moving consistently this week. Today's basics matter more than pushing harder.",
+      signals,
+    );
+  }
+
+  if (input.todayIsLight && input.recoveryStrong) {
+    return buildPulse(
+      "steady",
+      "Recovery looks steady. Today is a good day to stay light and protect sleep.",
+      signals,
+    );
+  }
+
+  if (input.recoveryStrong && input.movementConsistent) {
+    return buildPulse(
+      "opportunity",
+      "Your health rhythm has some room. A walk or mobility session would fit well today.",
+      signals,
+    );
+  }
+
+  return buildPulse(
+    "steady",
+    "Sleep, movement, and recovery look balanced. Stay with the basics that support you.",
+    signals,
+  );
 }
 
 export function buildBudgetCategoryNote(
@@ -106,6 +399,174 @@ export function buildBudgetCategoryNote(
   }).format(Math.max(overallRemaining, 0));
 
   return `${category} spending is a little higher than planned. You still have ${remaining} remaining overall.`;
+}
+
+export type FinancePulseInput = {
+  financeConnected: boolean;
+  diningElevated: boolean;
+  billsCovered: boolean;
+  savingsOnPace: boolean;
+  cashFlowHealthy: boolean;
+  billsUpcoming: boolean;
+};
+
+export function buildFinancePulse(input: FinancePulseInput): SyncPulse {
+  const signals: PulseSignal[] = [];
+
+  if (!input.financeConnected) {
+    return buildPulse(
+      "connect",
+      "Keep your accounts where they are. Connect them here and Sync will translate what needs attention — calmly.",
+      [{ domain: "finance", key: "disconnected" }],
+    );
+  }
+
+  if (input.cashFlowHealthy) {
+    signals.push({ domain: "finance", key: "cash-flow-stable", weight: 1 });
+  }
+  if (input.billsUpcoming) {
+    signals.push({ domain: "finance", key: "bills-upcoming", weight: 2 });
+  }
+  if (input.diningElevated) {
+    signals.push({ domain: "finance", key: "discretionary-elevated", weight: 1 });
+  }
+  if (input.savingsOnPace) {
+    signals.push({ domain: "finance", key: "savings-on-pace", weight: 1 });
+  }
+
+  if (
+    input.billsCovered &&
+    input.savingsOnPace &&
+    input.cashFlowHealthy &&
+    !input.diningElevated
+  ) {
+    return buildPulse(
+      "protected",
+      "Bills are covered and savings are on pace. Nothing urgent needs your attention today.",
+      signals,
+    );
+  }
+
+  if (input.diningElevated) {
+    return buildPulse(
+      "refocus",
+      "Discretionary spending is running a little high. Essentials are still covered — a small adjustment this week keeps you on track.",
+      signals,
+    );
+  }
+
+  if (!input.billsCovered || input.billsUpcoming) {
+    return buildPulse(
+      "refocus",
+      "Upcoming obligations deserve a look. Review what's due next and protect your balance for essentials.",
+      signals,
+    );
+  }
+
+  if (input.cashFlowHealthy && input.billsCovered) {
+    return buildPulse(
+      "steady",
+      "Cash flow looks manageable and obligations are in hand. Keep the rhythm steady.",
+      signals,
+    );
+  }
+
+  return buildPulse(
+    "steady",
+    "You're in a workable financial rhythm. Sync will flag anything that needs a closer look.",
+    signals,
+  );
+}
+
+export type CalendarPulseInput = {
+  selectedDayEventCount: number;
+  isToday: boolean;
+  hasMoneyOnDay: boolean;
+  weekAheadBusy: boolean;
+};
+
+export function buildCalendarPulse(input: CalendarPulseInput): SyncPulse {
+  const signals: PulseSignal[] = [];
+
+  if (input.selectedDayEventCount >= 4) {
+    signals.push({ domain: "calendar", key: "day-dense", weight: 2 });
+  }
+  if (input.weekAheadBusy) {
+    signals.push({ domain: "calendar", key: "week-busy", weight: 1 });
+  }
+  if (input.hasMoneyOnDay) {
+    signals.push({ domain: "finance", key: "money-on-day", weight: 1 });
+  }
+
+  if (input.selectedDayEventCount >= 4 && input.isToday) {
+    return buildPulse(
+      "refocus",
+      "Today is full. Start with what matters most — the rest can wait.",
+      signals,
+    );
+  }
+
+  if (input.selectedDayEventCount >= 4) {
+    return buildPulse(
+      "refocus",
+      "This day is stacked. Pick one or two things that truly matter.",
+      signals,
+    );
+  }
+
+  if (input.selectedDayEventCount === 0 && input.isToday) {
+    return buildPulse(
+      "opportunity",
+      "Today has open space. A good moment for something you've been putting off.",
+      signals,
+    );
+  }
+
+  if (input.hasMoneyOnDay) {
+    return buildPulse(
+      "steady",
+      "A financial date on this day. Tap below when you're ready for the details.",
+      signals,
+    );
+  }
+
+  if (input.weekAheadBusy) {
+    return buildPulse(
+      "steady",
+      "The week ahead has a few important moments. Nothing that needs action right now.",
+      signals,
+    );
+  }
+
+  return buildPulse(
+    "steady",
+    "Your timeline looks navigable. Tap a day when you need the details.",
+    signals,
+  );
+}
+
+export type FinanceGlanceInput = {
+  cashFlowHealthy: boolean;
+  billsCovered: boolean;
+  nextObligation?: { title: string; dateLabel: string } | null;
+};
+
+/** One-line interpretation for the finance primary view — not a dashboard summary. */
+export function buildFinanceGlance(input: FinanceGlanceInput): string {
+  const next = input.nextObligation;
+
+  if (input.cashFlowHealthy && input.billsCovered) {
+    if (next) {
+      return `${next.title} is next. Everything else looks manageable.`;
+    }
+    return "Essentials look covered. Nothing urgent needs your attention.";
+  }
+
+  if (next) {
+    return `${next.title} is coming up — worth a look when you have a moment.`;
+  }
+
+  return "Upcoming obligations deserve a glance when you have a moment.";
 }
 
 export function buildMoneySnapshotNote(

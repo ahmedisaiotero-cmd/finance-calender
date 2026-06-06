@@ -25,7 +25,7 @@ export function HomeCategoryOverview({
             </span>
           </div>
           <Link
-            href="/money"
+            href="/finance"
             className="text-[11px] text-muted-foreground/55 transition-colors hover:text-muted-foreground/80"
           >
             Open

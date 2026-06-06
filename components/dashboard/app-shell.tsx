@@ -8,7 +8,7 @@ type AppShellProps = {
   title: string;
   description?: string;
   eyebrow?: string;
-  layout?: "default" | "dashboard" | "wide";
+  layout?: "default" | "dashboard" | "wide" | "home" | "health" | "finance" | "calendar";
 };
 
 export function AppShell({
@@ -19,6 +19,10 @@ export function AppShell({
   layout = "default",
 }: AppShellProps) {
   const isDashboard = layout === "dashboard";
+  const isHome = layout === "home";
+  const isHealth = layout === "health";
+  const isFinance = layout === "finance";
+  const isCalendar = layout === "calendar";
   const isWide = layout === "wide";
 
   return (
@@ -31,10 +35,14 @@ export function AppShell({
             className={cn(
               "sync-app-main mx-auto",
               isDashboard && "sync-app-main--narrow",
+              isHome && "sync-app-main--home",
+              isHealth && "sync-app-main--health",
+              isFinance && "sync-app-main--finance",
+              isCalendar && "sync-app-main--calendar",
               isWide && "sync-app-main--wide",
             )}
           >
-            {!isDashboard && (
+            {!isDashboard && !isHome && !isFinance && !isHealth && !isCalendar && (
               <header className="sync-page-header">
                 <p className="sync-page-eyebrow">{eyebrow}</p>
                 <h1 className="sync-page-title">{title}</h1>

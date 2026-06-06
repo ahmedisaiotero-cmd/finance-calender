@@ -2,29 +2,20 @@
 
 import { useMemo } from "react";
 
-import { HomeCategorySnapshot } from "@/components/dashboard/home-category-snapshot";
-import { HomeTodayFocus } from "@/components/dashboard/home-today-focus";
-import { PageHeader, PulseBlock } from "@/components/sync";
+import { HomeGreeting } from "@/components/dashboard/home-greeting";
+import { HomeTodayCard } from "@/components/dashboard/home-today-card";
+import { Pulse } from "@/components/sync";
 import { useSyncTimeline } from "@/hooks/use-sync-timeline";
 import { useSyncUser } from "@/hooks/use-sync-user";
+import { useUserLifeAreas } from "@/hooks/use-user-life-areas";
+import { buildHomePulseInput } from "@/lib/build-home-pulse-input";
 import { toDateKey } from "@/lib/calendar-utils";
-import {
-  countCareerFocusAreas,
-  countHealthSessionsThisWeek,
-  getCareerFocusTitleFromTimeline,
-  getNextHealthOpportunity,
-} from "@/lib/health-from-timeline";
-import {
-  buildHomeFocusItems,
-  getMotivationalLine,
-  getRecoveryPercent,
-} from "@/lib/home-focus";
-import {
-  buildHealthRhythmMessage,
-  buildMoneySnapshotNote,
-  resolvePulse,
-} from "@/lib/sync-pulse";
-import { SYNC_HOME_SUBTITLE, SYNC_PRODUCT } from "@/lib/sync-copy";
+import { getUpcomingTimelineEvents } from "@/lib/home-upcoming";
+import { countHealthSessionsThisWeek } from "@/lib/health-from-timeline";
+import { buildHomeFocusItems, getRecoveryPercent } from "@/lib/home-focus";
+import { resolvePulse } from "@/lib/sync-pulse";
+import { resolveHomeConnections } from "@/lib/sync-connections";
+import { getTimeGreeting } from "@/lib/sync-copy";
 import { monthlySpending } from "@/lib/mock-data";
 import {
   filterTransactionsForMonth,
@@ -38,19 +29,28 @@ export function SyncDashboard() {
   const viewMonth = now.getMonth();
 
   const { user } = useSyncUser();
-  const { timeline, ready, transactions, usingLiveTimeline } = useSyncTimeline(
-    viewYear,
-    viewMonth,
-  );
+  const activeLifeAreas = useUserLifeAreas();
+  const {
+    timeline,
+    ready,
+    transactions,
+    usingLiveTimeline,
+    usingDatabase,
+  } = useSyncTimeline(viewYear, viewMonth);
 
   const liveToday = useMemo(
     () => timeline.filter((e) => e.date === todayKey),
     [timeline, todayKey],
   );
 
+  const upcomingEvents = useMemo(
+    () => getUpcomingTimelineEvents(timeline, now, 6),
+    [timeline, now],
+  );
+
   const focusItems = useMemo(
     () =>
-      buildHomeFocusItems(liveToday, now, 5, {
+      buildHomeFocusItems(liveToday, now, 3, {
         liveOnly: usingLiveTimeline,
       }),
     [liveToday, now, usingLiveTimeline],
@@ -61,49 +61,85 @@ export function SyncDashboard() {
     [timeline, now],
   );
 
-  const nextHealth = useMemo(
-    () => getNextHealthOpportunity(timeline, now),
-    [timeline, now],
-  );
-
   const moneySnapshot = useMemo(() => {
     const monthTx = filterTransactionsForMonth(transactions, viewYear, viewMonth);
     const { expenses } = summarizeTransactions(monthTx);
     const spent =
       expenses > 0 ? Math.round(expenses) : Math.round(monthlySpending.spent);
     const budget = monthlySpending.budget;
-    const remaining = Math.max(budget - spent, 0);
     const withinBudget = spent <= budget;
     const budgetUsedPercent =
       budget > 0 ? Math.round((spent / budget) * 100) : 0;
-    return { spent, remaining, withinBudget, budgetUsedPercent, budget };
+    return { withinBudget, budgetTight: budgetUsedPercent > 85 };
   }, [transactions, viewYear, viewMonth]);
 
-  const pulse = useMemo(
+  const recoveryPercent = getRecoveryPercent();
+  const recoveryLow = recoveryPercent < 65;
+  const recoveryStrong = recoveryPercent >= 80;
+  const sleepLight = recoveryPercent < 70;
+
+  const scheduleFull =
+    upcomingEvents.length >= 4 ||
+    focusItems.length >= 3 ||
+    liveToday.length >= 4;
+  const scheduleLight =
+    liveToday.length <= 1 && upcomingEvents.length <= 2;
+
+  const hasHealthEvents = useMemo(
+    () => timeline.some((event) => event.lifeCategory === "health"),
+    [timeline],
+  );
+
+  const connections = useMemo(
     () =>
-      resolvePulse({
-        workoutsDone: healthSessions,
-        workoutsGoal: 5,
-        recoveryPercent: getRecoveryPercent(),
-        withinBudget: moneySnapshot.withinBudget,
-        budgetUsedPercent: moneySnapshot.budgetUsedPercent,
+      resolveHomeConnections({
+        usingLiveTimeline,
+        usingDatabase,
+        healthSessions,
+        hasHealthEvents,
       }),
-    [
-      healthSessions,
-      moneySnapshot.withinBudget,
-      moneySnapshot.budgetUsedPercent,
-    ],
+    [usingLiveTimeline, usingDatabase, healthSessions, hasHealthEvents],
   );
 
-  const careerTitle = useMemo(
-    () => getCareerFocusTitleFromTimeline(timeline, now),
-    [timeline, now],
-  );
+  const pulse = useMemo(() => {
+    const input = buildHomePulseInput({
+      activeLifeAreas,
+      todayKey,
+      timeline,
+      scheduleFull,
+      scheduleLight,
+      topPrioritiesCount: focusItems.length,
+      calendarConnected: connections.calendar.status === "connected",
+      sleepLight,
+      recoveryLow,
+      recoveryStrong,
+      workoutsDone: healthSessions,
+      workoutsGoal: 5,
+      healthConnected: connections.health.status === "connected",
+      withinBudget: moneySnapshot.withinBudget,
+      budgetTight: moneySnapshot.budgetTight,
+      billsUpcoming: upcomingEvents.some((e) => e.category === "money"),
+      cashFlowHealthy: moneySnapshot.withinBudget,
+      moneyConnected: connections.money.status === "connected",
+      upcomingEvents,
+    });
 
-  const careerFocusCount = useMemo(
-    () => countCareerFocusAreas(timeline, now),
-    [timeline, now],
-  );
+    return resolvePulse(input);
+  }, [
+    activeLifeAreas,
+    todayKey,
+    timeline,
+    scheduleFull,
+    scheduleLight,
+    focusItems.length,
+    connections,
+    sleepLight,
+    recoveryLow,
+    recoveryStrong,
+    healthSessions,
+    moneySnapshot,
+    upcomingEvents,
+  ]);
 
   const todayLabel = now.toLocaleDateString("en-US", {
     weekday: "long",
@@ -111,39 +147,23 @@ export function SyncDashboard() {
     day: "numeric",
   });
 
-  const moneyLabel = buildMoneySnapshotNote(
-    moneySnapshot.spent,
-    moneySnapshot.budget,
-    moneySnapshot.remaining,
-  );
-  const healthLabel = buildHealthRhythmMessage(
-    healthSessions,
-    now,
-    nextHealth,
-  );
-  const careerLabel = `${careerFocusCount} focus ${careerFocusCount === 1 ? "area" : "areas"} · ${careerTitle}`;
-
   return (
-    <div
-      className="flex w-full max-w-2xl flex-col gap-8 sm:gap-10"
-      data-page="home"
-    >
-      <PageHeader
-        eyebrow={SYNC_PRODUCT.name}
-        title={`Welcome back, ${user.name}.`}
+    <div className="sync-home sync-home--focus" data-page="home">
+      <header className="sync-briefing">
+        <HomeGreeting greeting={getTimeGreeting(user.name, now)} />
+        <Pulse
+          state={pulse.state}
+          title={pulse.title}
+          message={pulse.message}
+          contributingSignals={pulse.contributingSignals}
+        />
+      </header>
+
+      <HomeTodayCard
         dateLabel={todayLabel}
-        subtitle={SYNC_HOME_SUBTITLE}
-        motivation={getMotivationalLine(now)}
-      />
-
-      <PulseBlock pulse={pulse} />
-
-      <HomeTodayFocus items={focusItems} loading={!ready} />
-
-      <HomeCategorySnapshot
-        moneyLabel={moneyLabel}
-        healthLabel={healthLabel}
-        careerLabel={careerLabel}
+        priorities={focusItems}
+        calendar={connections.calendar}
+        loading={!ready}
       />
     </div>
   );

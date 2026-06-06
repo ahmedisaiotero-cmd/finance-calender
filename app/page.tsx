@@ -3,7 +3,7 @@ import { HomeContent } from "@/components/dashboard/home-content";
 
 export default function Home() {
   return (
-    <AppShell title="Today" layout="dashboard">
+    <AppShell title="Today" layout="home">
       <HomeContent />
     </AppShell>
   );

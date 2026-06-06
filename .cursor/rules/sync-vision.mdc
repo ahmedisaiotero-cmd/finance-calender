@@ -11,12 +11,16 @@ Before any design, UX, or implementation decision, read `SYNC_VISION.md` in the 
 
 Extreme Synchronization. Extreme Clarity. Extreme Simplicity. **Extreme Compassion.**
 
+Sync **connects** to tools users trust — it does not replace them. It reads signals that matter and translates them into calm guidance.
+
+**Interpretation over information. Clarity over completeness.**
+
 Users should feel informed, supported, and capable — never overwhelmed, never judged.
 
 ## The Sync Test (apply before building)
 
 1. Does this reduce mental load?
-2. Can the user understand this in under 10 seconds?
+2. Can the user understand this in under five seconds?
 3. Does this help the user decide what matters right now?
 4. Does this make the user feel more capable instead of more anxious?
 5. Is this the simplest possible version?
@@ -29,7 +33,7 @@ Never shame-based or fear-based copy. Prefer: needs attention, opportunity to ad
 
 ## Pulse
 
-Home displays **Pulse** — an emotional season summary, never a score, never judgment.
+**Pulse** is Sync's interpretation layer on every primary page — never a score, never judgment. It answers: *Given everything Sync knows, how should I approach today?* (or the domain equivalent.)
 
 ## Product framing
 

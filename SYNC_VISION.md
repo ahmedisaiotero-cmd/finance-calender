@@ -25,6 +25,29 @@ If something increases cognitive load, hide it, simplify it, or remove it.
 
 ---
 
+## Integration Philosophy
+
+Sync **never replaces** the tools users already trust.
+
+Sync **connects** to them, extracts only the **signals that matter**, and **translates** them into calm guidance.
+
+Users keep Google Calendar, their bank, Apple Health, and the apps they rely on. Sync reads what it needs and interprets — it does not become another dashboard competing with those tools.
+
+**Interpretation over information. Clarity over completeness.**
+
+Every primary page answers **one question within five seconds**:
+
+| Page | Question |
+|------|----------|
+| **Home** | How should I approach today? |
+| **Calendar** | When are the important moments? |
+| **Health** | Am I taking care of myself? |
+| **Finance** | Am I financially on track? |
+
+Default to what matters. Hide the rest until the user asks for it.
+
+---
+
 ## Compassion Philosophy
 
 Many people struggle with money, health, consistency, stress, and uncertainty.
@@ -69,7 +92,7 @@ The tone should be calm, supportive, and grounded.
 Before implementing any feature, ask:
 
 1. Does this reduce mental load?
-2. Can the user understand this in under 10 seconds?
+2. Can the user understand this in under five seconds?
 3. Does this help the user decide what matters right now?
 4. Does this make the user feel more capable instead of more anxious?
 5. Is this the simplest possible version?
@@ -140,7 +163,7 @@ The Home page should:
 - Reinforce progress
 - Help users decide what matters
 
-Users should understand their life within **30 seconds** — then close the app and go live it.
+Users should understand what matters within **five seconds** — then close the app and go live it.
 
 ---
 
