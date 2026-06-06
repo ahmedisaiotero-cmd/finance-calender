@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import { HomeGreeting } from "@/components/dashboard/home-greeting";
 import { HomeTodayCard } from "@/components/dashboard/home-today-card";
 import { Pulse } from "@/components/sync";
+import { useStableNow } from "@/hooks/use-stable-now";
 import { useSyncTimeline } from "@/hooks/use-sync-timeline";
 import { useSyncUser } from "@/hooks/use-sync-user";
 import { useUserLifeAreas } from "@/hooks/use-user-life-areas";
@@ -23,7 +24,7 @@ import {
 } from "@/lib/transaction-utils";
 
 export function SyncDashboard() {
-  const now = new Date();
+  const now = useStableNow();
   const todayKey = toDateKey(now);
   const viewYear = now.getFullYear();
   const viewMonth = now.getMonth();

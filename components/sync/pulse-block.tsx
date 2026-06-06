@@ -1,5 +1,4 @@
 import type { SyncPulse } from "@/lib/sync-pulse";
-import { cn } from "@/lib/utils";
 
 import { Pulse, pulseFromSync } from "@/components/sync/pulse";
 

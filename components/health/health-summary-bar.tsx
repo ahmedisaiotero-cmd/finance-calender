@@ -7,12 +7,13 @@ import {
   countHealthSessionsThisWeek,
   getNextHealthOpportunity,
 } from "@/lib/health-from-timeline";
+import { useStableNow } from "@/hooks/use-stable-now";
 import { useSyncTimeline } from "@/hooks/use-sync-timeline";
 import { buildHealthRhythmMessage } from "@/lib/sync-pulse";
 import { SYNC_LOADING_LABEL } from "@/lib/sync-copy";
 
 export function HealthSummaryBar() {
-  const now = new Date();
+  const now = useStableNow();
   const { timeline, ready } = useSyncTimeline(
     now.getFullYear(),
     now.getMonth(),
@@ -28,7 +29,7 @@ export function HealthSummaryBar() {
     [timeline, now],
   );
 
-  const rhythm = buildHealthRhythmMessage(sessions, now, nextHealth);
+  const rhythm = buildHealthRhythmMessage(sessions, nextHealth);
   const recovery = healthStats.recovery.value;
 
   if (!ready) {

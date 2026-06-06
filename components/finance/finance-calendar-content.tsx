@@ -9,6 +9,7 @@ import { CalendarToolbar } from "@/components/calendar/calendar-toolbar";
 import { Pulse } from "@/components/sync";
 import { SYNC_LOADING_LABEL } from "@/lib/sync-copy";
 import { buildCalendarPulse } from "@/lib/sync-pulse";
+import { useStableNow } from "@/hooks/use-stable-now";
 import { useCalendarEvents } from "@/hooks/use-calendar-events";
 import { useSyncTimeline } from "@/hooks/use-sync-timeline";
 import { useTransactions } from "@/hooks/use-transactions";
@@ -37,7 +38,7 @@ export function FinanceCalendarContent({
   initialMonth,
 }: FinanceCalendarContentProps) {
   const { transactions, ready, usingDatabase } = useTransactions();
-  const now = new Date();
+  const now = useStableNow();
   const todayKey = toDateKey(now);
   const [viewAnchor, setViewAnchor] = useState(
     () =>

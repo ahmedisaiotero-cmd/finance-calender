@@ -12,6 +12,12 @@ type TimelineApiResponse = {
   source?: "supabase" | "prisma" | "none";
 };
 
+type RemoteTimelineState = {
+  key: string | null;
+  timeline: TimelineEvent[] | null;
+  source: "supabase" | "prisma" | "mock" | "loading";
+};
+
 async function fetchTimelineFromApi(
   year: number,
   month: number,
@@ -33,13 +39,12 @@ export function useSyncTimeline(year: number, month: number) {
     transactions,
     usingDatabase,
   );
-  const [remoteTimeline, setRemoteTimeline] = useState<TimelineEvent[] | null>(
-    null,
-  );
-  const [timelineSource, setTimelineSource] = useState<
-    "supabase" | "prisma" | "mock" | "loading"
-  >("loading");
-  const [remoteChecked, setRemoteChecked] = useState(false);
+  const requestKey = `${year}-${month}`;
+  const [remoteState, setRemoteState] = useState<RemoteTimelineState>({
+    key: null,
+    timeline: null,
+    source: "loading",
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -49,24 +54,29 @@ export function useSyncTimeline(year: number, month: number) {
       if (cancelled) return;
 
       const events = result?.events ?? [];
-      setRemoteTimeline(events);
 
-      if (events.length > 0) {
-        setTimelineSource(result?.source === "prisma" ? "prisma" : "supabase");
-      } else {
-        setTimelineSource("mock");
-      }
-      setRemoteChecked(true);
+      setRemoteState({
+        key: requestKey,
+        timeline: events,
+        source:
+          events.length > 0
+            ? result?.source === "prisma"
+              ? "prisma"
+              : "supabase"
+            : "mock",
+      });
     }
 
-    setRemoteChecked(false);
-    setTimelineSource("loading");
     load();
 
     return () => {
       cancelled = true;
     };
-  }, [year, month]);
+  }, [year, month, requestKey]);
+
+  const remoteChecked = remoteState.key === requestKey;
+  const remoteTimeline = remoteState.timeline;
+  const timelineSource = remoteChecked ? remoteState.source : "loading";
 
   const usingLiveTimeline =
     remoteTimeline != null && remoteTimeline.length > 0;

@@ -20,16 +20,21 @@ import { useTransactions } from "@/hooks/use-transactions";
 
 export function MoneyContent() {
   const { transactions, addTransaction, ready } = useTransactions();
-  const now = new Date();
-  const viewYear = now.getFullYear();
-  const viewMonth = now.getMonth();
+  const viewWindow = useMemo(() => {
+    const now = new Date();
+    return {
+      viewYear: now.getFullYear(),
+      viewMonth: now.getMonth(),
+      monthName: now.toLocaleDateString("en-US", { month: "long" }),
+    };
+  }, []);
+
+  const { viewYear, viewMonth, monthName } = viewWindow;
 
   const monthTransactions = useMemo(
     () => filterTransactionsForMonth(transactions, viewYear, viewMonth),
     [transactions, viewYear, viewMonth],
   );
-
-  const monthName = now.toLocaleDateString("en-US", { month: "long" });
 
   const snapshot = useMemo(() => {
     const { expenses } = summarizeTransactions(monthTransactions);

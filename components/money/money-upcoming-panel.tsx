@@ -3,13 +3,14 @@
 import { useMemo } from "react";
 
 import { SectionEyebrow, TimelineItemRow } from "@/components/sync";
+import { useStableNow } from "@/hooks/use-stable-now";
 import { useSyncTimeline } from "@/hooks/use-sync-timeline";
 import { getMoneyUpcomingFromTimeline } from "@/lib/health-from-timeline";
 import { shortDateLabel } from "@/lib/sync-timeline";
 import { formatTransactionTotal } from "@/lib/transaction-utils";
 
 export function MoneyUpcomingPanel() {
-  const now = new Date();
+  const now = useStableNow();
   const { timeline, ready } = useSyncTimeline(
     now.getFullYear(),
     now.getMonth(),

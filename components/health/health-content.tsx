@@ -11,6 +11,7 @@ import {
   healthStats,
   weeklyWorkoutSplit,
 } from "@/components/health/health-mock-data";
+import { useStableNow } from "@/hooks/use-stable-now";
 import { useSyncTimeline } from "@/hooks/use-sync-timeline";
 import { countHealthSessionsThisWeek } from "@/lib/health-from-timeline";
 import { resolveHomeConnections } from "@/lib/sync-connections";
@@ -18,7 +19,7 @@ import { buildHealthPulse } from "@/lib/sync-pulse";
 import { SYNC_LOADING_LABEL } from "@/lib/sync-copy";
 
 export function HealthContent() {
-  const now = new Date();
+  const now = useStableNow();
   const { timeline, ready, usingLiveTimeline, usingDatabase } = useSyncTimeline(
     now.getFullYear(),
     now.getMonth(),

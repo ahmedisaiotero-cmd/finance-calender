@@ -6,14 +6,22 @@ import { getCalendarEventsForMonth } from "@/lib/build-calendar-events";
 import type { CalendarEvent } from "@/src/data/calendar-events";
 import type { Transaction } from "@/src/data/transactions";
 
+type CalendarEventsResult = {
+  key: string | null;
+  events: CalendarEvent[];
+};
+
 export function useCalendarEvents(
   year: number,
   month: number,
   transactions: Transaction[],
   usingDatabase: boolean,
 ) {
-  const [events, setEvents] = useState<CalendarEvent[]>([]);
-  const [ready, setReady] = useState(false);
+  const requestKey = `${year}-${month}-${usingDatabase}`;
+  const [result, setResult] = useState<CalendarEventsResult>({
+    key: null,
+    events: [],
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -27,8 +35,10 @@ export function useCalendarEvents(
           if (res.ok) {
             const data = await res.json();
             if (!cancelled) {
-              setEvents(data.events as CalendarEvent[]);
-              setReady(true);
+              setResult({
+                key: requestKey,
+                events: data.events as CalendarEvent[],
+              });
             }
             return;
           }
@@ -38,18 +48,21 @@ export function useCalendarEvents(
       }
 
       if (!cancelled) {
-        setEvents(getCalendarEventsForMonth(year, month, { transactions }));
-        setReady(true);
+        setResult({
+          key: requestKey,
+          events: getCalendarEventsForMonth(year, month, { transactions }),
+        });
       }
     }
 
-    setReady(false);
     load();
 
     return () => {
       cancelled = true;
     };
-  }, [year, month, transactions, usingDatabase]);
+  }, [year, month, transactions, usingDatabase, requestKey]);
 
-  return { events, ready };
+  const ready = result.key === requestKey;
+
+  return { events: result.events, ready };
 }

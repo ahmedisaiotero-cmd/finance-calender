@@ -29,8 +29,9 @@ export type PulseSignal = {
 export type SyncPulse = {
   state: PulseState;
   title: string;
-  message: string;
+  message: string;                                                                                                                                                                                                                                                                                                                                                                                                               
   contributingSignals: PulseSignal[];
+  nextStep?: string;
 };
 
 /** @deprecated Use SyncPulse.state */
@@ -276,7 +277,6 @@ export function resolvePulse(input: PulseInput): SyncPulse {
 
 export function buildHealthRhythmMessage(
   workoutsDone: number,
-  reference = new Date(),
   nextOpportunity?: string | null,
 ): string {
   const next =
