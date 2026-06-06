@@ -8,9 +8,8 @@ export type SupabaseTimelineItemRow = {
   category: string;
   date: string;
   status: string;
-  detail: TimelineEventDetail | null;
+  detail: (TimelineEventDetail & { duration?: string }) | null;
   created_at?: string;
-  workspace_id?: string | null;
 };
 
 const VALID_CATEGORIES = new Set([
@@ -32,13 +31,36 @@ function normalizeStatus(status: string) {
   return status.toLowerCase();
 }
 
+function parseDurationMinutes(
+  detail?: TimelineEventDetail & { duration?: string },
+) {
+  if (detail?.durationMinutes != null) return detail.durationMinutes;
+  if (!detail?.duration) return undefined;
+  const match = String(detail.duration).match(/(\d+)\s*min/i);
+  return match ? Number(match[1]) : undefined;
+}
+
+function normalizeDetail(
+  raw: SupabaseTimelineItemRow["detail"],
+): TimelineEventDetail | undefined {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return undefined;
+
+  const durationMinutes = parseDurationMinutes(raw);
+  return {
+    ...raw,
+    durationMinutes,
+    segment:
+      raw.segment ??
+      (raw.remaining != null
+        ? `${raw.remaining}g of protein remaining today`
+        : undefined),
+  };
+}
+
 export function supabaseTimelineRowToEvent(
   row: SupabaseTimelineItemRow,
 ): TimelineEvent {
-  const detail =
-    row.detail && typeof row.detail === "object" && !Array.isArray(row.detail)
-      ? row.detail
-      : undefined;
+  const detail = normalizeDetail(row.detail);
 
   const lifeCategory = VALID_CATEGORIES.has(row.category)
     ? (row.category as TimelineEvent["lifeCategory"])
@@ -70,15 +92,19 @@ export async function getTimelineItemsFromSupabase(
 
   const { data, error } = await supabase
     .from("timeline_items")
-    .select("id, title, category, date, status, detail, created_at, workspace_id")
+    .select("id, title, category, date, status, detail, created_at")
     .gte("date", start)
     .lte("date", end)
     .order("date", { ascending: true })
     .order("created_at", { ascending: true });
 
   if (error) {
-    console.error("Supabase timeline_items query failed:", error.message);
-    return [];
+    console.error(
+      "Supabase timeline_items query failed:",
+      error.code,
+      error.message,
+    );
+    throw error;
   }
 
   return (data as SupabaseTimelineItemRow[] | null)?.map(supabaseTimelineRowToEvent) ?? [];

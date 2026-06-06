@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 import {
-  getSupabaseAnonKey,
+  getSupabaseServerKey,
   getSupabaseUrl,
   isSupabaseConfigured,
 } from "@/lib/supabase/env";
@@ -11,7 +11,7 @@ export function createSupabaseServerClient() {
     throw new Error("Supabase is not configured");
   }
 
-  return createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+  return createClient(getSupabaseUrl(), getSupabaseServerKey(), {
     auth: {
       persistSession: false,
       autoRefreshToken: false,

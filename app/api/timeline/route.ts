@@ -24,8 +24,13 @@ export async function GET(request: Request) {
     }
 
     if (isSupabaseConfigured()) {
-      const events = await getTimelineItemsFromSupabase(year, month);
-      return NextResponse.json({ events, source: "supabase" });
+      try {
+        const events = await getTimelineItemsFromSupabase(year, month);
+        return NextResponse.json({ events, source: "supabase" });
+      } catch (error) {
+        console.error("GET /api/timeline supabase", error);
+        return NextResponse.json({ events: [], source: "supabase" });
+      }
     }
 
     if (isDatabaseConfigured()) {

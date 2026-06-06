@@ -12,10 +12,12 @@ export type CalendarLens =
 
 export type TimelineEventDetail = {
   time?: string;
+  duration?: string;
   durationMinutes?: number;
   amount?: number;
   segment?: string;
   note?: string;
+  remaining?: number;
 };
 
 export type TimelineEvent = {
