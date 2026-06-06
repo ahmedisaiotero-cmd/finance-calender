@@ -1,11 +1,11 @@
 import { CalendarDayCell } from "@/components/calendar/calendar-day-cell";
 import { CALENDAR_WEEKDAYS } from "@/lib/calendar-constants";
 import type { CalendarCell } from "@/lib/calendar-utils";
-import type { CalendarEvent } from "@/src/data/calendar-events";
+import type { TimelineEvent } from "@/lib/timeline-events";
 
 type CalendarGridProps = {
   cells: CalendarCell[];
-  eventsByDate: Map<string, CalendarEvent[]>;
+  eventsByDate: Map<string, TimelineEvent[]>;
   selectedKey: string;
   onSelectDay: (dateKey: string) => void;
 };

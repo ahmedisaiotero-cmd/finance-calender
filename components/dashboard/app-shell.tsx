@@ -1,5 +1,6 @@
 import { MobileHeader } from "@/components/dashboard/mobile-header";
 import { Sidebar } from "@/components/dashboard/sidebar";
+import { SYNC_PRODUCT } from "@/lib/sync-copy";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -12,7 +13,7 @@ export function AppShell({
   children,
   title,
   description,
-  eyebrow = "Finance Calendar",
+  eyebrow = SYNC_PRODUCT.name,
 }: AppShellProps) {
   return (
     <div className="flex min-h-screen bg-background">

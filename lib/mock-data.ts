@@ -12,15 +12,6 @@ export const monthlySpending = {
   vsLastMonthPercent: -12.4,
 };
 
-export const navItems = [
-  { label: "Dashboard", href: "/" },
-  { label: "Calendar", href: "/calendar" },
-  { label: "Transactions", href: "/calendar#transactions" },
-  { label: "Budgets", href: "/calendar#budgets" },
-  { label: "Fitness", href: "/fitness" },
-  { label: "Insights", href: "#" },
-] as const;
-
 export const dashboardQuickStats = [
   {
     label: "Income this month",

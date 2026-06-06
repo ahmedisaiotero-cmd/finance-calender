@@ -4,6 +4,10 @@ import Link from "next/link";
 
 import { TransactionList } from "@/components/transaction-list";
 import { useTransactions } from "@/hooks/use-transactions";
+import {
+  SYNC_RECENT_ACTIVITY_SUBTITLE,
+  SYNC_RECENT_ACTIVITY_TITLE,
+} from "@/lib/sync-copy";
 import { cn } from "@/lib/utils";
 
 export function RecentTransactions({ className }: { className?: string }) {
@@ -20,10 +24,10 @@ export function RecentTransactions({ className }: { className?: string }) {
       <div className="flex items-center justify-between border-b border-border/60 px-6 py-5">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">
-            Recent transactions
+            {SYNC_RECENT_ACTIVITY_TITLE}
           </h2>
           <p className="mt-0.5 text-sm text-muted-foreground">
-            Synced with your finance calendar
+            {SYNC_RECENT_ACTIVITY_SUBTITLE}
           </p>
         </div>
         <Link

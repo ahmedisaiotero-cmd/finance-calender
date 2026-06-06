@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Domain {
+  FINANCE
+  HEALTH
+  GENERAL
+}
+
+enum EventSource {
+  MANUAL
+  RECURRING
+  IMPORTED
+  LOGGED
+}
+
+enum EventStatus {
+  PLANNED
+  COMPLETED
+  SKIPPED
+  CANCELLED
+}
+
+enum RecurringRuleType {
+  MONTHLY
+  WEEKLY
+  DAILY
+}
+
+model User {
+  id         String      @id @default(uuid())
+  email      String      @unique
+  name       String?
+  timezone   String      @default("UTC")
+  createdAt  DateTime    @default(now())
+  workspaces Workspace[]
+}
+
+model Workspace {
+  id             String          @id @default(uuid())
+  ownerId        String
+  owner          User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name           String
+  createdAt      DateTime        @default(now())
+  categories     Category[]
+  events         Event[]
+  transactions   Transaction[]
+  recurringRules RecurringRule[]
+  budgets        Budget[]
+}
+
+model Category {
+  id             String          @id @default(uuid())
+  workspaceId    String
+  workspace      Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  domain         Domain
+  name           String
+  color          String?
+  events         Event[]
+  transactions   Transaction[]
+  budgetLines    BudgetLine[]
+  recurringRules RecurringRule[]
+
+  @@unique([workspaceId, domain, name])
+}
+
+model Event {
+  id              String         @id @default(uuid())
+  workspaceId     String
+  workspace       Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  domain          Domain
+  title           String
+  categoryId      String?
+  category        Category?      @relation(fields: [categoryId], references: [id])
+  startsAt        DateTime
+  allDay          Boolean        @default(true)
+  status          EventStatus    @default(PLANNED)
+  source          EventSource
+  recurringRuleId String?
+  recurringRule   RecurringRule? @relation(fields: [recurringRuleId], references: [id])
+  amountCents     Int?
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  deletedAt       DateTime?
+  transaction     Transaction?
+
+  @@index([workspaceId, startsAt])
+  @@index([workspaceId, domain, startsAt])
+}
+
+model Transaction {
+  id          String    @id @default(uuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  eventId     String?   @unique
+  event       Event?    @relation(fields: [eventId], references: [id])
+  name        String
+  categoryId  String
+  category    Category  @relation(fields: [categoryId], references: [id])
+  amountCents Int
+  currency    String    @default("USD")
+  occurredAt  DateTime
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@index([workspaceId, occurredAt])
+}
+
+model RecurringRule {
+  id           String            @id @default(uuid())
+  workspaceId  String
+  workspace    Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  domain       Domain
+  title        String
+  categoryId   String?
+  category     Category?         @relation(fields: [categoryId], references: [id])
+  ruleType     RecurringRuleType
+  ruleConfig   Json
+  amountCents  Int?
+  durationMin  Int?
+  active       Boolean           @default(true)
+  startsOn     DateTime          @db.Date
+  endsOn       DateTime?         @db.Date
+  events       Event[]
+}
+
+model Budget {
+  id          String       @id @default(uuid())
+  workspaceId String
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name        String
+  active      Boolean      @default(true)
+  lines       BudgetLine[]
+}
+
+model BudgetLine {
+  id         String   @id @default(uuid())
+  budgetId   String
+  budget     Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  limitCents Int
+
+  @@unique([budgetId, categoryId])
+}

@@ -18,8 +18,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Finance Calendar",
-  description: "A modern finance dashboard for spending and transactions",
+  title: "SYNC",
+  description:
+    "A calendar-first life operating system — Money, Health, Career, Relationships, and Personal on one timeline.",
 };
 
 const themeScript = `

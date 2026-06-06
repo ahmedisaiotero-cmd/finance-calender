@@ -10,7 +10,7 @@ import type { Transaction } from "@/src/data/transactions";
 import { cn } from "@/lib/utils";
 
 type AddTransactionFormProps = {
-  onAdd: (transaction: Omit<Transaction, "id">) => void;
+  onAdd: (transaction: Omit<Transaction, "id">) => void | Promise<void>;
 };
 
 export function AddTransactionForm({ onAdd }: AddTransactionFormProps) {
@@ -21,13 +21,13 @@ export function AddTransactionForm({ onAdd }: AddTransactionFormProps) {
   const [type, setType] = useState<"expense" | "income">("expense");
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     const value = parseFloat(amount);
     if (!name.trim() || Number.isNaN(value) || value <= 0) return;
 
-    onAdd({
+    await onAdd({
       name: name.trim(),
       category: type === "income" ? "Income" : category,
       amount: type === "income" ? value : -value,

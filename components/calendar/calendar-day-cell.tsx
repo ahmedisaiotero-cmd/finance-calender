@@ -1,10 +1,10 @@
-import type { CalendarEvent } from "@/src/data/calendar-events";
+import type { TimelineEvent } from "@/lib/timeline-events";
 import type { CalendarCell } from "@/lib/calendar-utils";
 import { cn } from "@/lib/utils";
 
 type CalendarDayCellProps = {
   cell: CalendarCell;
-  events: CalendarEvent[];
+  events: TimelineEvent[];
   isSelected: boolean;
   onSelect: (dateKey: string) => void;
 };
@@ -15,8 +15,14 @@ export function CalendarDayCell({
   isSelected,
   onSelect,
 }: CalendarDayCellProps) {
-  const hasIncome = events.some((e) => e.amount >= 0);
-  const hasExpense = events.some((e) => e.amount < 0);
+  const hasMoney = events.some((e) => e.lifeCategory === "money");
+  const hasHealth = events.some((e) => e.lifeCategory === "health");
+  const hasIncome = events.some(
+    (e) => e.lifeCategory === "money" && (e.amount ?? 0) >= 0,
+  );
+  const hasExpense = events.some(
+    (e) => e.lifeCategory === "money" && (e.amount ?? 0) < 0,
+  );
 
   return (
     <button
@@ -45,9 +51,11 @@ export function CalendarDayCell({
             key={event.id}
             className={cn(
               "truncate rounded-md px-1 py-0.5 text-[10px] font-medium leading-tight sm:text-[11px]",
-              event.amount >= 0
+              event.lifeCategory === "health"
                 ? "bg-income-muted text-income"
-                : "bg-expense-muted text-expense",
+                : (event.amount ?? 0) >= 0
+                  ? "bg-income-muted text-income"
+                  : "bg-expense-muted text-expense",
             )}
           >
             {event.title}
@@ -62,9 +70,12 @@ export function CalendarDayCell({
 
       {events.length > 0 && (
         <div className="mt-auto flex gap-0.5 pt-1">
-          {hasIncome && <span className="size-1.5 rounded-full bg-income" />}
-          {hasExpense && (
-            <span className="size-1.5 rounded-full bg-expense opacity-60" />
+          {hasHealth && <span className="size-1.5 rounded-full bg-income" />}
+          {hasMoney && hasIncome && (
+            <span className="size-1.5 rounded-full bg-income opacity-80" />
+          )}
+          {hasMoney && hasExpense && (
+            <span className="size-1.5 rounded-full bg-foreground/70" />
           )}
         </div>
       )}

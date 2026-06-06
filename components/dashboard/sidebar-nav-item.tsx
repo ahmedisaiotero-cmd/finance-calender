@@ -11,6 +11,7 @@ type SidebarNavItemProps = {
   icon: LucideIcon;
   isActive: boolean;
   onNavigate?: () => void;
+  className?: string;
 };
 
 export function SidebarNavItem({
@@ -19,6 +20,7 @@ export function SidebarNavItem({
   icon: Icon,
   isActive,
   onNavigate,
+  className,
 }: SidebarNavItemProps) {
   return (
     <Link
@@ -27,6 +29,7 @@ export function SidebarNavItem({
       aria-current={isActive ? "page" : undefined}
       className={cn(
         "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[13px] font-medium tracking-tight",
+        className,
         "transition-[color,transform,background-color,box-shadow] duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]",
         "hover:translate-x-0.5 active:scale-[0.98] active:duration-150",
         isActive

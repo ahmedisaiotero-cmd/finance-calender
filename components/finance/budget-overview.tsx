@@ -8,6 +8,7 @@ import {
   formatTransactionTotal,
   spendingByCategory,
 } from "@/lib/transaction-utils";
+import { syncBudgetsSubtitle } from "@/lib/sync-copy";
 import { categoryBudgets } from "@/src/data/budgets";
 import type { Transaction } from "@/src/data/transactions";
 
@@ -43,7 +44,7 @@ export function BudgetOverview({
       <div>
         <h2 className="text-lg font-semibold tracking-tight">Budgets</h2>
         <p className="mt-0.5 text-sm text-muted-foreground">
-          Category limits for {monthLabel} — synced with your transactions
+          {syncBudgetsSubtitle(monthLabel)}
         </p>
       </div>
 

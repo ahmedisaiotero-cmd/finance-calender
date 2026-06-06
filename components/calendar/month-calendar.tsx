@@ -16,6 +16,10 @@ import {
   parseDateKey,
   toDateKey,
 } from "@/lib/calendar-utils";
+import {
+  groupTimelineByDate,
+  moneyEventToTimeline,
+} from "@/lib/timeline-events";
 
 type MonthCalendarProps = {
   initialYear?: number;
@@ -40,6 +44,10 @@ export function MonthCalendar({
   );
 
   const eventsByDate = useMemo(() => groupEventsByDate(events), [events]);
+  const timelineByDate = useMemo(
+    () => groupTimelineByDate(events.map(moneyEventToTimeline)),
+    [events],
+  );
   const cells = useMemo(
     () => getCalendarCells(viewYear, viewMonth),
     [viewYear, viewMonth],
@@ -83,7 +91,7 @@ export function MonthCalendar({
         />
         <CalendarGrid
           cells={cells}
-          eventsByDate={eventsByDate}
+          eventsByDate={timelineByDate}
           selectedKey={selectedKey}
           onSelectDay={setSelectedKey}
         />
