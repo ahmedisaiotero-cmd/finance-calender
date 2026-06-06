@@ -1,12 +1,14 @@
 import { MobileHeader } from "@/components/dashboard/mobile-header";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { SYNC_PRODUCT } from "@/lib/sync-copy";
+import { cn } from "@/lib/utils";
 
 type AppShellProps = {
   children: React.ReactNode;
   title: string;
   description?: string;
   eyebrow?: string;
+  layout?: "default" | "dashboard" | "wide";
 };
 
 export function AppShell({
@@ -14,27 +16,33 @@ export function AppShell({
   title,
   description,
   eyebrow = SYNC_PRODUCT.name,
+  layout = "default",
 }: AppShellProps) {
+  const isDashboard = layout === "dashboard";
+  const isWide = layout === "wide";
+
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="sync-app-shell flex min-h-screen bg-background">
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <MobileHeader />
         <main className="flex-1 overflow-auto">
-          <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8 sm:py-10">
-            <header className="mb-8 hidden md:block">
-              <p className="text-sm font-medium text-muted-foreground">
-                {eyebrow}
-              </p>
-              <h1 className="mt-1 text-3xl font-semibold tracking-tight sm:text-4xl">
-                {title}
-              </h1>
-              {description && (
-                <p className="mt-2 max-w-lg text-muted-foreground">
-                  {description}
-                </p>
-              )}
-            </header>
+          <div
+            className={cn(
+              "sync-app-main mx-auto",
+              isDashboard && "sync-app-main--narrow",
+              isWide && "sync-app-main--wide",
+            )}
+          >
+            {!isDashboard && (
+              <header className="sync-page-header">
+                <p className="sync-page-eyebrow">{eyebrow}</p>
+                <h1 className="sync-page-title">{title}</h1>
+                {description && (
+                  <p className="sync-page-description">{description}</p>
+                )}
+              </header>
+            )}
             {children}
           </div>
         </main>

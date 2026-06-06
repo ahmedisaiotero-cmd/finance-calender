@@ -10,6 +10,16 @@ export const CALENDAR_WEEKDAYS = [
   "Sat",
 ] as const;
 
+export const CALENDAR_WEEKDAYS_SHORT = [
+  "S",
+  "M",
+  "T",
+  "W",
+  "T",
+  "F",
+  "S",
+] as const;
+
 export const calendarSourceLabels: Record<CalendarEventSource, string> = {
   recurring: "Recurring",
   transaction: "Logged",

@@ -2,42 +2,60 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Settings } from "lucide-react";
+import {
+  CalendarDays,
+  Dumbbell,
+  LayoutDashboard,
+  Wallet,
+  type LucideIcon,
+} from "lucide-react";
 
 import { SidebarNavItem } from "@/components/dashboard/sidebar-nav-item";
-import { SidebarNavItemSoon } from "@/components/dashboard/sidebar-nav-item-soon";
-import {
-  lifeCategoryNavItems,
-  moneySubNavItems,
-  primaryNavItems,
-} from "@/lib/sync-categories";
 import { cn } from "@/lib/utils";
 
 type NavLinksProps = {
   onNavigate?: () => void;
   className?: string;
-  showSectionLabel?: boolean;
 };
 
-function isNavItemActive(pathname: string, hash: string, href: string) {
-  const [path, itemHash] = href.split("#");
+type MainNavItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+};
 
-  if (itemHash) {
-    return pathname === path && hash === `#${itemHash}`;
+const mainNavItems: MainNavItem[] = [
+  { label: "Home", href: "/", icon: LayoutDashboard },
+  { label: "Calendar", href: "/calendar", icon: CalendarDays },
+  { label: "Money", href: "/money", icon: Wallet },
+  { label: "Health", href: "/fitness", icon: Dumbbell },
+];
+
+function isMainNavActive(
+  item: MainNavItem,
+  pathname: string,
+  hash: string,
+) {
+  if (item.label === "Home") {
+    return pathname === "/";
   }
 
-  return pathname === path || (path !== "/" && pathname.startsWith(path));
+  if (item.label === "Calendar") {
+    return pathname === "/calendar";
+  }
+
+  if (item.label === "Money") {
+    return pathname === "/money" || pathname.startsWith("/money/");
+  }
+
+  if (item.label === "Health") {
+    return pathname === "/fitness" || pathname.startsWith("/fitness/");
+  }
+
+  return false;
 }
 
-function isCalendarNavActive(pathname: string) {
-  return pathname === "/calendar";
-}
-
-export function NavLinks({
-  onNavigate,
-  className,
-  showSectionLabel = true,
-}: NavLinksProps) {
+export function NavLinks({ onNavigate, className }: NavLinksProps) {
   const pathname = usePathname();
   const [hash, setHash] = useState("");
 
@@ -50,75 +68,16 @@ export function NavLinks({
 
   return (
     <nav className={cn("flex flex-col gap-0.5", className)}>
-      {showSectionLabel && (
-        <p className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-          Workspace
-        </p>
-      )}
-
-      {primaryNavItems.map((item) => (
+      {mainNavItems.map((item) => (
         <SidebarNavItem
           key={item.label}
           href={item.href}
           label={item.label}
           icon={item.icon}
-          isActive={
-            item.href === "/calendar"
-              ? isCalendarNavActive(pathname)
-              : isNavItemActive(pathname, hash, item.href)
-          }
+          isActive={isMainNavActive(item, pathname, hash)}
           onNavigate={onNavigate}
         />
       ))}
-
-      <p className="mb-2 mt-4 px-3 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-        Categories
-      </p>
-
-      {lifeCategoryNavItems.map((category) => {
-        if (!category.enabled || !category.href) {
-          return (
-            <SidebarNavItemSoon
-              key={category.id}
-              label={category.label}
-              icon={category.icon}
-            />
-          );
-        }
-
-        const isActive =
-          category.id === "money"
-            ? false
-            : isNavItemActive(pathname, hash, category.href);
-
-        return (
-          <div key={category.id}>
-            <SidebarNavItem
-              href={category.href}
-              label={category.label}
-              icon={category.icon}
-              isActive={isActive}
-              onNavigate={onNavigate}
-            />
-            {category.id === "money" &&
-              moneySubNavItems.map((item) => (
-                <SidebarNavItem
-                  key={item.label}
-                  href={item.href}
-                  label={item.label}
-                  icon={item.icon}
-                  isActive={isNavItemActive(pathname, hash, item.href)}
-                  onNavigate={onNavigate}
-                  className="ml-3 w-[calc(100%-0.75rem)] py-2 text-[12px]"
-                />
-              ))}
-          </div>
-        );
-      })}
-
-      <div className="my-3 h-px bg-gradient-to-r from-transparent via-border/80 to-transparent" />
-
-      <SidebarNavItemSoon label="Settings" icon={Settings} />
     </nav>
   );
 }

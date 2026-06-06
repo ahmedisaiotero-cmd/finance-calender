@@ -10,6 +10,14 @@ export type CalendarLens =
   | "relationships"
   | "personal";
 
+export type TimelineEventDetail = {
+  time?: string;
+  durationMinutes?: number;
+  amount?: number;
+  segment?: string;
+  note?: string;
+};
+
 export type TimelineEvent = {
   id: string;
   title: string;
@@ -17,8 +25,10 @@ export type TimelineEvent = {
   lifeCategory: Exclude<CalendarLens, "all">;
   category: string;
   source: string;
+  status?: string;
   amount?: number;
   durationMinutes?: number;
+  detail?: TimelineEventDetail;
 };
 
 export function moneyEventToTimeline(event: CalendarEvent): TimelineEvent {

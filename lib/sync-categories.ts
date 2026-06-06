@@ -81,8 +81,7 @@ export const lifeCategoryNavItems: LifeCategoryNavItem[] = [
   },
 ];
 
-/** Money tools stay on Calendar via hash sections (no /money hub). */
 export const moneySubNavItems: MoneySubNavItem[] = [
-  { label: "Transactions", href: "/calendar#transactions", icon: Receipt },
-  { label: "Budgets", href: "/calendar#budgets", icon: Wallet },
+  { label: "Transactions", href: "/money", icon: Receipt },
+  { label: "Budgets", href: "/money", icon: Wallet },
 ];

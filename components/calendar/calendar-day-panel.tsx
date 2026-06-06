@@ -1,6 +1,5 @@
 import { formatCurrency } from "@/lib/calendar-utils";
 import { calendarSourceLabels } from "@/lib/calendar-constants";
-import { SurfaceCard } from "@/components/ui/surface-card";
 import type { CalendarEvent } from "@/src/data/calendar-events";
 import { cn } from "@/lib/utils";
 
@@ -13,72 +12,81 @@ export function CalendarDayPanel({ dateLabel, events }: CalendarDayPanelProps) {
   const dayTotal = events.reduce((sum, event) => sum + event.amount, 0);
 
   return (
-    <SurfaceCard as="aside" className="lg:col-span-2">
-      <div className="border-b border-border/60 px-5 py-4 sm:px-6">
-        <h3 className="text-lg font-semibold tracking-tight">{dateLabel}</h3>
-        <p className="mt-0.5 text-sm text-muted-foreground">
+    <section>
+      <header className="mb-5">
+        <h2 className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground/65">
+          Selected day
+        </h2>
+        <p className="mt-1.5 text-[13px] tracking-[-0.01em] text-foreground/80">
+          {dateLabel}
+        </p>
+        <p className="mt-0.5 text-[11px] text-muted-foreground/55">
           {events.length === 0
             ? "No events scheduled"
             : `${events.length} event${events.length === 1 ? "" : "s"}`}
         </p>
-      </div>
+      </header>
 
       {events.length === 0 ? (
-        <CalendarDayPanelEmpty />
+        <p className="text-[12px] text-muted-foreground/55">
+          Select a day with activity on the calendar.
+        </p>
       ) : (
-        <ul className="divide-y divide-border/60">
-          {events.map((event) => (
-            <CalendarEventRow key={event.id} event={event} />
+        <ul className="flex flex-col">
+          {events.map((event, index) => (
+            <CalendarEventRow
+              key={event.id}
+              event={event}
+              showDivider={index > 0}
+            />
           ))}
         </ul>
       )}
 
       {events.length > 0 && (
-        <div className="border-t border-border/60 px-5 py-4 sm:px-6">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Day total</span>
-            <span className="font-semibold tabular-nums">
-              {formatCurrency(dayTotal)}
-            </span>
-          </div>
-        </div>
+        <p className="mt-4 text-[11px] tabular-nums text-muted-foreground/60">
+          Day total{" "}
+          <span className="text-foreground/80">{formatCurrency(dayTotal)}</span>
+        </p>
       )}
-    </SurfaceCard>
+    </section>
   );
 }
 
-function CalendarEventRow({ event }: { event: CalendarEvent }) {
+function CalendarEventRow({
+  event,
+  showDivider,
+}: {
+  event: CalendarEvent;
+  showDivider: boolean;
+}) {
   const isIncome = event.amount >= 0;
 
   return (
-    <li className="flex items-center justify-between gap-4 px-5 py-4 sm:px-6">
+    <li
+      className={cn(
+        "grid items-baseline gap-x-5 gap-y-0.5 py-3.5 sm:grid-cols-[1fr_auto]",
+        showDivider && "border-t border-border/25",
+      )}
+    >
       <div className="min-w-0">
-        <p className="truncate font-medium">{event.title}</p>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-[13px] tracking-[-0.01em] text-foreground/85">
+          {event.title}
+        </p>
+        <p className="mt-0.5 text-[11px] text-muted-foreground/55">
           {event.category}
-          <span className="mx-1.5 text-muted-foreground/50">·</span>
-          <span className="text-xs">{calendarSourceLabels[event.source]}</span>
+          <span className="mx-1.5 text-border/60">·</span>
+          {calendarSourceLabels[event.source]}
         </p>
       </div>
-      <p
+      <span
         className={cn(
-          "shrink-0 font-semibold tabular-nums",
-          isIncome ? "text-income" : "text-foreground",
+          "text-[13px] font-medium tabular-nums",
+          isIncome ? "text-income/75" : "text-foreground/80",
         )}
       >
         {formatCurrency(event.amount)}
-      </p>
+      </span>
     </li>
-  );
-}
-
-function CalendarDayPanelEmpty() {
-  return (
-    <p className="px-5 py-10 text-center text-sm text-muted-foreground sm:px-6">
-      Select a day with activity. Add data in{" "}
-      <code className="text-xs">recurring-events.ts</code>,{" "}
-      <code className="text-xs">transactions.ts</code>, or{" "}
-      <code className="text-xs">calendar-events.ts</code>.
-    </p>
   );
 }

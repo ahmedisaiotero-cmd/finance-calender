@@ -14,7 +14,7 @@ export async function getDefaultWorkspace() {
     user = await prisma.user.create({
       data: {
         email: DEMO_USER_EMAIL,
-        name: "Demo User",
+        name: "Ahmed",
         workspaces: {
           create: { name: "Personal" },
         },

@@ -14,7 +14,7 @@ export function SurfaceCard({
   return (
     <Tag
       className={cn(
-        "rounded-3xl border border-border/60 bg-card shadow-sm",
+        "sync-surface-card rounded-lg border border-border/35",
         className,
       )}
     >

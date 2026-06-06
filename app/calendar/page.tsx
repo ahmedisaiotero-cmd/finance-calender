@@ -6,10 +6,11 @@ export default function CalendarPage() {
   return (
     <AppShell
       title="Calendar"
-      description={SYNC_CALENDAR_ALL_HINT}
+      description={`When are the important moments? ${SYNC_CALENDAR_ALL_HINT} Tap a day for details.`}
       eyebrow={SYNC_PRODUCT.name}
+      layout="wide"
     >
-      <FinanceCalendarContent initialYear={2026} initialMonth={4} />
+      <FinanceCalendarContent />
     </AppShell>
   );
 }

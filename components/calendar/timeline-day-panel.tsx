@@ -1,17 +1,9 @@
+import { CategoryLabel } from "@/components/dashboard/category-label";
 import { formatCurrency } from "@/lib/calendar-utils";
 import { calendarSourceLabels } from "@/lib/calendar-constants";
 import { healthSourceLabels } from "@/lib/health-constants";
 import type { TimelineEvent } from "@/lib/timeline-events";
-import { SurfaceCard } from "@/components/ui/surface-card";
 import { cn } from "@/lib/utils";
-
-const CATEGORY_LABELS: Record<TimelineEvent["lifeCategory"], string> = {
-  money: "Money",
-  health: "Health",
-  career: "Career",
-  relationships: "Relationships",
-  personal: "Personal",
-};
 
 type TimelineDayPanelProps = {
   dateLabel: string;
@@ -29,93 +21,98 @@ export function TimelineDayPanel({
     .reduce((sum, e) => sum + (e.amount ?? 0), 0);
 
   return (
-    <SurfaceCard as="aside" className="lg:col-span-2">
-      <div className="border-b border-border/60 px-5 py-4 sm:px-6">
-        <h3 className="text-lg font-semibold tracking-tight">{dateLabel}</h3>
-        <p className="mt-0.5 text-sm text-muted-foreground">
+    <section>
+      <header className="mb-5">
+        <h2 className="text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground/65">
+          Selected day
+        </h2>
+        <p className="mt-1.5 text-[13px] tracking-[-0.01em] text-foreground/80">
+          {dateLabel}
+        </p>
+        <p className="mt-0.5 text-[11px] text-muted-foreground/55">
           {events.length === 0
             ? "Nothing on your timeline"
             : `${events.length} on your timeline`}
         </p>
-      </div>
+      </header>
 
       {events.length === 0 ? (
-        <p className="px-5 py-10 text-center text-sm text-muted-foreground sm:px-6">
+        <p className="text-[12px] text-muted-foreground/55">
           {lens === "health"
-            ? "No health events this day. Open the Health category page for the full training calendar."
-            : "Select a day with activity or add a Money transaction below."}
+            ? "No health events this day."
+            : "Select a day with activity on the calendar."}
         </p>
       ) : (
-        <ul className="divide-y divide-border/60">
-          {events.map((event) => (
-            <TimelineEventRow key={event.id} event={event} />
+        <ul className="flex flex-col">
+          {events.map((event, index) => (
+            <TimelineEventRow
+              key={event.id}
+              event={event}
+              showDivider={index > 0}
+            />
           ))}
         </ul>
       )}
 
       {moneyTotal !== 0 && events.some((e) => e.lifeCategory === "money") && (
-        <div className="border-t border-border/60 px-5 py-4 sm:px-6">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Money total</span>
-            <span className="font-semibold tabular-nums">
-              {formatCurrency(moneyTotal)}
-            </span>
-          </div>
-        </div>
+        <p className="mt-4 text-[11px] tabular-nums text-muted-foreground/60">
+          Money total{" "}
+          <span className="text-foreground/80">{formatCurrency(moneyTotal)}</span>
+        </p>
       )}
-    </SurfaceCard>
+    </section>
   );
 }
 
-function TimelineEventRow({ event }: { event: TimelineEvent }) {
+function TimelineEventRow({
+  event,
+  showDivider,
+}: {
+  event: TimelineEvent;
+  showDivider: boolean;
+}) {
   const isMoney = event.lifeCategory === "money";
   const amount = event.amount ?? 0;
+  const sourceLabel = isMoney
+    ? calendarSourceLabels[event.source as keyof typeof calendarSourceLabels]
+    : healthSourceLabels[event.source as keyof typeof healthSourceLabels];
 
   return (
-    <li className="flex items-start justify-between gap-4 px-5 py-4 sm:px-6">
+    <li
+      className={cn(
+        "grid items-baseline gap-x-5 gap-y-0.5 py-3.5 sm:grid-cols-[1fr_auto]",
+        showDivider && "border-t border-border/25",
+      )}
+    >
       <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <span
-            className={cn(
-              "rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-              isMoney
-                ? "bg-expense-muted text-foreground"
-                : "bg-income-muted text-income",
-            )}
-          >
-            {CATEGORY_LABELS[event.lifeCategory]}
-          </span>
-          <p className="truncate font-medium">{event.title}</p>
+        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+          <p className="text-[13px] tracking-[-0.01em] text-foreground/85">
+            {event.title}
+          </p>
+          <CategoryLabel category={event.lifeCategory} />
         </div>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-0.5 text-[11px] text-muted-foreground/55">
           {event.category}
-          <span className="mx-1.5 text-muted-foreground/50">·</span>
-          <span className="text-xs">
-            {isMoney
-              ? calendarSourceLabels[
-                  event.source as keyof typeof calendarSourceLabels
-                ]
-              : healthSourceLabels[
-                  event.source as keyof typeof healthSourceLabels
-                ]}
-          </span>
+          <span className="mx-1.5 text-border/60">·</span>
+          {sourceLabel}
           {!isMoney && event.durationMinutes != null && (
             <>
-              <span className="mx-1.5 text-muted-foreground/50">·</span>
-              <span className="text-xs">{event.durationMinutes} min</span>
+              <span className="mx-1.5 text-border/60">·</span>
+              {event.durationMinutes} min
             </>
           )}
         </p>
       </div>
+
       {isMoney && (
-        <p
+        <span
           className={cn(
-            "shrink-0 font-semibold tabular-nums",
-            amount >= 0 ? "text-income" : "text-foreground",
+            "text-[13px] font-medium tabular-nums",
+            amount >= 0 ? "text-income/75" : "text-foreground/80",
           )}
         >
           {formatCurrency(amount)}
-        </p>
+        </span>
       )}
     </li>
   );

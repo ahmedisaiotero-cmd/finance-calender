@@ -1,15 +1,10 @@
 import { AppShell } from "@/components/dashboard/app-shell";
-import { DashboardContent } from "@/components/dashboard/dashboard-content";
-import { SYNC_PRODUCT } from "@/lib/sync-copy";
+import { HomeContent } from "@/components/dashboard/home-content";
 
 export default function Home() {
   return (
-    <AppShell
-      title="Home"
-      description={`Your life at a glance on one timeline. ${SYNC_PRODUCT.positioning}.`}
-      eyebrow={SYNC_PRODUCT.name}
-    >
-      <DashboardContent />
+    <AppShell title="Today" layout="dashboard">
+      <HomeContent />
     </AppShell>
   );
 }

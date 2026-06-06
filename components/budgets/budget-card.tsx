@@ -35,7 +35,7 @@ export function BudgetCard({ budget, spent }: BudgetCardProps) {
               : "bg-income-muted text-income",
           )}
         >
-          {isOver ? "Over" : `${formatTransactionTotal(remaining)} left`}
+          {isOver ? "Needs attention" : `${formatTransactionTotal(remaining)} left`}
         </span>
       </div>
 

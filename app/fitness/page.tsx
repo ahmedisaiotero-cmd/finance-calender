@@ -1,4 +1,4 @@
-import { HealthMonthCalendar } from "@/components/health/health-month-calendar";
+import { HealthContent } from "@/components/health/health-content";
 import { AppShell } from "@/components/dashboard/app-shell";
 import { SYNC_PRODUCT } from "@/lib/sync-copy";
 
@@ -6,10 +6,10 @@ export default function FitnessPage() {
   return (
     <AppShell
       title="Health"
-      description="Training, recovery, and wellness on your SYNC timeline."
+      description="Am I taking care of myself? Weekly rhythm and today's basics."
       eyebrow={SYNC_PRODUCT.name}
     >
-      <HealthMonthCalendar initialYear={2026} initialMonth={4} />
+      <HealthContent />
     </AppShell>
   );
 }

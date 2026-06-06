@@ -30,7 +30,7 @@ export function TransactionSummaryCards({
       <QuickStatCard
         label="Net"
         value={formatTransactionTotal(net)}
-        hint={net >= 0 ? "In the green" : "Over spent"}
+        hint={net >= 0 ? "In the green" : "Room to adjust"}
       />
     </div>
   );

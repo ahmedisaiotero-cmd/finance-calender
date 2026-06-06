@@ -42,6 +42,12 @@ model User {
   workspaces Workspace[]
 }
 
+enum TimelineItemStatus {
+  PLANNED
+  COMPLETED
+  DUE
+}
+
 model Workspace {
   id             String          @id @default(uuid())
   ownerId        String
@@ -53,6 +59,21 @@ model Workspace {
   transactions   Transaction[]
   recurringRules RecurringRule[]
   budgets        Budget[]
+  timelineItems  TimelineItem[]
+}
+
+model TimelineItem {
+  id          String              @id @default(uuid())
+  workspaceId String
+  workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  title       String
+  category    String
+  date        DateTime            @db.Date
+  status      TimelineItemStatus  @default(PLANNED)
+  detail      Json?
+  createdAt   DateTime            @default(now())
+
+  @@index([workspaceId, date])
 }
 
 model Category {

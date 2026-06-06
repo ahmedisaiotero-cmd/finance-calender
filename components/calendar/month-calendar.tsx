@@ -10,8 +10,8 @@ import { SurfaceCard } from "@/components/ui/surface-card";
 import { useTransactions } from "@/hooks/use-transactions";
 import { getCalendarEventsForMonth } from "@/lib/build-calendar-events";
 import {
-  getCalendarCells,
-  getMonthLabel,
+  getTwoWeekCells,
+  getTwoWeekRangeLabel,
   groupEventsByDate,
   parseDateKey,
   toDateKey,
@@ -33,24 +33,31 @@ export function MonthCalendar({
 }: MonthCalendarProps) {
   const { transactions, ready } = useTransactions();
   const now = new Date();
-  const [viewYear, setViewYear] = useState(initialYear ?? now.getFullYear());
-  const [viewMonth, setViewMonth] = useState(initialMonth ?? now.getMonth());
+  const [viewAnchor, setViewAnchor] = useState(
+    () => new Date(initialYear ?? now.getFullYear(), initialMonth ?? now.getMonth(), now.getDate()),
+  );
   const [selectedKey, setSelectedKey] = useState(toDateKey(now));
 
-  const events = useMemo(
-    () =>
-      getCalendarEventsForMonth(viewYear, viewMonth, { transactions }),
-    [viewYear, viewMonth, transactions],
-  );
+  const cells = useMemo(() => getTwoWeekCells(viewAnchor), [viewAnchor]);
+  const rangeLabel = useMemo(() => getTwoWeekRangeLabel(cells), [cells]);
+
+  const events = useMemo(() => {
+    const months = new Set<string>();
+    for (const cell of cells) {
+      months.add(`${cell.date.getFullYear()}-${cell.date.getMonth()}`);
+    }
+    const all = [];
+    for (const key of months) {
+      const [y, m] = key.split("-").map(Number);
+      all.push(...getCalendarEventsForMonth(y, m, { transactions }));
+    }
+    return all;
+  }, [cells, transactions]);
 
   const eventsByDate = useMemo(() => groupEventsByDate(events), [events]);
   const timelineByDate = useMemo(
     () => groupTimelineByDate(events.map(moneyEventToTimeline)),
     [events],
-  );
-  const cells = useMemo(
-    () => getCalendarCells(viewYear, viewMonth),
-    [viewYear, viewMonth],
   );
 
   const selectedEvents = eventsByDate.get(selectedKey) ?? [];
@@ -60,16 +67,17 @@ export function MonthCalendar({
     day: "numeric",
   });
 
-  function shiftMonth(delta: number) {
-    const next = new Date(viewYear, viewMonth + delta, 1);
-    setViewYear(next.getFullYear());
-    setViewMonth(next.getMonth());
+  function shiftTwoWeeks(delta: number) {
+    setViewAnchor((current) => {
+      const next = new Date(current);
+      next.setDate(next.getDate() + delta * 14);
+      return next;
+    });
   }
 
   function goToToday() {
     const today = new Date();
-    setViewYear(today.getFullYear());
-    setViewMonth(today.getMonth());
+    setViewAnchor(today);
     setSelectedKey(toDateKey(today));
   }
 
@@ -81,12 +89,13 @@ export function MonthCalendar({
 
   return (
     <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
-      <SurfaceCard className="p-4 sm:p-6 lg:col-span-3">
+      <SurfaceCard className="sync-apple-cal-shell p-4 sm:p-6 lg:col-span-3">
         <CalendarSourceLegend />
         <CalendarToolbar
-          monthLabel={getMonthLabel(viewYear, viewMonth)}
-          onPrevious={() => shiftMonth(-1)}
-          onNext={() => shiftMonth(1)}
+          monthLabel={rangeLabel}
+          variant="two-week"
+          onPrevious={() => shiftTwoWeeks(-1)}
+          onNext={() => shiftTwoWeeks(1)}
           onToday={goToToday}
         />
         <CalendarGrid

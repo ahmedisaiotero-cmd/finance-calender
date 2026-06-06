@@ -4,42 +4,39 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { CalendarGrid } from "@/components/calendar/calendar-grid";
 import { CalendarLensEmpty } from "@/components/calendar/calendar-lens-empty";
-import { CalendarSourceLegend } from "@/components/calendar/calendar-source-legend";
-import {
-  CalendarSegmentTabs,
-  moneySegmentFromHash,
-  type MoneySegment,
-} from "@/components/calendar/calendar-segment-tabs";
+import { CalendarSelectedDayPanel } from "@/components/calendar/calendar-selected-day-panel";
+import { CalendarSummaryBar } from "@/components/calendar/calendar-summary-bar";
 import { CalendarToolbar } from "@/components/calendar/calendar-toolbar";
 import { CategoryLensBar } from "@/components/calendar/category-lens-bar";
-import { TimelineDayPanel } from "@/components/calendar/timeline-day-panel";
-import { CalendarDayPanel } from "@/components/calendar/calendar-day-panel";
-import { BudgetOverview } from "@/components/finance/budget-overview";
-import { FinanceTransactionList } from "@/components/finance/finance-transaction-list";
-import { AddTransactionForm } from "@/components/transactions/add-transaction-form";
-import { TransactionSummaryCards } from "@/components/transactions/transaction-summary-cards";
-import { SurfaceCard } from "@/components/ui/surface-card";
-import {
-  SYNC_CALENDAR_ALL_HINT,
-  SYNC_DB_SYNCED_LABEL,
-  SYNC_LOADING_LABEL,
-} from "@/lib/sync-copy";
+import { healthStats } from "@/components/health/health-mock-data";
+import { SYNC_DB_SYNCED_LABEL, SYNC_LOADING_LABEL } from "@/lib/sync-copy";
 import { useCalendarEvents } from "@/hooks/use-calendar-events";
+import { useSyncTimeline } from "@/hooks/use-sync-timeline";
 import { useTransactions } from "@/hooks/use-transactions";
+import {
+  getHealthEventsForMonth,
+  totalActiveMinutes,
+} from "@/lib/build-health-calendar-events";
 import {
   getCalendarCells,
   getMonthLabel,
-  groupEventsByDate,
+  getUniqueMonthsFromCells,
   parseDateKey,
   toDateKey,
 } from "@/lib/calendar-utils";
+import { monthlySpending } from "@/lib/mock-data";
+import {
+  filterTransactionsForMonth,
+  formatTransactionTotal,
+  summarizeTransactions,
+} from "@/lib/transaction-utils";
+import { getItemsForDate, itemToTimelineEvent } from "@/lib/sync-timeline";
+import { buildUnifiedTimeline } from "@/lib/unified-timeline";
 import {
   filterTimelineByLens,
   groupTimelineByDate,
-  mergeTimelineForMonth,
   type CalendarLens,
 } from "@/lib/timeline-events";
-import { filterTransactionsForMonth } from "@/lib/transaction-utils";
 
 type FinanceCalendarContentProps = {
   initialYear?: number;
@@ -58,37 +55,100 @@ function isPlaceholderLens(
   return (PLACEHOLDER_LENSES as readonly string[]).includes(lens);
 }
 
+function adjacentMonth(year: number, month: number, delta: number) {
+  return new Date(year, month + delta, 1);
+}
+
 export function FinanceCalendarContent({
   initialYear,
   initialMonth,
 }: FinanceCalendarContentProps) {
-  const { transactions, addTransaction, ready, usingDatabase } =
-    useTransactions();
+  const { transactions, ready, usingDatabase } = useTransactions();
   const now = new Date();
-  const [viewYear, setViewYear] = useState(initialYear ?? now.getFullYear());
-  const [viewMonth, setViewMonth] = useState(initialMonth ?? now.getMonth());
-  const [selectedKey, setSelectedKey] = useState(toDateKey(now));
+  const todayKey = toDateKey(now);
+  const [viewAnchor, setViewAnchor] = useState(
+    () =>
+      new Date(
+        initialYear ?? now.getFullYear(),
+        initialMonth ?? now.getMonth(),
+        1,
+      ),
+  );
+  const [selectedKey, setSelectedKey] = useState(todayKey);
   const [lens, setLens] = useState<CalendarLens>("all");
-  const [moneySegment, setMoneySegment] = useState<MoneySegment>("overview");
 
-  const monthLabel = getMonthLabel(viewYear, viewMonth);
-
-  const monthTransactions = useMemo(
-    () => filterTransactionsForMonth(transactions, viewYear, viewMonth),
-    [transactions, viewYear, viewMonth],
+  const viewYear = viewAnchor.getFullYear();
+  const viewMonth = viewAnchor.getMonth();
+  const cells = useMemo(
+    () => getCalendarCells(viewYear, viewMonth),
+    [viewYear, viewMonth],
+  );
+  const monthLabel = useMemo(
+    () => getMonthLabel(viewYear, viewMonth),
+    [viewYear, viewMonth],
+  );
+  const monthsInView = useMemo(
+    () => getUniqueMonthsFromCells(cells),
+    [cells],
   );
 
-  const { events: moneyEvents, ready: eventsReady } = useCalendarEvents(
-    viewYear,
-    viewMonth,
+  const prevMonth = adjacentMonth(viewYear, viewMonth, -1);
+  const nextMonth = adjacentMonth(viewYear, viewMonth, 1);
+
+  const { events: currentMoneyEvents, ready: currentEventsReady } =
+    useCalendarEvents(
+      viewYear,
+      viewMonth,
+      transactions,
+      usingDatabase,
+    );
+
+  const { events: prevMoneyEvents, ready: prevEventsReady } = useCalendarEvents(
+    prevMonth.getFullYear(),
+    prevMonth.getMonth(),
     transactions,
     usingDatabase,
   );
 
-  const mergedTimeline = useMemo(
-    () => mergeTimelineForMonth(moneyEvents, viewYear, viewMonth),
-    [moneyEvents, viewYear, viewMonth],
+  const { events: nextMoneyEvents, ready: nextEventsReady } = useCalendarEvents(
+    nextMonth.getFullYear(),
+    nextMonth.getMonth(),
+    transactions,
+    usingDatabase,
   );
+
+  const moneyEvents = useMemo(
+    () => [...prevMoneyEvents, ...currentMoneyEvents, ...nextMoneyEvents],
+    [prevMoneyEvents, currentMoneyEvents, nextMoneyEvents],
+  );
+
+  const eventsReady = currentEventsReady && prevEventsReady && nextEventsReady;
+
+  const {
+    timeline: currentMonthTimeline,
+    ready: syncTimelineReady,
+    usingLiveTimeline,
+  } = useSyncTimeline(viewYear, viewMonth);
+
+  const mergedTimeline = useMemo(() => {
+    if (usingLiveTimeline) {
+      return currentMonthTimeline;
+    }
+
+    return monthsInView.flatMap(({ year, month }) => {
+      const monthMoney = moneyEvents.filter((event) => {
+        const [y, m] = event.date.split("-").map(Number);
+        return y === year && m - 1 === month;
+      });
+      return buildUnifiedTimeline(monthMoney, year, month, { reference: now });
+    });
+  }, [
+    moneyEvents,
+    monthsInView,
+    now,
+    usingLiveTimeline,
+    currentMonthTimeline,
+  ]);
 
   const lensEvents = useMemo(
     () => filterTimelineByLens(mergedTimeline, lens),
@@ -100,128 +160,123 @@ export function FinanceCalendarContent({
     [lensEvents],
   );
 
-  const moneyByDate = useMemo(
-    () => groupEventsByDate(moneyEvents),
-    [moneyEvents],
-  );
+  const monthTimeline = useMemo(() => {
+    const currentMonthKeys = new Set(
+      cells.filter((cell) => cell.isCurrentMonth).map((cell) => cell.dateKey),
+    );
+    return mergedTimeline.filter((e) => currentMonthKeys.has(e.date));
+  }, [cells, mergedTimeline]);
 
-  const cells = useMemo(
-    () => getCalendarCells(viewYear, viewMonth),
-    [viewYear, viewMonth],
-  );
+  const monthStats = useMemo(() => {
+    const monthTx = filterTransactionsForMonth(
+      transactions,
+      viewYear,
+      viewMonth,
+    );
+    const { expenses } = summarizeTransactions(monthTx);
+    const spent =
+      expenses > 0 ? expenses : Math.round(monthlySpending.spent);
 
-  const selectedTimeline = timelineByDate.get(selectedKey) ?? [];
-  const selectedMoney = moneyByDate.get(selectedKey) ?? [];
+    const healthEvents = getHealthEventsForMonth(viewYear, viewMonth);
+    const minutes = totalActiveMinutes(healthEvents);
+    const activeHours = Math.round(minutes / 60);
+
+    const activeDays = new Set(healthEvents.map((e) => e.date)).size;
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const isCurrentMonth =
+      viewYear === now.getFullYear() && viewMonth === now.getMonth();
+    const elapsed = isCurrentMonth ? now.getDate() : daysInMonth;
+    const computedConsistency = Math.min(
+      100,
+      Math.round((activeDays / Math.max(elapsed, 1)) * 100),
+    );
+    const consistency =
+      isCurrentMonth && computedConsistency > 0
+        ? computedConsistency
+        : isCurrentMonth
+          ? healthStats.recovery.value
+          : computedConsistency || healthStats.recovery.value;
+
+    return {
+      timelineItems: monthTimeline.length,
+      spent: formatTransactionTotal(spent),
+      activeHours,
+      consistency,
+    };
+  }, [transactions, viewYear, viewMonth, monthTimeline.length, now]);
+
+  const selectedEvents = useMemo(() => {
+    const live = timelineByDate.get(selectedKey) ?? [];
+    if (live.length > 0 || usingLiveTimeline) return live;
+    return getItemsForDate(selectedKey, now).map(itemToTimelineEvent);
+  }, [timelineByDate, selectedKey, now, usingLiveTimeline]);
   const selectedLabel = parseDateKey(selectedKey).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
   });
 
-  const syncHashToSegment = useCallback(() => {
+  const redirectLegacyMoneyHash = useCallback(() => {
     const hash = window.location.hash;
     if (hash === "#transactions" || hash === "#budgets") {
-      setLens("money");
-      setMoneySegment(moneySegmentFromHash(hash));
+      window.location.replace("/money");
     }
   }, []);
 
   useEffect(() => {
-    syncHashToSegment();
-    window.addEventListener("hashchange", syncHashToSegment);
-    return () => window.removeEventListener("hashchange", syncHashToSegment);
-  }, [syncHashToSegment]);
-
-  useEffect(() => {
-    if (moneySegment === "transactions" || moneySegment === "budgets") {
-      const el = document.getElementById(moneySegment);
-      el?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [moneySegment, lens]);
-
-  function handleLensChange(next: CalendarLens) {
-    setLens(next);
-    if (next !== "money") {
-      setMoneySegment("overview");
-      const path = window.location.pathname + window.location.search;
-      window.history.replaceState(null, "", path);
-    }
-  }
+    redirectLegacyMoneyHash();
+    window.addEventListener("hashchange", redirectLegacyMoneyHash);
+    return () => window.removeEventListener("hashchange", redirectLegacyMoneyHash);
+  }, [redirectLegacyMoneyHash]);
 
   function shiftMonth(delta: number) {
-    const next = new Date(viewYear, viewMonth + delta, 1);
-    setViewYear(next.getFullYear());
-    setViewMonth(next.getMonth());
+    setViewAnchor(
+      (current) =>
+        new Date(current.getFullYear(), current.getMonth() + delta, 1),
+    );
   }
 
   function goToToday() {
     const today = new Date();
-    setViewYear(today.getFullYear());
-    setViewMonth(today.getMonth());
+    setViewAnchor(new Date(today.getFullYear(), today.getMonth(), 1));
     setSelectedKey(toDateKey(today));
   }
 
-  async function handleAddTransaction(
-    input: Parameters<typeof addTransaction>[0],
-  ) {
-    await addTransaction(input);
-    if (input.dateISO) {
-      setSelectedKey(input.dateISO);
-      const [y, m] = input.dateISO.split("-").map(Number);
-      setViewYear(y);
-      setViewMonth(m - 1);
-    }
-  }
-
-  if (!ready || !eventsReady) {
+  if (!ready || !eventsReady || !syncTimelineReady) {
     return (
-      <p className="text-sm text-muted-foreground">{SYNC_LOADING_LABEL}</p>
+      <p className="text-[13px] text-muted-foreground">{SYNC_LOADING_LABEL}</p>
     );
   }
 
-  const showCalendarGrid =
-    !isPlaceholderLens(lens) &&
-    (lens !== "money" || moneySegment === "overview");
+  const showCalendarGrid = !isPlaceholderLens(lens);
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <CategoryLensBar value={lens} onChange={handleLensChange} />
-        <div className="flex flex-wrap items-center gap-2">
-          {usingDatabase && (
-            <p className="rounded-full border border-border/60 bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
-              {SYNC_DB_SYNCED_LABEL}
-            </p>
-          )}
-        </div>
+    <div className="flex w-full flex-col gap-10 sm:gap-12">
+      <CalendarSummaryBar
+        timelineItems={monthStats.timelineItems}
+        spent={monthStats.spent}
+        activeHours={monthStats.activeHours}
+        consistency={monthStats.consistency}
+      />
+
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <CategoryLensBar value={lens} onChange={setLens} />
+        {(usingLiveTimeline || usingDatabase) && (
+          <p className="text-[10px] font-medium uppercase tracking-[0.08em] text-muted-foreground/45">
+            {SYNC_DB_SYNCED_LABEL}
+          </p>
+        )}
       </div>
-
-      {lens === "all" && (
-        <p className="max-w-2xl text-sm text-muted-foreground">
-          {SYNC_CALENDAR_ALL_HINT}
-        </p>
-      )}
-
-      {lens === "money" && (
-        <CalendarSegmentTabs
-          value={moneySegment}
-          onChange={setMoneySegment}
-        />
-      )}
 
       {isPlaceholderLens(lens) && <CalendarLensEmpty lens={lens} />}
 
       {showCalendarGrid && (
-        <div className="grid gap-6 lg:grid-cols-5 lg:gap-8">
-          <SurfaceCard className="p-4 sm:p-6 lg:col-span-3">
-            {lens === "money" ? <CalendarSourceLegend /> : (
-              <p className="mb-3 text-xs text-muted-foreground">
-                <span className="font-medium text-foreground">All</span> —
-                Money and Health on one grid. Switch lens to focus.
-              </p>
-            )}
+        <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] lg:gap-14 xl:gap-16">
+          <section className="min-w-0 rounded-lg border border-border/35 px-4 py-5 sm:px-6 sm:py-7 lg:px-8 lg:py-8">
             <CalendarToolbar
               monthLabel={monthLabel}
+              variant="month"
+              lens={lens}
               onPrevious={() => shiftMonth(-1)}
               onNext={() => shiftMonth(1)}
               onToday={goToToday}
@@ -232,43 +287,16 @@ export function FinanceCalendarContent({
               selectedKey={selectedKey}
               onSelectDay={setSelectedKey}
             />
-          </SurfaceCard>
+          </section>
 
-          {lens === "money" ? (
-            <CalendarDayPanel
-              dateLabel={selectedLabel}
-              events={selectedMoney}
-            />
-          ) : (
-            <TimelineDayPanel
-              dateLabel={selectedLabel}
-              events={selectedTimeline}
-              lens={lens === "health" ? "health" : "all"}
-            />
-          )}
-        </div>
-      )}
-
-      {lens === "money" && moneySegment === "overview" && (
-        <AddTransactionForm onAdd={handleAddTransaction} />
-      )}
-
-      {lens === "money" && moneySegment === "transactions" && (
-        <div className="space-y-6">
-          <TransactionSummaryCards transactions={monthTransactions} />
-          <FinanceTransactionList
-            transactions={monthTransactions}
-            selectedDateKey={selectedKey}
-            monthLabel={monthLabel}
+          <CalendarSelectedDayPanel
+            dateLabel={selectedLabel}
+            events={selectedEvents}
+            showTodayTrackers={
+              selectedKey === todayKey && (lens === "all" || lens === "health")
+            }
           />
         </div>
-      )}
-
-      {lens === "money" && moneySegment === "budgets" && (
-        <BudgetOverview
-          transactions={monthTransactions}
-          monthLabel={monthLabel}
-        />
       )}
     </div>
   );

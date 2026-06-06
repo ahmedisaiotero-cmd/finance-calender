@@ -60,10 +60,12 @@ export function BudgetOverview({
           hint="From logged transactions"
         />
         <QuickStatCard
-          label="Over budget"
+          label="Needs attention"
           value={String(totals.overBudget)}
           hint={
-            totals.overBudget === 0 ? "On track" : "Needs attention"
+            totals.overBudget === 0
+              ? "All categories on track"
+              : "Opportunity to adjust"
           }
         />
       </div>

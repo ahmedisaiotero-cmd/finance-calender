@@ -7,9 +7,6 @@ const LENS_OPTIONS: { id: CalendarLens; label: string; enabled: boolean }[] = [
   { id: "all", label: "All", enabled: true },
   { id: "money", label: "Money", enabled: true },
   { id: "health", label: "Health", enabled: true },
-  { id: "career", label: "Career", enabled: false },
-  { id: "relationships", label: "Relationships", enabled: false },
-  { id: "personal", label: "Personal", enabled: false },
 ];
 
 type CategoryLensBarProps = {
@@ -22,7 +19,7 @@ export function CategoryLensBar({ value, onChange }: CategoryLensBarProps) {
     <div
       role="tablist"
       aria-label="Calendar category"
-      className="flex flex-wrap gap-1.5"
+      className="flex flex-wrap gap-x-3 gap-y-1"
     >
       {LENS_OPTIONS.map((option) => (
         <button
@@ -33,17 +30,18 @@ export function CategoryLensBar({ value, onChange }: CategoryLensBarProps) {
           disabled={!option.enabled}
           onClick={() => option.enabled && onChange(option.id)}
           className={cn(
-            "rounded-full px-3 py-1.5 text-xs font-medium transition-colors sm:text-sm",
+            "text-[10px] font-medium uppercase tracking-[0.06em] transition-colors",
             value === option.id
-              ? "bg-primary text-primary-foreground shadow-sm"
-              : "bg-muted/60 text-muted-foreground hover:bg-muted",
-            !option.enabled &&
-              "cursor-not-allowed opacity-45 hover:bg-muted/60",
+              ? "text-foreground/85"
+              : "text-muted-foreground/45 hover:text-muted-foreground/70",
+            !option.enabled && "cursor-not-allowed opacity-40",
           )}
         >
           {option.label}
           {!option.enabled && (
-            <span className="ml-1 text-[10px] uppercase opacity-80">Soon</span>
+            <span className="ml-1 normal-case tracking-normal opacity-70">
+              Soon
+            </span>
           )}
         </button>
       ))}

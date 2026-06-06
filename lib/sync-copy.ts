@@ -7,11 +7,17 @@ export const SYNC_PRODUCT = {
 } as const;
 
 export const SYNC_CALENDAR_ALL_HINT =
-  "Viewing all categories — Money on your timeline today. More life categories coming soon.";
+  "Viewing all categories — Money and Health on your timeline.";
 
 export const SYNC_CATEGORY_SOON_LABEL = "Soon";
 
 export const SYNC_LOADING_LABEL = "Loading your timeline…";
+
+export const SYNC_HOME_SUBTITLE =
+  "What deserves your attention right now?";
+
+export const SYNC_HOME_TAGLINE =
+  "Money, Health, and Career on one timeline.";
 
 export const SYNC_DB_SYNCED_LABEL = "Synced";
 

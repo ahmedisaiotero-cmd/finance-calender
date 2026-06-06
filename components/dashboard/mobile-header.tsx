@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Menu } from "lucide-react";
 
-import { SyncLogo } from "@/components/brand/sync-logo";
 import { MobileNavMenu } from "@/components/dashboard/mobile-nav-menu";
 import { SYNC_PRODUCT } from "@/lib/sync-copy";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -14,12 +13,14 @@ export function MobileHeader() {
 
   return (
     <>
-      <header className="flex h-14 items-center justify-between border-b border-border/60 bg-background/80 px-4 backdrop-blur-xl md:hidden">
-        <div className="flex items-center gap-2">
-          <SyncLogo size="sm" />
-          <span className="text-sm font-semibold tracking-tight">
+      <header className="sync-mobile-header flex h-14 items-center justify-between border-b border-border/40 px-4 backdrop-blur-xl md:hidden">
+        <div className="min-w-0">
+          <span className="text-sm font-bold tracking-tight">
             {SYNC_PRODUCT.name}
           </span>
+          <p className="truncate text-[11px] text-muted-foreground">
+            Synchronize your life.
+          </p>
         </div>
         <div className="flex items-center gap-1">
           <ThemeToggle />

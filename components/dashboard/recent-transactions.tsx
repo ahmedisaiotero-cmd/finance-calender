@@ -31,7 +31,7 @@ export function RecentTransactions({ className }: { className?: string }) {
           </p>
         </div>
         <Link
-          href="/calendar#transactions"
+          href="/money"
           className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
           View all

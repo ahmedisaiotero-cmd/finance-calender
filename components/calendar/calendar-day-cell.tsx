@@ -1,3 +1,4 @@
+import { dayCategoryDots, type DayCategoryDot } from "@/lib/calendar-display-events";
 import type { TimelineEvent } from "@/lib/timeline-events";
 import type { CalendarCell } from "@/lib/calendar-utils";
 import { cn } from "@/lib/utils";
@@ -7,76 +8,70 @@ type CalendarDayCellProps = {
   events: TimelineEvent[];
   isSelected: boolean;
   onSelect: (dateKey: string) => void;
+  density?: "month" | "two-week";
 };
 
+function dotClass(dot: DayCategoryDot) {
+  if (dot === "health") return "sync-apple-cal-dot--health";
+  if (dot === "money-income") return "sync-apple-cal-dot--money-income";
+  return "sync-apple-cal-dot--money";
+}
+
+/** Month grid: day number, category dots, item count only — no event names. */
 export function CalendarDayCell({
   cell,
   events,
   isSelected,
   onSelect,
+  density = "month",
 }: CalendarDayCellProps) {
-  const hasMoney = events.some((e) => e.lifeCategory === "money");
-  const hasHealth = events.some((e) => e.lifeCategory === "health");
-  const hasIncome = events.some(
-    (e) => e.lifeCategory === "money" && (e.amount ?? 0) >= 0,
-  );
-  const hasExpense = events.some(
-    (e) => e.lifeCategory === "money" && (e.amount ?? 0) < 0,
-  );
+  if (density !== "month") {
+    return null;
+  }
+
+  const dots = dayCategoryDots(events);
+  const count = events.length;
 
   return (
     <button
       type="button"
       onClick={() => onSelect(cell.dateKey)}
+      aria-pressed={isSelected}
+      aria-label={`${cell.date.toLocaleDateString("en-US", { month: "long", day: "numeric" })}${count > 0 ? `, ${count} items` : ""}`}
       className={cn(
-        "flex min-h-[4.5rem] flex-col items-center rounded-2xl border border-transparent p-1.5 text-left transition-colors sm:min-h-[5.25rem] sm:p-2",
-        cell.isCurrentMonth ? "text-foreground" : "text-muted-foreground/50",
-        isSelected && "border-border bg-accent shadow-sm",
-        !isSelected && "hover:bg-muted/50",
-        cell.isToday && !isSelected && "ring-1 ring-border",
+        "sync-apple-cal-cell flex flex-col items-start p-3 text-left transition-colors sm:p-3.5",
+        "min-h-[4.75rem] sm:min-h-[5.25rem] lg:min-h-[5.75rem]",
+        !cell.isCurrentMonth && "opacity-40",
+        isSelected && "sync-apple-cal-cell--selected",
+        !isSelected && "hover:bg-muted/15",
       )}
     >
       <span
         className={cn(
-          "mb-1 flex size-7 items-center justify-center rounded-full text-sm font-medium tabular-nums",
-          cell.isToday && "bg-primary text-primary-foreground",
+          "mb-auto flex size-7 shrink-0 items-center justify-center rounded-full text-[13px] font-medium tabular-nums",
+          cell.isToday &&
+            "bg-[#ff3b30] text-white shadow-[0_1px_4px_rgba(255,59,48,0.35)]",
+          !cell.isToday && "text-foreground/88",
         )}
       >
         {cell.date.getDate()}
       </span>
 
-      <div className="flex w-full flex-1 flex-col gap-0.5 overflow-hidden">
-        {events.slice(0, 2).map((event) => (
-          <span
-            key={event.id}
-            className={cn(
-              "truncate rounded-md px-1 py-0.5 text-[10px] font-medium leading-tight sm:text-[11px]",
-              event.lifeCategory === "health"
-                ? "bg-income-muted text-income"
-                : (event.amount ?? 0) >= 0
-                  ? "bg-income-muted text-income"
-                  : "bg-expense-muted text-expense",
-            )}
-          >
-            {event.title}
-          </span>
-        ))}
-        {events.length > 2 && (
-          <span className="px-1 text-[10px] text-muted-foreground">
-            +{events.length - 2} more
-          </span>
-        )}
-      </div>
-
-      {events.length > 0 && (
-        <div className="mt-auto flex gap-0.5 pt-1">
-          {hasHealth && <span className="size-1.5 rounded-full bg-income" />}
-          {hasMoney && hasIncome && (
-            <span className="size-1.5 rounded-full bg-income opacity-80" />
+      {count > 0 && (
+        <div className="mt-auto flex w-full flex-col gap-1.5">
+          {dots.length > 0 && (
+            <div className="flex gap-1" aria-hidden>
+              {dots.slice(0, 3).map((dot, index) => (
+                <span
+                  key={`${cell.dateKey}-${dot}-${index}`}
+                  className={cn("sync-apple-cal-dot", dotClass(dot))}
+                />
+              ))}
+            </div>
           )}
-          {hasMoney && hasExpense && (
-            <span className="size-1.5 rounded-full bg-foreground/70" />
-          )}
+          <span className="text-[10px] font-medium tabular-nums text-muted-foreground/60">
+            {count} {count === 1 ? "item" : "items"}
+          </span>
         </div>
       )}
     </button>

@@ -50,12 +50,12 @@ export function BudgetsContent() {
           hint="From your transactions"
         />
         <QuickStatCard
-          label="Over budget"
+          label="Needs attention"
           value={String(totals.overBudget)}
           hint={
             totals.overBudget === 0
               ? "All categories on track"
-              : "Categories need attention"
+              : "Opportunity to adjust"
           }
         />
       </div>

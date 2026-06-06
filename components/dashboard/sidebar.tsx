@@ -1,30 +1,25 @@
-"use client";
+import { Settings } from "lucide-react";
 
-import { SyncLogo } from "@/components/brand/sync-logo";
 import { NavLinks } from "@/components/dashboard/nav-links";
+import { SidebarNavItemSoon } from "@/components/dashboard/sidebar-nav-item-soon";
 import { UserProfile } from "@/components/dashboard/user-profile";
-import { SYNC_PRODUCT } from "@/lib/sync-copy";
 
 export function Sidebar() {
   return (
-    <aside className="sidebar-glass hidden w-[17rem] shrink-0 flex-col md:flex">
-      <div className="flex h-[4.25rem] items-center gap-3 px-5">
-        <SyncLogo size="md" />
-        <div className="min-w-0">
-          <p className="truncate text-[15px] font-semibold tracking-tight">
-            SYNC
-          </p>
-          <p className="truncate text-xs text-muted-foreground">
-            {SYNC_PRODUCT.tagline}
-          </p>
+    <aside className="sidebar-glass hidden w-[15rem] shrink-0 flex-col md:flex">
+      <div className="sync-sidebar-brand px-5 pb-8 pt-7">
+        <p className="sync-sidebar-logo">SYNC</p>
+        <p className="sync-sidebar-tagline">Synchronize your life.</p>
+      </div>
+
+      <div className="flex flex-1 flex-col px-3">
+        <NavLinks className="flex-1" />
+        <div className="pb-4 pt-2">
+          <SidebarNavItemSoon label="Settings" icon={Settings} />
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col overflow-y-auto px-3 py-1">
-        <NavLinks className="flex-1" />
-      </div>
-
-      <div className="border-t border-border/40 p-3">
+      <div className="sync-sidebar-footer p-3">
         <UserProfile className="sidebar-profile-card" />
       </div>
     </aside>

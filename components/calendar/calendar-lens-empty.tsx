@@ -26,12 +26,14 @@ export function CalendarLensEmpty({ lens }: CalendarLensEmptyProps) {
   const copy = MESSAGES[lens];
 
   return (
-    <div className="rounded-xl border border-dashed border-border/60 bg-muted/20 px-6 py-12 text-center">
-      <p className="text-sm font-semibold tracking-tight">{copy.title}</p>
-      <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+    <div className="py-12 text-center">
+      <p className="text-[13px] font-medium tracking-[-0.01em] text-foreground/80">
+        {copy.title}
+      </p>
+      <p className="mx-auto mt-2 max-w-sm text-[12px] text-muted-foreground/55">
         {copy.body}
       </p>
-      <p className="mt-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+      <p className="mt-4 text-[10px] font-medium uppercase tracking-[0.1em] text-muted-foreground/45">
         Coming soon
       </p>
     </div>

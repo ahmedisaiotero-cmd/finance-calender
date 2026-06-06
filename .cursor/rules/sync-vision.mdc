@@ -1,0 +1,48 @@
+---
+description: SYNC product vision — source of truth for design, UX, and implementation
+alwaysApply: true
+---
+
+# SYNC Vision (required reading)
+
+Before any design, UX, or implementation decision, read `SYNC_VISION.md` in the project root and treat it as the product source of truth.
+
+## Core philosophy
+
+Extreme Synchronization. Extreme Clarity. Extreme Simplicity. **Extreme Compassion.**
+
+Users should feel informed, supported, and capable — never overwhelmed, never judged.
+
+## The Sync Test (apply before building)
+
+1. Does this reduce mental load?
+2. Can the user understand this in under 10 seconds?
+3. Does this help the user decide what matters right now?
+4. Does this make the user feel more capable instead of more anxious?
+5. Is this the simplest possible version?
+
+If any answer is "no," rethink the implementation.
+
+## Language
+
+Never shame-based or fear-based copy. Prefer: needs attention, opportunity to adjust, you're making progress, here's what matters next.
+
+## Pulse
+
+Home displays **Pulse** — an emotional season summary, never a score, never judgment.
+
+## Product framing
+
+Sync is a **compassionate unified life timeline** — not a finance app, fitness app, habit tracker, or widget dashboard.
+
+Default to **Level 1** information (what matters). Never show Level 3 (everything) by default.
+
+## When requests conflict with the vision
+
+Do not silently comply. Explain the conflict with specific principles from `SYNC_VISION.md`, then propose a simpler alternative that aligns with Sync.
+
+## Engineering guardrails
+
+- Prefer reusable components; favor consistency over novelty
+- Apply compassion incrementally — no full redesigns required to improve tone
+- When uncertain, choose what makes life feel calmer

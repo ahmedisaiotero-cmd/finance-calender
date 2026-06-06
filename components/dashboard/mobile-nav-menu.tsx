@@ -1,14 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { X } from "lucide-react";
+import { Settings, X } from "lucide-react";
 
-import { SyncLogo } from "@/components/brand/sync-logo";
 import { NavLinks } from "@/components/dashboard/nav-links";
+import { SidebarNavItemSoon } from "@/components/dashboard/sidebar-nav-item-soon";
 import { SYNC_PRODUCT } from "@/lib/sync-copy";
-import { UserProfile } from "@/components/dashboard/user-profile";
 import { Button } from "@/components/ui/button";
-import { userProfile } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 type MobileNavMenuProps = {
@@ -52,21 +50,18 @@ export function MobileNavMenu({ open, onClose }: MobileNavMenuProps) {
         aria-label="Navigation menu"
         aria-hidden={!open}
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex w-[min(100vw-3rem,18rem)] flex-col border-r border-border/60 bg-sidebar shadow-2xl transition-transform duration-300 ease-out md:hidden",
+          "sync-mobile-nav fixed inset-y-0 left-0 z-50 flex w-[min(100vw-3rem,18rem)] flex-col border-r border-border/40 shadow-2xl transition-transform duration-300 ease-out md:hidden",
           open ? "translate-x-0" : "-translate-x-full",
         )}
       >
-        <div className="flex h-14 items-center justify-between border-b border-border/60 px-4">
-          <div className="flex items-center gap-2">
-            <SyncLogo size="sm" />
-            <div className="min-w-0">
-              <span className="text-sm font-semibold tracking-tight">
-                {SYNC_PRODUCT.name}
-              </span>
-              <p className="truncate text-[11px] text-muted-foreground">
-                {SYNC_PRODUCT.tagline}
-              </p>
-            </div>
+        <div className="flex items-center justify-between border-b border-border/40 px-4 py-4">
+          <div className="min-w-0">
+            <span className="text-sm font-bold tracking-tight">
+              {SYNC_PRODUCT.name}
+            </span>
+            <p className="text-[11px] text-muted-foreground">
+              Synchronize your life.
+            </p>
           </div>
           <Button
             variant="ghost"
@@ -79,22 +74,11 @@ export function MobileNavMenu({ open, onClose }: MobileNavMenuProps) {
           </Button>
         </div>
 
-        <div className="border-b border-border/60 p-4">
-          <UserProfile showEmail size="compact" />
-          <dl className="mt-4 grid gap-2 rounded-xl bg-muted/40 px-3 py-3 text-xs">
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Account</dt>
-              <dd className="font-medium">{userProfile.plan}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Email</dt>
-              <dd className="truncate font-medium">{userProfile.email}</dd>
-            </div>
-          </dl>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-3 py-4">
-          <NavLinks onNavigate={onClose} />
+        <div className="flex flex-1 flex-col overflow-y-auto px-3 py-4">
+          <NavLinks onNavigate={onClose} className="flex-1" />
+          <div className="pb-2 pt-4">
+            <SidebarNavItemSoon label="Settings" icon={Settings} />
+          </div>
         </div>
       </aside>
     </>

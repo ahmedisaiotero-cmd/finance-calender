@@ -3,6 +3,7 @@ import {
   EventSource,
   PrismaClient,
   RecurringRuleType,
+  TimelineItemStatus,
 } from "@prisma/client";
 
 import { resolveTransactionDate, transactionReferenceDate } from "../lib/build-calendar-events";
@@ -21,7 +22,7 @@ async function main() {
     update: {},
     create: {
       email: DEMO_EMAIL,
-      name: "Demo User",
+      name: "Ahmed",
       workspaces: {
         create: { name: "Personal" },
       },
@@ -187,7 +188,77 @@ async function main() {
     });
   }
 
+  await seedTimelineItems(workspace.id, new Date());
+
   console.log("Seed complete for workspace:", workspace.id);
+}
+
+function noonDate(reference: Date, dayOffset = 0) {
+  const date = new Date(reference);
+  date.setDate(date.getDate() + dayOffset);
+  date.setHours(12, 0, 0, 0);
+  return date;
+}
+
+async function seedTimelineItems(workspaceId: string, reference: Date) {
+  const items = [
+    {
+      id: "seed-timeline-morning-run",
+      title: "Morning Run",
+      category: "health",
+      date: noonDate(reference, 0),
+      status: TimelineItemStatus.PLANNED,
+      detail: { time: "7:00 AM", durationMinutes: 30 },
+    },
+    {
+      id: "seed-timeline-protein-goal",
+      title: "Protein Goal",
+      category: "health",
+      date: noonDate(reference, 0),
+      status: TimelineItemStatus.PLANNED,
+      detail: { segment: "42g of protein remaining today", remaining: 42 },
+    },
+    {
+      id: "seed-timeline-rent-due",
+      title: "Rent Due",
+      category: "money",
+      date: noonDate(reference, 1),
+      status: TimelineItemStatus.DUE,
+      detail: { amount: -1200 },
+    },
+    {
+      id: "seed-timeline-product-review",
+      title: "Product Review",
+      category: "career",
+      date: noonDate(reference, 0),
+      status: TimelineItemStatus.DUE,
+      detail: { time: "2:00 PM", note: "Draft due" },
+    },
+  ] as const;
+
+  for (const item of items) {
+    await prisma.timelineItem.upsert({
+      where: { id: item.id },
+      update: {
+        title: item.title,
+        category: item.category,
+        date: item.date,
+        status: item.status,
+        detail: item.detail,
+      },
+      create: {
+        id: item.id,
+        workspaceId,
+        title: item.title,
+        category: item.category,
+        date: item.date,
+        status: item.status,
+        detail: item.detail,
+      },
+    });
+  }
+
+  console.log("Seeded", items.length, "timeline items");
 }
 
 main()
