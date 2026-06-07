@@ -480,67 +480,92 @@ export function buildFinancePulse(input: FinancePulseInput): SyncPulse {
 
 export type CalendarPulseInput = {
   selectedDayEventCount: number;
+  nextDayEventCount: number;
+  nextThreeDaysBusy: boolean;
+  hasMoneyEventSoon: boolean;
+  hasHealthEventOnSelectedDay: boolean;
   isToday: boolean;
-  hasMoneyOnDay: boolean;
-  weekAheadBusy: boolean;
 };
 
 export function buildCalendarPulse(input: CalendarPulseInput): SyncPulse {
   const signals: PulseSignal[] = [];
+  const selectedBusy = input.selectedDayEventCount >= 4;
+  const selectedLight = input.selectedDayEventCount <= 1;
+  const tomorrowBusy = input.nextDayEventCount >= 4;
 
-  if (input.selectedDayEventCount >= 4) {
+  if (selectedBusy) {
     signals.push({ domain: "calendar", key: "day-dense", weight: 2 });
   }
-  if (input.weekAheadBusy) {
-    signals.push({ domain: "calendar", key: "week-busy", weight: 1 });
+  if (tomorrowBusy) {
+    signals.push({ domain: "calendar", key: "busy-next-day", weight: 1 });
   }
-  if (input.hasMoneyOnDay) {
-    signals.push({ domain: "finance", key: "money-on-day", weight: 1 });
+  if (input.nextThreeDaysBusy) {
+    signals.push({ domain: "calendar", key: "three-day-load", weight: 2 });
+  }
+  if (input.hasMoneyEventSoon) {
+    signals.push({ domain: "finance", key: "money-soon", weight: 1 });
+  }
+  if (input.hasHealthEventOnSelectedDay) {
+    signals.push({ domain: "health", key: "health-today", weight: 1 });
   }
 
-  if (input.selectedDayEventCount >= 4 && input.isToday) {
+  if (selectedBusy) {
     return buildPulse(
       "refocus",
-      "Today is full. Start with what matters most — the rest can wait.",
+      "This day is full. Pick the one or two things that matter most.",
       signals,
     );
   }
 
-  if (input.selectedDayEventCount >= 4) {
-    return buildPulse(
-      "refocus",
-      "This day is stacked. Pick one or two things that truly matter.",
-      signals,
-    );
-  }
-
-  if (input.selectedDayEventCount === 0 && input.isToday) {
+  if (selectedLight && tomorrowBusy) {
     return buildPulse(
       "opportunity",
-      "Today has open space. A good moment for something you've been putting off.",
+      "Today is lighter, but tomorrow is busy. Use this space to get ahead.",
       signals,
     );
   }
 
-  if (input.hasMoneyOnDay) {
+  if (input.nextThreeDaysBusy) {
     return buildPulse(
-      "steady",
-      "A financial date on this day. Tap below when you're ready for the details.",
+      "refocus",
+      "The next few days are packed. Clear one small thing now to reduce friction.",
       signals,
     );
   }
 
-  if (input.weekAheadBusy) {
+  if (input.hasMoneyEventSoon) {
     return buildPulse(
       "steady",
-      "The week ahead has a few important moments. Nothing that needs action right now.",
+      "A financial date is coming up. Nothing urgent, but it is worth keeping in view.",
+      signals,
+    );
+  }
+
+  if (input.hasHealthEventOnSelectedDay && input.isToday) {
+    return buildPulse(
+      "steady",
+      "You have a health moment today. Keep it simple and follow through.",
+      signals,
+    );
+  }
+
+  if (
+    input.isToday &&
+    selectedLight &&
+    !tomorrowBusy &&
+    !input.nextThreeDaysBusy &&
+    !input.hasMoneyEventSoon
+  ) {
+    return buildPulse(
+      "opportunity",
+      "You have open space today. Good time to move one goal forward.",
       signals,
     );
   }
 
   return buildPulse(
     "steady",
-    "Your timeline looks navigable. Tap a day when you need the details.",
+    "Your timeline looks manageable. Stay aware and keep moving.",
     signals,
   );
 }

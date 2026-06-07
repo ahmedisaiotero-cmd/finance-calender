@@ -4,6 +4,7 @@ import { useMemo } from "react";
 
 import { HealthConnectedSource } from "@/components/health/health-connected-source";
 import { HealthPageHeader } from "@/components/health/health-page-header";
+import { HealthSummaryBar } from "@/components/health/health-summary-bar";
 import { HealthTodaysBasics } from "@/components/health/health-todays-basics";
 import { Pulse } from "@/components/sync";
 import {
@@ -13,10 +14,12 @@ import {
 } from "@/components/health/health-mock-data";
 import { useStableNow } from "@/hooks/use-stable-now";
 import { useSyncTimeline } from "@/hooks/use-sync-timeline";
-import { countHealthSessionsThisWeek } from "@/lib/health-from-timeline";
+import {
+  countHealthSessionsThisWeek,
+  getNextHealthOpportunity,
+} from "@/lib/health-from-timeline";
 import { resolveHomeConnections } from "@/lib/sync-connections";
 import { buildHealthPulse } from "@/lib/sync-pulse";
-import { SYNC_LOADING_LABEL } from "@/lib/sync-copy";
 
 export function HealthContent() {
   const now = useStableNow();
@@ -35,6 +38,11 @@ export function HealthContent() {
     [timeline],
   );
 
+  const nextHealth = useMemo(
+    () => getNextHealthOpportunity(timeline, now),
+    [timeline, now],
+  );
+
   const connections = useMemo(
     () =>
       resolveHomeConnections({
@@ -48,7 +56,7 @@ export function HealthContent() {
 
   const healthConnected = connections.health.status === "connected";
   const isHealthPreview = !usingLiveTimeline && ready;
-  const showHealthData = healthConnected || isHealthPreview;
+  const showHealthData = !ready || healthConnected || isHealthPreview;
 
   const todayIsLight = useMemo(
     () =>
@@ -81,16 +89,15 @@ export function HealthContent() {
     [showHealthData, workoutsThisWeek, todayIsLight],
   );
 
-  if (!ready) {
-    return (
-      <p className="text-[13px] text-muted-foreground/72">{SYNC_LOADING_LABEL}</p>
-    );
-  }
-
   return (
     <div className="sync-health-page" data-page="health">
       <header className="sync-briefing">
         <HealthPageHeader />
+        <HealthSummaryBar
+          sessions={healthSessions}
+          nextHealth={nextHealth}
+          ready={ready}
+        />
         <Pulse
           state={healthPulse.state}
           title={healthPulse.title}

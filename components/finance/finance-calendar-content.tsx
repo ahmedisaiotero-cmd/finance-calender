@@ -20,7 +20,10 @@ import {
   parseDateKey,
   toDateKey,
 } from "@/lib/calendar-utils";
-import { getItemsForDate, itemToTimelineEvent } from "@/lib/sync-timeline";
+import {
+  buildCalendarPulseForecast,
+  resolveSelectedDayEvents,
+} from "@/lib/calendar-day-events";
 import { buildUnifiedTimeline } from "@/lib/unified-timeline";
 import { groupTimelineByDate } from "@/lib/timeline-events";
 
@@ -128,11 +131,17 @@ export function FinanceCalendarContent({
     [mergedTimeline],
   );
 
-  const selectedEvents = useMemo(() => {
-    const live = timelineByDate.get(selectedKey) ?? [];
-    if (live.length > 0 || usingLiveTimeline) return live;
-    return getItemsForDate(selectedKey, now).map(itemToTimelineEvent);
-  }, [timelineByDate, selectedKey, now, usingLiveTimeline]);
+  const selectedEvents = useMemo(
+    () =>
+      resolveSelectedDayEvents(
+        selectedKey,
+        timelineByDate,
+        usingLiveTimeline,
+        now,
+      ),
+    [timelineByDate, selectedKey, now, usingLiveTimeline],
+  );
+
   const selectedLabel = parseDateKey(selectedKey).toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
@@ -141,15 +150,15 @@ export function FinanceCalendarContent({
 
   const calendarPulse = useMemo(
     () =>
-      buildCalendarPulse({
-        selectedDayEventCount: selectedEvents.length,
-        isToday: selectedKey === todayKey,
-        hasMoneyOnDay: selectedEvents.some((e) => e.lifeCategory === "money"),
-        weekAheadBusy:
-          mergedTimeline.filter((e) => e.date >= todayKey).slice(0, 14)
-            .length >= 8,
-      }),
-    [selectedEvents, selectedKey, todayKey, mergedTimeline],
+      buildCalendarPulse(
+        buildCalendarPulseForecast(
+          selectedKey,
+          todayKey,
+          timelineByDate,
+          selectedEvents,
+        ),
+      ),
+    [selectedEvents, selectedKey, todayKey, timelineByDate],
   );
 
   const redirectLegacyMoneyHash = useCallback(() => {

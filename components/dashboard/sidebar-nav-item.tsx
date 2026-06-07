@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 
+import { prefetchSyncDataForRoute } from "@/lib/prefetch-sync-data";
 import { cn } from "@/lib/utils";
 
 type SidebarNavItemProps = {
@@ -26,6 +27,8 @@ export function SidebarNavItem({
     <Link
       href={href}
       onClick={onNavigate}
+      onMouseEnter={() => prefetchSyncDataForRoute(href)}
+      onFocus={() => prefetchSyncDataForRoute(href)}
       aria-current={isActive ? "page" : undefined}
       className={cn(
         "sync-nav-item w-full",
