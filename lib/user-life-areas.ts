@@ -269,7 +269,7 @@ const NAV_CATALOG: NavItem[] = [
   },
 ];
 
-const ALWAYS_PRIMARY_IDS: NavItemId[] = ["home", "calendar"];
+const ALWAYS_PRIMARY_IDS: NavItemId[] = ["home"];
 
 const NAV_PATH_MATCHERS: Record<NavItemId, (pathname: string) => boolean> = {
   home: (pathname) => pathname === "/",
@@ -308,18 +308,16 @@ export function buildSidebarNavigation(
       continue;
     }
 
+    if (item.id === "calendar") {
+      if (calendarConnected) primary.push(item);
+      continue;
+    }
+
     if (!item.lifeArea) continue;
 
     const areaState = states[item.lifeArea];
     if (isLifeAreaInPrimary(areaState)) {
       primary.push(item);
-    } else {
-      optional.push({
-        id: item.lifeArea,
-        label: item.label,
-        href: enableAreaHref(item.lifeArea),
-        icon: item.icon,
-      });
     }
   }
 

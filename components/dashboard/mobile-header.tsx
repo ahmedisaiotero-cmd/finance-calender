@@ -13,13 +13,13 @@ export function MobileHeader() {
 
   return (
     <>
-      <header className="sync-mobile-header flex h-14 items-center justify-between border-b border-border/40 px-4 backdrop-blur-xl md:hidden">
+      <header className="sync-mobile-header flex h-16 items-center justify-between border-b px-4 md:hidden">
         <div className="min-w-0">
-          <span className="text-sm font-bold tracking-tight">
+          <span className="text-[15px] font-medium tracking-[-0.025em] text-foreground/90">
             {SYNC_PRODUCT.name}
           </span>
-          <p className="truncate text-[11px] text-muted-foreground">
-            Synchronize your life.
+          <p className="truncate text-[12px] text-muted-foreground/60">
+            {SYNC_PRODUCT.tagline}
           </p>
         </div>
         <div className="flex items-center gap-1">

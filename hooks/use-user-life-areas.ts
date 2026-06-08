@@ -27,7 +27,7 @@ export function useSidebarNavigation(): SidebarNavigation {
 
     const states = resolveLifeAreaStates(mockLifeAreaEnabled, signals);
 
-    return buildSidebarNavigation(states, true, signals);
+    return buildSidebarNavigation(states, false, signals);
   }, [txDb]);
 }
 

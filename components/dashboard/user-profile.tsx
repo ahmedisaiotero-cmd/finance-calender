@@ -25,10 +25,10 @@ export function UserProfile({
   return (
     <div
       className={cn(
-        "group flex items-center justify-between rounded-lg border border-transparent transition-colors duration-200",
+        "group flex items-center justify-between rounded-xl border border-transparent transition-colors duration-200",
         !isMinimal &&
-          "bg-accent/35 ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:border-border/50 hover:bg-accent/60 hover:shadow-sm",
-        isMinimal && "bg-transparent hover:bg-foreground/[0.03]",
+          "ease-[cubic-bezier(0.25,0.1,0.25,1)] hover:border-border/25 hover:bg-foreground/[0.03]",
+        isMinimal && "bg-transparent",
         isCompact ? "gap-2.5 px-1 py-1.5" : "px-3 py-2.5",
         className,
       )}
@@ -36,8 +36,7 @@ export function UserProfile({
       <div className="flex min-w-0 items-center gap-2.5">
         <div
           className={cn(
-            "flex shrink-0 items-center justify-center rounded-full font-semibold",
-            !isMinimal && "ring-2 ring-background/80 transition-transform duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)] group-hover:scale-105",
+            "flex shrink-0 items-center justify-center rounded-full font-medium",
             isMinimal ? "size-7 text-[10px]" : isCompact ? "size-12 text-sm" : "size-9 text-xs",
           )}
           style={{
@@ -50,8 +49,8 @@ export function UserProfile({
         <div className="min-w-0">
           <p
             className={cn(
-              "truncate font-medium tracking-tight",
-              isMinimal ? "text-[11px] text-foreground/85" : "text-sm",
+              "truncate font-medium tracking-[-0.01em]",
+              isMinimal ? "text-[12px] text-foreground/88" : "text-sm",
             )}
           >
             {userProfile.name}

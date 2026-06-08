@@ -44,9 +44,6 @@ export function SidebarNavItem({
         strokeWidth={isActive ? 2.25 : 1.75}
       />
       <span className="truncate">{label}</span>
-      {isActive ? (
-        <span className="sync-nav-active-dot" aria-hidden />
-      ) : null}
     </Link>
   );
 }

@@ -19,7 +19,7 @@ export function NavLinks({ onNavigate, className }: NavLinksProps) {
 
   return (
     <div className={cn("flex min-h-0 flex-1 flex-col", className)}>
-      <nav className="flex flex-col gap-0.5" aria-label="Primary navigation">
+      <nav className="flex flex-col gap-1" aria-label="Primary navigation">
         {primary.map((item) => (
           <SidebarNavItem
             key={item.id}

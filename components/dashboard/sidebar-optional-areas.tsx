@@ -16,14 +16,13 @@ export function SidebarOptionalAreas({
 
   return (
     <section className="sync-sidebar-optional" aria-label="Optional areas">
-      <p className="sync-sidebar-optional-label">Optional Areas</p>
-      <div className="mt-0.5 flex flex-col gap-0.5">
+      <p className="sync-sidebar-optional-label">Connect</p>
+      <div className="mt-1 flex flex-col gap-1">
         {areas.map((area) => (
           <SidebarOptionalAreaItem
             key={area.id}
             label={area.label}
             href={area.href}
-            icon={area.icon}
             onNavigate={onNavigate}
           />
         ))}
