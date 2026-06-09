@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 
 import { useTransactions } from "@/hooks/use-transactions";
+import { useCapturedItems } from "@/lib/captured-items";
 import { deriveStableNavConnectionSignals } from "@/lib/life-area-signals";
 import {
   buildSidebarNavigation,
@@ -18,17 +19,29 @@ import {
  */
 export function useSidebarNavigation(): SidebarNavigation {
   const { usingDatabase: txDb } = useTransactions();
+  const { items } = useCapturedItems();
 
   return useMemo(() => {
+    const hasFinanceCaptures = items.some((item) =>
+      item.destinations.includes("Finance"),
+    );
+    const hasHealthCaptures = items.some((item) =>
+      item.destinations.includes("Health"),
+    );
+    const hasGoalCaptures = items.some((item) =>
+      item.destinations.includes("Goals"),
+    );
     const signals = deriveStableNavConnectionSignals({
-      financeDb: txDb,
+      financeDb: txDb || hasFinanceCaptures,
       // Future: healthAccountConnected from OAuth registry
     });
+    signals.healthConnected = hasHealthCaptures;
+    signals.hasGoals = hasGoalCaptures;
 
     const states = resolveLifeAreaStates(mockLifeAreaEnabled, signals);
 
-    return buildSidebarNavigation(states, false, signals);
-  }, [txDb]);
+    return buildSidebarNavigation(states, true, signals);
+  }, [items, txDb]);
 }
 
 /** Active life areas for Pulse and feature gating. */

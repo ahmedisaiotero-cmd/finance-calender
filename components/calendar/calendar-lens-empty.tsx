@@ -4,6 +4,22 @@ const MESSAGES: Record<
   Exclude<CalendarLens, "all" | "money" | "health">,
   { title: string; body: string }
 > = {
+  family: {
+    title: "Family",
+    body: "Family plans and shared moments will live on your Sync timeline.",
+  },
+  goals: {
+    title: "Goals",
+    body: "Goals and milestones will stay visible without turning life into a scoreboard.",
+  },
+  reflection: {
+    title: "Reflection",
+    body: "Notes, moods, and reflections will have a calm place on your timeline.",
+  },
+  work: {
+    title: "Work",
+    body: "Shifts, focus blocks, and work plans will show up here.",
+  },
   career: {
     title: "Career",
     body: "Deadlines, shifts, and focus blocks will live on your SYNC timeline.",

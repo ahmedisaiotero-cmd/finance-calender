@@ -19,6 +19,7 @@ export const APP_SHELL_ROUTES: Record<string, AppShellRouteConfig> = {
   "/": { layout: "home", title: "Today" },
   "/calendar": { layout: "calendar", title: "Calendar" },
   "/finance": { layout: "finance", title: "Finance" },
+  "/health": { layout: "health", title: "Health" },
   "/fitness": { layout: "health", title: "Health" },
   "/settings": {
     layout: "default",

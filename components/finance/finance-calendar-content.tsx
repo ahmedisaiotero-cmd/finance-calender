@@ -6,6 +6,7 @@ import { CalendarGrid } from "@/components/calendar/calendar-grid";
 import { CalendarPageHeader } from "@/components/calendar/calendar-page-header";
 import { CalendarSelectedDayPanel } from "@/components/calendar/calendar-selected-day-panel";
 import { CalendarToolbar } from "@/components/calendar/calendar-toolbar";
+import { CategoryLensBar } from "@/components/calendar/category-lens-bar";
 import { Pulse } from "@/components/sync";
 import { SYNC_LOADING_LABEL } from "@/lib/sync-copy";
 import { buildCalendarPulse } from "@/lib/sync-pulse";
@@ -13,6 +14,10 @@ import { useStableNow } from "@/hooks/use-stable-now";
 import { useCalendarEvents } from "@/hooks/use-calendar-events";
 import { useSyncTimeline } from "@/hooks/use-sync-timeline";
 import { useTransactions } from "@/hooks/use-transactions";
+import {
+  useCapturedItems,
+  type CapturedSyncItem,
+} from "@/lib/captured-items";
 import {
   getCalendarCells,
   getMonthLabel,
@@ -25,7 +30,11 @@ import {
   resolveSelectedDayEvents,
 } from "@/lib/calendar-day-events";
 import { buildUnifiedTimeline } from "@/lib/unified-timeline";
-import { groupTimelineByDate } from "@/lib/timeline-events";
+import {
+  filterTimelineByLens,
+  groupTimelineByDate,
+  type CalendarLens,
+} from "@/lib/timeline-events";
 
 type FinanceCalendarContentProps = {
   initialYear?: number;
@@ -41,6 +50,8 @@ export function FinanceCalendarContent({
   initialMonth,
 }: FinanceCalendarContentProps) {
   const { transactions, ready, usingDatabase } = useTransactions();
+  const { getItemsForDestination } = useCapturedItems();
+  const capturedCalendarItems = getItemsForDestination("Calendar");
   const now = useStableNow();
   const todayKey = toDateKey(now);
   const [viewAnchor, setViewAnchor] = useState(
@@ -52,6 +63,7 @@ export function FinanceCalendarContent({
       ),
   );
   const [selectedKey, setSelectedKey] = useState(todayKey);
+  const [lens, setLens] = useState<CalendarLens>("all");
 
   const viewYear = viewAnchor.getFullYear();
   const viewMonth = viewAnchor.getMonth();
@@ -126,9 +138,14 @@ export function FinanceCalendarContent({
     currentMonthTimeline,
   ]);
 
+  const filteredTimeline = useMemo(
+    () => filterTimelineByLens(mergedTimeline, lens),
+    [mergedTimeline, lens],
+  );
+
   const timelineByDate = useMemo(
-    () => groupTimelineByDate(mergedTimeline),
-    [mergedTimeline],
+    () => groupTimelineByDate(filteredTimeline),
+    [filteredTimeline],
   );
 
   const selectedEvents = useMemo(
@@ -205,12 +222,17 @@ export function FinanceCalendarContent({
         />
       </header>
 
+      <ScheduledBySync items={capturedCalendarItems} />
+
       <div className="sync-calendar-grid">
         <section className="sync-home-surface min-w-0 px-3 py-4 sm:px-4 sm:py-5">
+          <div className="mb-5">
+            <CategoryLensBar value={lens} onChange={setLens} />
+          </div>
           <CalendarToolbar
             monthLabel={monthLabel}
             variant="month"
-            lens="all"
+            lens={lens}
             onPrevious={() => shiftMonth(-1)}
             onNext={() => shiftMonth(1)}
             onToday={goToToday}
@@ -226,8 +248,70 @@ export function FinanceCalendarContent({
         <CalendarSelectedDayPanel
           dateLabel={selectedLabel}
           events={selectedEvents}
+          capturedItems={capturedCalendarItems}
         />
       </div>
     </div>
+  );
+}
+
+function ScheduledBySync({ items }: { items: CapturedSyncItem[] }) {
+  return (
+    <section className="sync-home-surface">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-[1.05rem] font-medium tracking-[-0.025em] text-foreground/92">
+            Scheduled by Sync
+          </h2>
+          <p className="mt-1 text-[13px] text-muted-foreground/66">
+            Plans and reminders created from your capture inbox.
+          </p>
+        </div>
+        {items.length > 0 && (
+          <span className="rounded-full bg-primary/10 px-2.5 py-1 text-[12px] font-medium text-primary/80">
+            New
+          </span>
+        )}
+      </div>
+
+      {items.length === 0 ? (
+        <p className="mt-5 text-[14px] leading-relaxed text-muted-foreground/72">
+          Nothing scheduled yet. Tell Sync what to plan.
+        </p>
+      ) : (
+        <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+          {items.map((item, index) => (
+            <li
+              key={item.id}
+              className="rounded-2xl border border-primary/15 bg-primary/[0.055] px-4 py-3.5"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-[14px] font-medium tracking-[-0.02em] text-foreground/92">
+                    {item.title}
+                  </p>
+                  <p className="mt-1 text-[12px] text-muted-foreground/70">
+                    {[item.dateLabel, item.timeLabel]
+                      .filter((value) => value && value !== "Flexible")
+                      .join(" • ") || "Flexible"}
+                  </p>
+                </div>
+                {index === 0 && (
+                  <span className="shrink-0 rounded-full border border-primary/20 px-2 py-0.5 text-[10px] font-medium text-primary/75">
+                    Added
+                  </span>
+                )}
+              </div>
+              <p className="mt-3 text-[12px] font-medium text-muted-foreground/68">
+                {item.category}
+              </p>
+              <p className="mt-1 line-clamp-2 text-[12px] leading-relaxed text-muted-foreground/55">
+                {item.prompt}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }

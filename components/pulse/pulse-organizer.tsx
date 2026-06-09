@@ -1,23 +1,29 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { Mic } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+  type SyncDestination,
+  useCapturedItems,
+} from "@/lib/captured-items";
 import { createPulsePlan } from "@/lib/pulse/create-pulse-plan";
 import type {
   PulsePlan,
   PulsePlanCategory,
-  PulsePlanStatus,
 } from "@/lib/pulse/types";
 import { cn } from "@/lib/utils";
 
-const STARTER_PROMPTS = [
-  "I subscribed to Spotify for $12",
-  "I spent $45 on dinner",
-  "Organize a workout tomorrow morning",
-  "Remind me to cancel my trial",
-  "Help me save for a PS5 Pro",
-  "I need to finish my project tonight",
+const PLACEHOLDER_EXAMPLES = [
+  "Tell Sync your work schedule...",
+  "What's on your mind?",
+  "I subscribed to Spotify today...",
+  "I spent $45 on dinner...",
+  "Remind me to cancel my trial...",
+  "Today was stressful...",
+  "Help me save for a vacation...",
+  "Organize a workout tomorrow morning...",
 ] as const;
 
 const CATEGORY_LABELS: Record<PulsePlanCategory, string> = {
@@ -32,24 +38,12 @@ const CATEGORY_LABELS: Record<PulsePlanCategory, string> = {
   general: "General",
 };
 
-const STATUS_LABELS: Record<PulsePlanStatus, string> = {
-  draft: "Draft",
-  saved: "Saved",
-  scheduled: "Scheduled",
-};
-
-type SyncDestination = "Finance" | "Calendar" | "Health" | "Goals" | "Today";
-
-type OrganizedItem = PulsePlan & {
-  destinations: SyncDestination[];
-};
-
 const DESTINATIONS: Record<PulsePlanCategory, SyncDestination[]> = {
-  workout: ["Health", "Today"],
+  workout: ["Health", "Calendar", "Today"],
   workday: ["Calendar", "Today"],
   "date-night": ["Calendar"],
   subscription: ["Finance", "Calendar"],
-  expense: ["Finance"],
+  expense: ["Finance", "Today"],
   reminder: ["Calendar", "Today"],
   "savings-goal": ["Goals", "Finance"],
   task: ["Today"],
@@ -71,7 +65,12 @@ function frequencyLabel(plan: PulsePlan): string {
   return frequency.charAt(0).toUpperCase() + frequency.slice(1);
 }
 
-function compactTitle(plan: PulsePlan): string {
+type CompactTitleInput = Pick<
+  PulsePlan,
+  "category" | "timeLabel" | "title"
+>;
+
+function compactTitle(plan: CompactTitleInput): string {
   if (plan.category === "workout" && plan.timeLabel !== "Flexible") {
     return `${plan.timeLabel} Workout`;
   }
@@ -114,16 +113,24 @@ function compactMeta(plan: PulsePlan): string {
 }
 
 export function PulseOrganizer() {
+  const { items, addCapturedItem, removeCapturedItem } = useCapturedItems();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [prompt, setPrompt] = useState("");
   const [plan, setPlan] = useState<PulsePlan | null>(null);
   const [selectedDestinations, setSelectedDestinations] = useState<
     SyncDestination[]
   >([]);
-  const [recentlyOrganized, setRecentlyOrganized] = useState<OrganizedItem[]>(
-    [],
-  );
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
-  const organizePrompt = useCallback((text: string) => {
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setPlaceholderIndex((current) => (current + 1) % PLACEHOLDER_EXAMPLES.length);
+    }, 3200);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  const generatePreview = useCallback((text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
     const nextPlan = createPulsePlan(trimmed);
@@ -132,36 +139,36 @@ export function PulseOrganizer() {
     setSelectedDestinations(DESTINATIONS[nextPlan.category]);
   }, []);
 
-  const handleOrganize = useCallback(() => {
-    organizePrompt(prompt);
-  }, [organizePrompt, prompt]);
+  const generatePreviewFromInput = useCallback(() => {
+    generatePreview(inputRef.current?.value ?? prompt);
+  }, [generatePreview, prompt]);
 
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === "Enter") {
-      event.preventDefault();
-      handleOrganize();
-    }
+  const handlePreviewSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    generatePreviewFromInput();
   };
 
   const handleSavePlan = () => {
     if (!plan || plan.status !== "draft" || selectedDestinations.length === 0) {
       return;
     }
-    const saved: OrganizedItem = {
-      ...plan,
-      status: "saved",
-      destinations: selectedDestinations,
-    };
+    addCapturedItem(
+      { ...plan, status: "saved" },
+      selectedDestinations,
+      compactTitle(plan),
+    );
+    const saved = { ...plan, status: "saved" as const };
     setPlan(saved);
-    setRecentlyOrganized((items) => [
-      saved,
-      ...items.filter((item) => item.id !== saved.id),
-    ]);
   };
 
   const handleRemoveOrganized = (id: string) => {
-    setRecentlyOrganized((items) => items.filter((item) => item.id !== id));
+    removeCapturedItem(id);
     if (plan?.id === id) setPlan(null);
+  };
+
+  const handleDismissPreview = () => {
+    setPlan(null);
+    setSelectedDestinations([]);
   };
 
   const handleToggleDestination = (destination: SyncDestination) => {
@@ -173,47 +180,40 @@ export function PulseOrganizer() {
   };
 
   return (
-    <div className="flex w-full max-w-2xl flex-col gap-5 sm:gap-6">
-      <section className="sync-home-surface pulse-organizer">
-        <h2 className="mb-4 text-[1.15rem] font-medium tracking-[-0.03em] text-foreground/92 sm:text-[1.25rem]">
-          What&apos;s on your mind?
-        </h2>
-
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-          <input
-            type="text"
-            value={prompt}
-            onChange={(event) => setPrompt(event.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Tell Sync something happening in your life..."
-            className="h-12 min-h-[48px] flex-1 rounded-2xl border border-border/45 bg-background/55 px-4 text-[15px] text-foreground/90 outline-none transition-colors placeholder:text-muted-foreground/52 focus:border-primary/35 focus:bg-background/70 focus:ring-3 focus:ring-ring/20 sm:h-11 sm:min-h-0"
-            aria-label="Sync prompt"
-          />
+    <div className="flex w-full max-w-3xl flex-col items-center gap-6 sm:gap-7">
+      <section className="w-full">
+        <form
+          className="mx-auto flex w-full max-w-2xl flex-col gap-3 rounded-[1.75rem] border border-border/35 bg-card/55 p-2.5 shadow-[0_24px_80px_-52px_var(--foreground)] backdrop-blur-sm sm:flex-row sm:items-center"
+          onSubmit={handlePreviewSubmit}
+        >
+          <div className="flex min-h-[3.4rem] flex-1 items-center gap-2 rounded-[1.35rem] bg-background/35 px-4">
+            <input
+              ref={inputRef}
+              type="text"
+              value={prompt}
+              onChange={(event) => setPrompt(event.target.value)}
+              placeholder={PLACEHOLDER_EXAMPLES[placeholderIndex]}
+              className="h-12 min-w-0 flex-1 bg-transparent text-[16px] text-foreground/92 outline-none placeholder:text-muted-foreground/48"
+              aria-label="Sync prompt"
+            />
+            <button
+              type="button"
+              aria-label="Audio capture coming soon"
+              className="flex size-9 shrink-0 items-center justify-center rounded-full text-muted-foreground/55 transition-colors hover:bg-muted/40 hover:text-foreground/75"
+            >
+              <Mic className="size-4" strokeWidth={1.75} />
+            </button>
+          </div>
           <Button
-            type="button"
-            onClick={handleOrganize}
-            disabled={!prompt.trim()}
-            className="h-12 min-h-[48px] shrink-0 px-5 text-[15px] sm:h-11 sm:min-h-0"
+            type="submit"
+            className="h-12 min-h-[48px] shrink-0 px-5 text-[15px] sm:h-[3.4rem] sm:min-h-0"
           >
             Synchronize
           </Button>
-        </div>
-
-        <div className="-mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-1 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0">
-          {STARTER_PROMPTS.map((example) => (
-            <button
-              key={example}
-              type="button"
-              onClick={() => organizePrompt(example)}
-              className="shrink-0 rounded-full border border-border/35 bg-muted/25 px-3.5 py-2 text-left text-[12.5px] leading-snug text-muted-foreground/82 transition-colors hover:border-primary/25 hover:bg-accent/30 hover:text-foreground/88"
-            >
-              {example}
-            </button>
-          ))}
-        </div>
+        </form>
 
         {plan && (
-          <article className="pulse-organizer-plan mt-6 rounded-[1.15rem] bg-background/30 p-5 sm:p-6">
+          <article className="pulse-organizer-plan mx-auto mt-5 max-w-2xl rounded-[1.15rem] bg-card/45 p-5 sm:p-6">
             <h3 className="text-[18px] font-medium tracking-[-0.03em] text-foreground/95">
               {compactTitle(plan)}
             </h3>
@@ -263,7 +263,7 @@ export function PulseOrganizer() {
               <Button
                 type="button"
                 variant="ghost"
-                onClick={() => setPlan(null)}
+                onClick={handleDismissPreview}
                 className="h-11 text-muted-foreground/72"
               >
                 Dismiss
@@ -273,43 +273,36 @@ export function PulseOrganizer() {
         )}
       </section>
 
-      <section className="sync-home-surface pulse-recently-organized">
+      <section className="w-full max-w-2xl">
         <header>
-          <h2 className="text-[1.05rem] font-medium tracking-[-0.025em] text-foreground/90">
-            Recently Organized
+          <h2 className="text-[12px] font-medium tracking-[-0.01em] text-muted-foreground/54">
+            Recent synchronizations
           </h2>
         </header>
 
-        {recentlyOrganized.length === 0 ? (
-          <p className="mt-4 text-[14px] leading-relaxed text-muted-foreground/72">
+        {items.length === 0 ? (
+          <p className="mt-2 text-[12px] leading-relaxed text-muted-foreground/40">
             Nothing yet. Start with one thought.
           </p>
         ) : (
-          <ul className="mt-4 flex flex-col gap-3">
-            {recentlyOrganized.map((item) => (
+          <ul className="mt-3 flex flex-col gap-2">
+            {items.slice(0, 5).map((item) => (
               <li
                 key={item.id}
-                className="flex items-start justify-between gap-3 rounded-2xl border border-border/30 bg-background/30 px-4 py-3.5"
+                className="flex items-center justify-between gap-3 rounded-2xl px-1 py-1"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[14px] font-medium tracking-[-0.02em] text-foreground/90">
+                  <p className="truncate text-[13px] font-medium tracking-[-0.02em] text-foreground/78">
                     {compactTitle(item)}
                   </p>
-                  <div className="mt-1.5 flex flex-wrap items-center gap-2">
-                    <span className="text-[11px] text-muted-foreground/65">
-                      {item.destinations.join(", ")}
-                    </span>
-                    <span className="text-muted-foreground/35">·</span>
-                    <span
-                      className={cn(
-                        "text-[11px] font-medium",
-                        item.status === "scheduled"
-                          ? "text-primary/75"
-                          : "text-muted-foreground/65",
-                      )}
-                    >
-                      {STATUS_LABELS[item.status]}
-                    </span>
+                  <div className="mt-1 flex flex-wrap gap-1.5">
+                    {item.destinations.map((destination) => (
+                      <span
+                        key={destination}
+                        className="size-1.5 rounded-full bg-primary/45"
+                        title={destination}
+                      />
+                    ))}
                   </div>
                 </div>
                 <Button

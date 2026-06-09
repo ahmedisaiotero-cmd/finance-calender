@@ -242,7 +242,7 @@ const NAV_CATALOG: NavItem[] = [
   {
     id: "health",
     label: "Health",
-    href: "/fitness",
+    href: "/health",
     icon: Dumbbell,
     lifeArea: "health",
   },
@@ -269,7 +269,7 @@ const NAV_CATALOG: NavItem[] = [
   },
 ];
 
-const ALWAYS_PRIMARY_IDS: NavItemId[] = ["home"];
+const ALWAYS_PRIMARY_IDS: NavItemId[] = ["home", "calendar"];
 
 const NAV_PATH_MATCHERS: Record<NavItemId, (pathname: string) => boolean> = {
   home: (pathname) => pathname === "/",
@@ -280,7 +280,10 @@ const NAV_PATH_MATCHERS: Record<NavItemId, (pathname: string) => boolean> = {
     pathname === "/money" ||
     pathname.startsWith("/money/"),
   health: (pathname) =>
-    pathname === "/fitness" || pathname.startsWith("/fitness/"),
+    pathname === "/health" ||
+    pathname.startsWith("/health/") ||
+    pathname === "/fitness" ||
+    pathname.startsWith("/fitness/"),
   work: (pathname) => pathname === "/work" || pathname.startsWith("/work/"),
   school: (pathname) =>
     pathname === "/school" || pathname.startsWith("/school/"),
@@ -305,11 +308,6 @@ export function buildSidebarNavigation(
   for (const item of NAV_CATALOG) {
     if (ALWAYS_PRIMARY_IDS.includes(item.id)) {
       primary.push(item);
-      continue;
-    }
-
-    if (item.id === "calendar") {
-      if (calendarConnected) primary.push(item);
       continue;
     }
 

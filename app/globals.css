@@ -210,7 +210,7 @@
   }
 
   .sync-app-main {
-    @apply max-w-6xl px-4 py-6 sm:px-8 sm:py-10;
+    @apply max-w-6xl px-4 pb-24 pt-6 sm:px-8 sm:py-10;
   }
 
   .sync-app-main--narrow {
@@ -225,7 +225,43 @@
   .sync-app-main--health,
   .sync-app-main--finance,
   .sync-app-main--calendar {
-    @apply max-w-[68rem] px-4 py-6 sm:px-8 sm:py-10 lg:px-10;
+    @apply max-w-[68rem] px-4 pb-24 pt-6 sm:px-8 sm:py-10 lg:px-10;
+  }
+
+  .sync-pulse-nav {
+    @apply fixed bottom-4 left-4 z-40 rounded-[1.25rem] border border-border/25 bg-card/45 p-1.5 backdrop-blur-md;
+    box-shadow: 0 18px 46px -34px color-mix(in oklch, var(--foreground) 38%, transparent);
+  }
+
+  .sync-pulse-nav-item {
+    @apply relative flex min-h-9 items-center gap-2 rounded-[0.95rem] px-2.5 py-2 text-muted-foreground/62 transition-colors hover:bg-muted/35 hover:text-foreground/82;
+  }
+
+  .sync-pulse-nav-item--active {
+    @apply bg-muted/35 text-foreground/86;
+  }
+
+  .sync-pulse-nav-label {
+    @apply max-w-0 overflow-hidden whitespace-nowrap text-[12px] font-medium tracking-[-0.01em] opacity-0 transition-all duration-200;
+  }
+
+  .sync-pulse-nav:hover .sync-pulse-nav-label,
+  .sync-pulse-nav:focus-within .sync-pulse-nav-label,
+  .sync-pulse-nav-item--active .sync-pulse-nav-label {
+    @apply max-w-20 opacity-100;
+  }
+
+  .sync-pulse-dot {
+    @apply ml-auto size-1.5 shrink-0 rounded-full;
+  }
+
+  .sync-pulse-dot--quiet {
+    @apply bg-muted-foreground/25;
+  }
+
+  .sync-pulse-dot--recent {
+    @apply bg-primary/75;
+    box-shadow: 0 0 0 4px color-mix(in oklch, var(--primary) 12%, transparent);
   }
 
   .sync-page-focus-top {
@@ -242,6 +278,10 @@
 
   .sync-home--focus {
     @apply gap-5 sm:gap-6;
+  }
+
+  .sync-home--capture {
+    @apply mx-auto w-full;
   }
 
   .sync-home--focus .sync-home-today {
@@ -454,6 +494,41 @@
 
   .sync-calendar-day {
     @apply min-h-0;
+  }
+
+  .sync-domain-page {
+    @apply flex w-full max-w-3xl flex-col gap-5 sm:gap-6;
+  }
+
+  .sync-domain-header,
+  .sync-domain-section {
+    @apply rounded-[1.35rem] border border-border/35 px-5 py-5 sm:px-6 sm:py-6;
+    background-color: color-mix(in oklch, var(--card) 70%, transparent);
+    box-shadow: 0 18px 46px -36px color-mix(in oklch, var(--foreground) 20%, transparent);
+  }
+
+  .sync-domain-section-title {
+    @apply text-[1rem] font-medium tracking-[-0.025em] text-foreground/90;
+  }
+
+  .sync-domain-empty {
+    @apply mt-4 text-[14px] leading-relaxed text-muted-foreground/62;
+  }
+
+  .sync-domain-list {
+    @apply mt-4 flex flex-col gap-3;
+  }
+
+  .sync-domain-item {
+    @apply flex items-start justify-between gap-3 rounded-2xl border border-border/25 bg-background/25 px-4 py-3.5;
+  }
+
+  .sync-domain-action {
+    @apply inline-flex h-10 items-center rounded-full bg-primary px-4 text-[14px] font-medium text-primary-foreground transition-colors hover:bg-primary/90;
+  }
+
+  .sync-domain-action--quiet {
+    @apply border border-border/35 bg-transparent text-muted-foreground/78 hover:bg-muted/35 hover:text-foreground/88;
   }
 
   .sync-home-surface {

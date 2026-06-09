@@ -3,6 +3,10 @@ import type { TimelineEvent } from "@/lib/timeline-events";
 const LABELS: Record<TimelineEvent["lifeCategory"], string> = {
   money: "Money",
   health: "Health",
+  family: "Family",
+  goals: "Goals",
+  reflection: "Reflection",
+  work: "Work",
   career: "Career",
   relationships: "Relationships",
   personal: "Personal",

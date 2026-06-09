@@ -6,6 +6,10 @@ export type CalendarLens =
   | "all"
   | "money"
   | "health"
+  | "family"
+  | "goals"
+  | "reflection"
+  | "work"
   | "career"
   | "relationships"
   | "personal";
@@ -79,7 +83,11 @@ export function filterTimelineByLens(
   if (
     lens === "career" ||
     lens === "relationships" ||
-    lens === "personal"
+    lens === "personal" ||
+    lens === "family" ||
+    lens === "goals" ||
+    lens === "reflection" ||
+    lens === "work"
   ) {
     return [];
   }

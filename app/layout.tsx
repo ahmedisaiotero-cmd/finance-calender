@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeColorsProvider } from "@/components/theme-colors-provider";
 import { TransactionsProvider } from "@/components/finance/transactions-provider";
 import { ThemeProvider } from "@/components/theme-provider";
+import { CapturedItemsProvider } from "@/lib/captured-items";
 
 import "./globals.css";
 
@@ -52,7 +53,9 @@ export default function RootLayout({
       <body className="min-h-full font-sans">
         <ThemeProvider>
           <ThemeColorsProvider>
-            <TransactionsProvider>{children}</TransactionsProvider>
+            <TransactionsProvider>
+              <CapturedItemsProvider>{children}</CapturedItemsProvider>
+            </TransactionsProvider>
           </ThemeColorsProvider>
         </ThemeProvider>
       </body>

@@ -5,8 +5,12 @@ import { cn } from "@/lib/utils";
 
 const LENS_OPTIONS: { id: CalendarLens; label: string; enabled: boolean }[] = [
   { id: "all", label: "All", enabled: true },
-  { id: "money", label: "Finance", enabled: true },
+  { id: "money", label: "Money", enabled: true },
   { id: "health", label: "Health", enabled: true },
+  { id: "family", label: "Family", enabled: false },
+  { id: "goals", label: "Goals", enabled: false },
+  { id: "reflection", label: "Reflection", enabled: false },
+  { id: "work", label: "Work", enabled: false },
 ];
 
 type CategoryLensBarProps = {
