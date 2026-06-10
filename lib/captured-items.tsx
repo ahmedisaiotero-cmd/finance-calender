@@ -13,6 +13,7 @@ import type {
   PulsePlan,
   PulsePlanCategory,
   PulsePlanFrequency,
+  PulseMoneyType,
 } from "@/lib/pulse/types";
 
 export type SyncDestination = "Finance" | "Calendar" | "Health" | "Goals" | "Today";
@@ -36,6 +37,7 @@ export type CapturedSyncItem = {
   timeLabel: string;
   amount?: string | null;
   frequency?: PulsePlanFrequency;
+  moneyType?: PulseMoneyType;
   createdAt: string;
 };
 
@@ -121,6 +123,7 @@ export function CapturedItemsProvider({
         timeLabel: plan.timeLabel,
         amount: plan.parsedInput?.amount ?? null,
         frequency: plan.parsedInput?.frequency,
+        moneyType: plan.parsedInput?.moneyType,
         createdAt: plan.createdAt,
       };
 

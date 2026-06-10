@@ -11,6 +11,14 @@ import type { PulsePlanCategory } from "@/lib/pulse/types";
 export function detectPulseCategory(prompt: string): PulsePlanCategory {
   const text = prompt.trim().toLowerCase();
 
+  if (
+    /\b(get paid|getting paid|paid in|paycheck|payday|direct deposit|income|deposit|paid on|salary|wage)\b/.test(
+      text,
+    )
+  ) {
+    return "expense";
+  }
+
   if (/\b(remind|reminder|cancel|due)\b/.test(text)) return "reminder";
 
   if (

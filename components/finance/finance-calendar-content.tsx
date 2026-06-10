@@ -260,7 +260,7 @@ function ScheduledBySync({ items }: { items: CapturedSyncItem[] }) {
     <section className="sync-home-surface">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-[1.05rem] font-medium tracking-[-0.025em] text-foreground/92">
+          <h2 className="text-[1.05rem] font-medium tracking-tight text-foreground/92">
             Scheduled by Sync
           </h2>
           <p className="mt-1 text-[13px] text-muted-foreground/66">
@@ -283,7 +283,7 @@ function ScheduledBySync({ items }: { items: CapturedSyncItem[] }) {
           {items.map((item, index) => (
             <li
               key={item.id}
-              className="rounded-2xl border border-primary/15 bg-primary/[0.055] px-4 py-3.5"
+              className="rounded-2xl border border-primary/15 bg-primary/5.5 px-4 py-3.5"
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -295,6 +295,14 @@ function ScheduledBySync({ items }: { items: CapturedSyncItem[] }) {
                       .filter((value) => value && value !== "Flexible")
                       .join(" • ") || "Flexible"}
                   </p>
+                  {item.amount && (
+                    <p
+                      data-money-type={item.moneyType}
+                      className="mt-1 text-[12px] font-medium text-muted-foreground/70 data-[money-type=income]:text-income/80"
+                    >
+                      {item.amount}
+                    </p>
+                  )}
                 </div>
                 {index === 0 && (
                   <span className="shrink-0 rounded-full border border-primary/20 px-2 py-0.5 text-[10px] font-medium text-primary/75">

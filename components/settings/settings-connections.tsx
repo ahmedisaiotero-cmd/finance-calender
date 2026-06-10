@@ -52,7 +52,7 @@ export function SettingsConnections() {
         </h2>
         <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground/78">
           Sync reads signals from the apps you trust. Connect more when you are
-          ready — active areas move into your sidebar automatically.
+          ready — active areas appear in your Pulse dock automatically.
         </p>
 
         <ul className="mt-5 flex flex-col gap-3">
@@ -90,8 +90,8 @@ export function SettingsConnections() {
           Life areas
         </h2>
         <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground/78">
-          Enable or connect an area to add it to your primary navigation.
-          Inactive areas stay discoverable under Optional Areas in the sidebar.
+          Enable or connect an area when it becomes part of your life. Sync keeps
+          quiet areas out of the way until they are useful.
         </p>
 
         <ul className="mt-5 flex flex-col gap-3">

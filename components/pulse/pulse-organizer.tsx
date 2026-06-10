@@ -9,21 +9,22 @@ import {
   useCapturedItems,
 } from "@/lib/captured-items";
 import { createPulsePlan } from "@/lib/pulse/create-pulse-plan";
-import type {
-  PulsePlan,
-  PulsePlanCategory,
-} from "@/lib/pulse/types";
+import { getSyncPreviewThought } from "@/lib/pulse/preview-copy";
+import { getSyncReliefMessage } from "@/lib/pulse/relief-message";
+import type { PulseMoneyType, PulsePlan, PulsePlanCategory } from "@/lib/pulse/types";
 import { cn } from "@/lib/utils";
 
 const PLACEHOLDER_EXAMPLES = [
-  "Tell Sync your work schedule...",
-  "What's on your mind?",
-  "I subscribed to Spotify today...",
-  "I spent $45 on dinner...",
-  "Remind me to cancel my trial...",
-  "Today was stressful...",
-  "Help me save for a vacation...",
-  "Organize a workout tomorrow morning...",
+  "What's your work schedule?",
+  "What do you have planned tomorrow?",
+  "Don't let me forget this.",
+  "It's my mom's birthday today.",
+  "I need to call someone tomorrow.",
+  "I want to start working out.",
+  "I want to save for something important.",
+  "How was your day?",
+  "I feel overwhelmed.",
+  "I don't want to forget this goal.",
 ] as const;
 
 const CATEGORY_LABELS: Record<PulsePlanCategory, string> = {
@@ -50,6 +51,18 @@ const DESTINATIONS: Record<PulsePlanCategory, SyncDestination[]> = {
   general: ["Today"],
 };
 
+function hasFutureDate(plan: PulsePlan) {
+  return plan.dateLabel !== "Today" && plan.dateLabel !== "Upcoming";
+}
+
+function defaultDestinations(plan: PulsePlan): SyncDestination[] {
+  if (plan.parsedInput?.moneyType === "income") {
+    return hasFutureDate(plan) ? ["Finance", "Calendar"] : ["Finance"];
+  }
+
+  return DESTINATIONS[plan.category];
+}
+
 function formatDuration(minutes: number): string {
   if (minutes <= 0) return "—";
   if (minutes < 60) return `${minutes} min`;
@@ -65,12 +78,19 @@ function frequencyLabel(plan: PulsePlan): string {
   return frequency.charAt(0).toUpperCase() + frequency.slice(1);
 }
 
-type CompactTitleInput = Pick<
-  PulsePlan,
-  "category" | "timeLabel" | "title"
->;
+type CompactTitleInput = {
+  category: PulsePlanCategory;
+  timeLabel: string;
+  title: string;
+  parsedInput?: PulsePlan["parsedInput"];
+  moneyType?: PulseMoneyType;
+};
 
 function compactTitle(plan: CompactTitleInput): string {
+  if (plan.parsedInput?.moneyType === "income" || plan.moneyType === "income") {
+    return "Upcoming Paycheck";
+  }
+
   if (plan.category === "workout" && plan.timeLabel !== "Flexible") {
     return `${plan.timeLabel} Workout`;
   }
@@ -88,6 +108,10 @@ function compactTitle(plan: CompactTitleInput): string {
 
 function compactMeta(plan: PulsePlan): string {
   const amount = plan.parsedInput?.amount;
+
+  if (plan.parsedInput?.moneyType === "income") {
+    return [plan.dateLabel, amount].filter(Boolean).join(" • ");
+  }
 
   if (plan.category === "subscription") {
     return [frequencyLabel(plan), amount].filter(Boolean).join(" • ");
@@ -121,6 +145,7 @@ export function PulseOrganizer() {
     SyncDestination[]
   >([]);
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [reliefMessage, setReliefMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -136,7 +161,8 @@ export function PulseOrganizer() {
     const nextPlan = createPulsePlan(trimmed);
     setPrompt(trimmed);
     setPlan(nextPlan);
-    setSelectedDestinations(DESTINATIONS[nextPlan.category]);
+    setSelectedDestinations(defaultDestinations(nextPlan));
+    setReliefMessage(null);
   }, []);
 
   const generatePreviewFromInput = useCallback(() => {
@@ -152,13 +178,14 @@ export function PulseOrganizer() {
     if (!plan || plan.status !== "draft" || selectedDestinations.length === 0) {
       return;
     }
-    addCapturedItem(
+    const capturedItem = addCapturedItem(
       { ...plan, status: "saved" },
       selectedDestinations,
       compactTitle(plan),
     );
     const saved = { ...plan, status: "saved" as const };
     setPlan(saved);
+    setReliefMessage(getSyncReliefMessage(plan, capturedItem));
   };
 
   const handleRemoveOrganized = (id: string) => {
@@ -169,6 +196,7 @@ export function PulseOrganizer() {
   const handleDismissPreview = () => {
     setPlan(null);
     setSelectedDestinations([]);
+    setReliefMessage(null);
   };
 
   const handleToggleDestination = (destination: SyncDestination) => {
@@ -187,15 +215,26 @@ export function PulseOrganizer() {
           onSubmit={handlePreviewSubmit}
         >
           <div className="flex min-h-[3.4rem] flex-1 items-center gap-2 rounded-[1.35rem] bg-background/35 px-4">
-            <input
-              ref={inputRef}
-              type="text"
-              value={prompt}
-              onChange={(event) => setPrompt(event.target.value)}
-              placeholder={PLACEHOLDER_EXAMPLES[placeholderIndex]}
-              className="h-12 min-w-0 flex-1 bg-transparent text-[16px] text-foreground/92 outline-none placeholder:text-muted-foreground/48"
-              aria-label="Sync prompt"
-            />
+            <div className="relative min-w-0 flex-1">
+              {!prompt && (
+                <span
+                  key={PLACEHOLDER_EXAMPLES[placeholderIndex]}
+                  className="sync-placeholder-example pointer-events-none absolute left-0 top-1/2 -translate-y-1/2 truncate text-[16px] text-muted-foreground/48"
+                  aria-hidden
+                >
+                  {PLACEHOLDER_EXAMPLES[placeholderIndex]}
+                </span>
+              )}
+              <input
+                ref={inputRef}
+                type="text"
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+                placeholder=""
+                className="relative z-10 h-12 w-full min-w-0 bg-transparent text-[16px] text-foreground/92 outline-none"
+                aria-label="Sync prompt"
+              />
+            </div>
             <button
               type="button"
               aria-label="Audio capture coming soon"
@@ -212,6 +251,15 @@ export function PulseOrganizer() {
           </Button>
         </form>
 
+        {reliefMessage && (
+          <p
+            className="mx-auto mt-4 max-w-2xl text-center text-[14px] leading-relaxed text-muted-foreground/72"
+            aria-live="polite"
+          >
+            {reliefMessage}
+          </p>
+        )}
+
         {plan && (
           <article className="pulse-organizer-plan mx-auto mt-5 max-w-2xl rounded-[1.15rem] bg-card/45 p-5 sm:p-6">
             <h3 className="text-[18px] font-medium tracking-[-0.03em] text-foreground/95">
@@ -226,7 +274,7 @@ export function PulseOrganizer() {
                 Will be added to
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
-                {DESTINATIONS[plan.category].map((destination) => {
+                {defaultDestinations(plan).map((destination) => {
                   const selected = selectedDestinations.includes(destination);
 
                   return (
@@ -248,6 +296,10 @@ export function PulseOrganizer() {
                 })}
               </div>
             </div>
+
+            <p className="mt-5 text-[14px] leading-relaxed text-muted-foreground/68">
+              {getSyncPreviewThought(plan)}
+            </p>
 
             <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
               <Button

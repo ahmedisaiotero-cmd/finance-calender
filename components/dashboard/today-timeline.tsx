@@ -7,7 +7,7 @@ import type { TimelineEvent } from "@/lib/timeline-events";
 import { cn } from "@/lib/utils";
 
 const CATEGORY_LABELS: Record<TimelineEvent["lifeCategory"], string> = {
-  money: "Money",
+  money: "Finance",
   health: "Health",
   family: "Family",
   goals: "Goals",

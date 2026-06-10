@@ -9,14 +9,14 @@ export function FinanceContent() {
 
   return (
     <SyncDomainPage
-      title="Money"
+      title="Finance"
       supportingCopy="Bills, spending, subscriptions, and goals Sync has captured for you."
       items={capturedFinanceItems}
       insights={[
         capturedFinanceItems.length > 0
           ? `${capturedFinanceItems.length} money item${capturedFinanceItems.length === 1 ? "" : "s"} captured.`
-          : "Money will appear here when Sync has something useful to show.",
-        "Subscriptions and expenses stay close to the moments you capture.",
+          : "Finance will appear here when Sync has something useful to show.",
+        "Income, subscriptions, and expenses stay close to the moments you capture.",
       ]}
     />
   );

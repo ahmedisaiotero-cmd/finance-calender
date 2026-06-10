@@ -164,6 +164,27 @@ function buildSubscription(parsed: PulseParsedInput): PulseTemplateResult {
 }
 
 function buildExpense(parsed: PulseParsedInput): PulseTemplateResult {
+  if (parsed.moneyType === "income") {
+    const amount = parsed.amount;
+
+    return {
+      title: "Upcoming Paycheck",
+      summary: `Incoming money captured${amount ? ` for ${amount}` : ""}.`,
+      durationMinutes: 0,
+      includeCalendar: parsed.dateLabel !== "Upcoming" && parsed.dateLabel !== "Today",
+      previewLabel: "Incoming money in your finances",
+      sections: [
+        {
+          title: "Incoming",
+          items: [
+            `Amount: ${amount ?? "—"}`,
+            `Date: ${parsed.dateLabel ?? "Upcoming"}`,
+          ],
+        },
+      ],
+    };
+  }
+
   const subject = parsed.merchant ? titleCaseKeep(parsed.merchant) : null;
   const amount = parsed.amount;
 

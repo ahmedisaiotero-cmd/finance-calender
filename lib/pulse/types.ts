@@ -18,6 +18,13 @@ export type PulsePlanFrequency =
   | "monthly"
   | "yearly";
 
+export type PulseMoneyType =
+  | "income"
+  | "expense"
+  | "subscription"
+  | "transfer"
+  | "unknown";
+
 export type PulsePlanItem = {
   id: string;
   label: string;
@@ -37,6 +44,7 @@ export type PulseParsedInput = {
   dateLabel?: string;
   timeLabel?: string;
   frequency?: PulsePlanFrequency;
+  moneyType?: PulseMoneyType;
 };
 
 export type PulseCalendarSuggestion = {

@@ -142,7 +142,10 @@ function DomainItem({ item }: { item: CapturedSyncItem }) {
         </p>
       </div>
       {item.amount && (
-        <span className="shrink-0 text-[13px] font-medium text-muted-foreground/70">
+        <span
+          data-money-type={item.moneyType}
+          className="shrink-0 text-[13px] font-medium text-muted-foreground/70 data-[money-type=income]:text-income/80"
+        >
           {item.amount}
         </span>
       )}

@@ -13,7 +13,7 @@ type CalendarToolbarProps = {
 
 const LENS_SUBTITLE: Partial<Record<CalendarLens, string>> = {
   all: "All life domains",
-  money: "Money",
+  money: "Finance",
   health: "Health",
   family: "Family",
   goals: "Goals",

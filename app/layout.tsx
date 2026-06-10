@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "SYNC",
   description:
-    "A calendar-first life operating system — Money, Health, Career, Relationships, and Personal on one timeline.",
+    "A calendar-first life operating system — Finance, Health, Career, Relationships, and Personal on one timeline.",
 };
 
 const themeScript = `
