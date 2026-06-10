@@ -59,7 +59,7 @@ const MENU_ITEMS: DockItem[] = [
     icon: Target,
     destination: "Goals",
   },
-  { id: "work", label: "Work", href: "/work", icon: Briefcase, destination: null },
+  { id: "work", label: "Work", href: "/work", icon: Briefcase, destination: "Work" },
 ];
 
 function destinationForNav(id: string): DockItem["destination"] {
@@ -67,6 +67,8 @@ function destinationForNav(id: string): DockItem["destination"] {
   if (id === "finance") return "Finance";
   if (id === "health") return "Health";
   if (id === "goals") return "Goals";
+  if (id === "work") return "Work";
+  if (id === "school") return "School";
   return null;
 }
 

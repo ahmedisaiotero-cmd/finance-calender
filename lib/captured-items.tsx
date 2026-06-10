@@ -15,17 +15,28 @@ import type {
   PulsePlanFrequency,
   PulseMoneyType,
 } from "@/lib/pulse/types";
+import type { TimelineResolution } from "@/lib/timeline/resolve-timeline";
 
-export type SyncDestination = "Finance" | "Calendar" | "Health" | "Goals" | "Today";
+export type SyncDestination =
+  | "Finance"
+  | "Calendar"
+  | "Health"
+  | "Work"
+  | "School"
+  | "Goals";
 
-const CAPTURED_ITEMS_STORAGE_KEY = "sync.capturedItems";
-const SYNC_DESTINATIONS: SyncDestination[] = [
+/** Life-area destinations only — never timeline or date labels. */
+export const LIFE_AREA_DESTINATIONS: SyncDestination[] = [
   "Finance",
   "Calendar",
   "Health",
+  "Work",
+  "School",
   "Goals",
-  "Today",
 ];
+
+const CAPTURED_ITEMS_STORAGE_KEY = "sync.capturedItems";
+const SYNC_DESTINATIONS: SyncDestination[] = [...LIFE_AREA_DESTINATIONS];
 
 export type CapturedSyncItem = {
   id: string;
@@ -38,6 +49,7 @@ export type CapturedSyncItem = {
   amount?: string | null;
   frequency?: PulsePlanFrequency;
   moneyType?: PulseMoneyType;
+  timeline?: TimelineResolution;
   createdAt: string;
 };
 
@@ -56,6 +68,27 @@ const CapturedItemsContext = createContext<CapturedItemsContextValue | null>(
   null,
 );
 
+function normalizeStoredDestinations(
+  destinations: unknown,
+): SyncDestination[] {
+  if (!Array.isArray(destinations)) return [];
+
+  const normalized: SyncDestination[] = [];
+
+  for (const destination of destinations) {
+    if (typeof destination !== "string") continue;
+    if (destination === "Today") {
+      normalized.push("Calendar");
+      continue;
+    }
+    if (SYNC_DESTINATIONS.includes(destination as SyncDestination)) {
+      normalized.push(destination as SyncDestination);
+    }
+  }
+
+  return [...new Set(normalized)];
+}
+
 function isCapturedSyncItem(value: unknown): value is CapturedSyncItem {
   if (!value || typeof value !== "object") return false;
 
@@ -66,9 +99,7 @@ function isCapturedSyncItem(value: unknown): value is CapturedSyncItem {
     typeof item.category === "string" &&
     typeof item.prompt === "string" &&
     Array.isArray(item.destinations) &&
-    item.destinations.every((destination) =>
-      SYNC_DESTINATIONS.includes(destination as SyncDestination),
-    ) &&
+    normalizeStoredDestinations(item.destinations).length > 0 &&
     typeof item.dateLabel === "string" &&
     typeof item.timeLabel === "string" &&
     typeof item.createdAt === "string"
@@ -81,7 +112,12 @@ function parseStoredCapturedItems(value: string | null): CapturedSyncItem[] {
   try {
     const parsed = JSON.parse(value);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(isCapturedSyncItem);
+    return parsed
+      .filter(isCapturedSyncItem)
+      .map((item) => ({
+        ...item,
+        destinations: normalizeStoredDestinations(item.destinations),
+      }));
   } catch {
     return [];
   }
@@ -124,6 +160,7 @@ export function CapturedItemsProvider({
         amount: plan.parsedInput?.amount ?? null,
         frequency: plan.parsedInput?.frequency,
         moneyType: plan.parsedInput?.moneyType,
+        timeline: plan.timeline,
         createdAt: plan.createdAt,
       };
 

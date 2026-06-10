@@ -31,12 +31,20 @@ export function useSidebarNavigation(): SidebarNavigation {
     const hasGoalCaptures = items.some((item) =>
       item.destinations.includes("Goals"),
     );
+    const hasWorkCaptures = items.some((item) =>
+      item.destinations.includes("Work"),
+    );
+    const hasSchoolCaptures = items.some((item) =>
+      item.destinations.includes("School"),
+    );
     const signals = deriveStableNavConnectionSignals({
       financeDb: txDb || hasFinanceCaptures,
       // Future: healthAccountConnected from OAuth registry
     });
     signals.healthConnected = hasHealthCaptures;
     signals.hasGoals = hasGoalCaptures;
+    signals.hasWorkConnection = hasWorkCaptures;
+    signals.hasSchoolConnection = hasSchoolCaptures;
 
     const states = resolveLifeAreaStates(mockLifeAreaEnabled, signals);
 

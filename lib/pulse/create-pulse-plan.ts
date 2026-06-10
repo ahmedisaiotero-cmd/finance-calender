@@ -1,9 +1,14 @@
 import { detectPulseCategory } from "@/lib/pulse/detect-pulse-category";
 import { parsePulsePrompt } from "@/lib/pulse/parse-pulse-prompt";
+import { normalizeCaptureInput } from "@/lib/parser/normalize-capture-input";
 import {
   buildPulseTemplate,
   materializeSections,
 } from "@/lib/pulse/templates";
+import {
+  resolveTimeline,
+  type ResolveTimelineOptions,
+} from "@/lib/timeline/resolve-timeline";
 import type { PulsePlan } from "@/lib/pulse/types";
 
 export { detectPulseCategory } from "@/lib/pulse/detect-pulse-category";
@@ -16,14 +21,30 @@ function createPlanId(): string {
   return `pulse-${Date.now()}`;
 }
 
-export function createPulsePlan(prompt: string): PulsePlan {
+type CreatePulsePlanOptions = {
+  timeline?: ResolveTimelineOptions;
+};
+
+function hasResolvedTimelineLabel(timelineLabel: string) {
+  return timelineLabel !== "Needs a timeline";
+}
+
+export function createPulsePlan(
+  prompt: string,
+  options: CreatePulsePlanOptions = {},
+): PulsePlan {
   const trimmed = prompt.trim();
-  const category = detectPulseCategory(trimmed);
-  const parsed = parsePulsePrompt(trimmed, category);
-  const template = buildPulseTemplate(category, trimmed, parsed);
+  const normalizedInput = normalizeCaptureInput(trimmed);
+  const parserText = normalizedInput.normalized;
+  const category = detectPulseCategory(parserText);
+  const parsed = parsePulsePrompt(parserText, category);
+  const timeline = resolveTimeline(parserText, options.timeline);
+  const template = buildPulseTemplate(category, parserText, parsed);
   const id = createPlanId();
 
-  const dateLabel = parsed.dateLabel ?? "Upcoming";
+  const dateLabel = hasResolvedTimelineLabel(timeline.label)
+    ? timeline.label
+    : parsed.dateLabel ?? "Upcoming";
   const timeLabel = parsed.timeLabel ?? "Flexible";
 
   return {
@@ -46,6 +67,7 @@ export function createPulsePlan(prompt: string): PulsePlan {
         }
       : undefined,
     parsedInput: parsed,
+    timeline,
     createdAt: new Date().toISOString(),
   };
 }

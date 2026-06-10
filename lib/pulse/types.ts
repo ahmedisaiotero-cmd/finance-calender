@@ -1,3 +1,5 @@
+import type { TimelineResolution } from "@/lib/timeline/resolve-timeline";
+
 export type PulsePlanCategory =
   | "workout"
   | "workday"
@@ -67,5 +69,6 @@ export type PulsePlan = {
   sections: PulsePlanSection[];
   calendarSuggestion?: PulseCalendarSuggestion;
   parsedInput?: PulseParsedInput;
+  timeline?: TimelineResolution;
   createdAt: string;
 };

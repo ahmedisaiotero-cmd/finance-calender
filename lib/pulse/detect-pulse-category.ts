@@ -39,7 +39,9 @@ export function detectPulseCategory(prompt: string): PulsePlanCategory {
 
   if (/\b(workout|gym|exercise|lift|run|cardio)\b/.test(text)) return "workout";
 
-  if (/\b(workday|work|shift|productivity)\b/.test(text)) return "workday";
+  if (/\b(workday|work|worked|working|shift|job|productivity)\b/.test(text)) {
+    return "workday";
+  }
 
   if (/\b(date night|date|girlfriend|food|mini golf)\b/.test(text)) {
     return "date-night";

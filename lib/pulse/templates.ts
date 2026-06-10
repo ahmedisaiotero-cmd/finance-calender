@@ -279,7 +279,7 @@ function buildTask(
     summary: `Task organized for ${friendlyWhen(whenLabel)}.`,
     durationMinutes: 30,
     includeCalendar: false,
-    previewLabel: "A task in Today",
+    previewLabel: "A task on your calendar",
     sections: [
       {
         title: "Task",
