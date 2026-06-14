@@ -98,6 +98,15 @@ export function generateAmbientInsightFromBlocks(
     const dayBlocks = blocks.filter((block) => block.date === dateKey);
     const overlap = findInternalOverlap(dayBlocks);
     if (overlap) {
+      const protectedBlock =
+        overlap.first.protected || overlap.second.protected
+          ? overlap.first.protected
+            ? overlap.first
+            : overlap.second
+          : null;
+      if (protectedBlock) {
+        return `${overlap.second.title === protectedBlock.title ? overlap.first.title : overlap.second.title} overlaps with protected time.`;
+      }
       const existingLabel =
         overlap.first.title === "Work" ? "work" : overlap.first.title.toLowerCase();
       return `${overlap.second.title} overlaps with ${existingLabel}.`;

@@ -1,5 +1,5 @@
-import { HomeContent } from "@/components/dashboard/home-content";
+import { SyncWorkspace } from "@/components/sync/sync-workspace";
 
-export default function Home() {
-  return <HomeContent />;
+export default function HomePage() {
+  return <SyncWorkspace activeLens="home" showInput />;
 }

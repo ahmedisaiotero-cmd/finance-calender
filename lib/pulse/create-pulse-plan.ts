@@ -1,6 +1,8 @@
+import { applyNormalizationConfidencePenalty } from "@/lib/parser/normalization-confidence";
+import { normalizeCaptureInput } from "@/lib/parser/normalize-capture-input";
 import { detectPulseCategory } from "@/lib/pulse/detect-pulse-category";
 import { parsePulsePrompt } from "@/lib/pulse/parse-pulse-prompt";
-import { normalizeCaptureInput } from "@/lib/parser/normalize-capture-input";
+import { resolveSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";
 import {
   buildPulseTemplate,
   materializeSections,
@@ -38,7 +40,39 @@ export function createPulsePlan(
   const parserText = normalizedInput.normalized;
   const category = detectPulseCategory(parserText);
   const parsed = parsePulsePrompt(parserText, category);
-  const timeline = resolveTimeline(parserText, options.timeline);
+  const rawTimeline = resolveTimeline(parserText, options.timeline);
+  const destinations = resolveSyncDestinations({
+    id: "draft",
+    title: "",
+    category,
+    status: "draft",
+    prompt: parserText,
+    summary: "",
+    dateLabel: parsed.dateLabel ?? "Upcoming",
+    timeLabel: parsed.timeLabel ?? "Flexible",
+    durationMinutes: 0,
+    sections: [],
+    timeline: rawTimeline,
+    createdAt: new Date().toISOString(),
+  });
+  const timeline = applyNormalizationConfidencePenalty(
+    rawTimeline,
+    normalizedInput.correctionEntries,
+    {
+      categoryClear: category !== "general",
+      dateClear: Boolean(
+        rawTimeline.startDate ||
+          rawTimeline.deadlineDate ||
+          rawTimeline.recurrence?.days?.length ||
+          (rawTimeline.label && rawTimeline.label !== "Needs a timeline"),
+      ),
+      timeClear: Boolean(
+        rawTimeline.isTimed &&
+          (rawTimeline.startTime || rawTimeline.deadlineTime),
+      ),
+      destinationClear: destinations.length > 0,
+    },
+  );
   const template = buildPulseTemplate(category, parserText, parsed);
   const id = createPlanId();
 

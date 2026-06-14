@@ -16,6 +16,7 @@ const CENTERED_NAV_ORDER = [
   "health",
   "work",
   "relationships",
+  "family",
   "goals",
   "school",
 ] as const;

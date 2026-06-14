@@ -115,7 +115,7 @@ function seedCapture(
     userContext: MOCK_SYNC_USER_CONTEXT,
   });
 
-  assert.deepEqual(preview.where.destinations, ["Relationships", "Calendar"]);
+  assert.deepEqual(preview.where.destinations, ["Family", "Calendar"]);
   assert.equal(preview.readyToSave, true);
   assert.equal(preview.banner, "Ready to save.");
   assert.ok(preview.when.label.includes("Tomorrow"));

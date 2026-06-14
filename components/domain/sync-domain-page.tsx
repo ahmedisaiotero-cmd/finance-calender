@@ -21,7 +21,7 @@ export function SyncDomainPage({
   supportingCopy,
   items,
   insights,
-  lens = "all",
+  lens = "home",
 }: SyncDomainPageProps) {
   const summary = insights[0];
 

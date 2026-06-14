@@ -24,7 +24,7 @@ export function detectPulseCategory(prompt: string): PulsePlanCategory {
     return "task";
   }
 
-  if (/\b(remind|reminder|cancel|due)\b/.test(text)) return "reminder";
+  if (/\b(remind|reminder|cancel|due|rent)\b/.test(text)) return "reminder";
 
   if (
     /\b(subscribed|subscribe|subscription|renewal|trial|charge|bill)\b/.test(

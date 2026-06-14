@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import type { SyncDestination } from "@/lib/captured-items";
+import type { MeaningActionType } from "@/lib/intelligence/meaning-engine";
 import { logSyncPreviewDebug } from "@/lib/pulse/sync-preview-debug";
 import {
   getDestinationChipLabels,
@@ -24,6 +25,8 @@ type SyncPreviewPanelProps = {
   };
   onToggleDestination?: (destination: SyncDestination) => void;
   onConfirm: () => void;
+  onProtectTime?: () => void;
+  onSuggestedAction?: (actionType: MeaningActionType) => void;
   onDismiss: () => void;
   onChangeTime?: () => void;
   onUpdateExisting?: () => void;
@@ -65,7 +68,7 @@ function defaultConfirmLabel(mode: SyncPreviewMode) {
   if (mode === "delete") return "Remove";
   if (mode === "edit") return "Update";
   if (mode === "duplicate") return "Keep Both";
-  return "Synchronize";
+  return "Save";
 }
 
 export function SyncPreviewPanel({
@@ -75,6 +78,8 @@ export function SyncPreviewPanel({
   editPreview,
   onToggleDestination,
   onConfirm,
+  onProtectTime,
+  onSuggestedAction,
   onDismiss,
   onChangeTime,
   onUpdateExisting,
@@ -93,6 +98,15 @@ export function SyncPreviewPanel({
     preview.mode === "edit" ||
     preview.mode === "schedule-save" ||
     preview.mode === "schedule-update";
+  const showProtectTime =
+    preview.meaning?.protection.eligible &&
+    preview.mode === "create" &&
+    onProtectTime;
+  const secondaryActions =
+    preview.why.suggestedActions?.filter(
+      (action) =>
+        action.actionType !== "protect_time" && action.actionType !== "none",
+    ) ?? [];
 
   useEffect(() => {
     logSyncPreviewDebug(plan, preview, selectedDestinations);
@@ -152,16 +166,25 @@ export function SyncPreviewPanel({
               <p className="text-[14px] text-muted-foreground/72">{whenTime}</p>
             )}
             {hasOverlap && preview.when.overlap && (
-              <div className="mt-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
+              <div
+                className={cn(
+                  "mt-2 rounded-xl border p-3",
+                  preview.when.overlap.severity === "important"
+                    ? "border-amber-500/30 bg-amber-500/8"
+                    : "border-amber-500/20 bg-amber-500/5",
+                )}
+              >
                 <p className="text-[13px] font-medium text-amber-800/90 dark:text-amber-300/90">
                   {preview.when.overlap.headline}
                 </p>
+                {preview.when.overlap.conflictMeaning && (
+                  <p className="mt-1 text-[13px] text-muted-foreground/75">
+                    {preview.when.overlap.conflictMeaning}
+                  </p>
+                )}
                 <p className="mt-1 text-[13px] text-muted-foreground/75">
                   {preview.when.overlap.existingTitle}:{" "}
                   {preview.when.overlap.existingRange}
-                </p>
-                <p className="text-[13px] text-muted-foreground/75">
-                  New item: {preview.when.overlap.proposedRange}
                 </p>
               </div>
             )}
@@ -207,13 +230,40 @@ export function SyncPreviewPanel({
         )}
 
         <PreviewSection label={isDelete ? "What happens" : "Why it matters"}>
+          {preview.why.importanceLabel && !isDelete && (
+            <p className="mb-1 text-[12px] font-medium uppercase tracking-[0.06em] text-muted-foreground/55">
+              {preview.why.importanceLabel}
+            </p>
+          )}
           <p className="text-[14px] leading-relaxed text-muted-foreground/72">
             {isDelete
               ? "This will be removed from your calendar and life areas. You can always capture it again."
               : preview.why.summary}
           </p>
+          {preview.why.protectionRecommendation && !isDelete && (
+            <p className="mt-2 text-[13px] text-primary/75">
+              {preview.why.protectionRecommendation}
+            </p>
+          )}
         </PreviewSection>
       </div>
+
+      {!isDelete && secondaryActions.length > 0 && (
+        <PreviewSection label="Suggested actions" className="mt-5">
+          <div className="flex flex-col gap-2">
+            {secondaryActions.slice(0, 3).map((action) => (
+              <button
+                key={action.id}
+                type="button"
+                onClick={() => onSuggestedAction?.(action.actionType)}
+                className="rounded-xl border border-border/25 px-3 py-2 text-left text-[13px] text-foreground/82 transition-colors hover:bg-muted/20"
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </PreviewSection>
+      )}
 
       <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
         {isDuplicate && onUpdateExisting && (
@@ -231,6 +281,16 @@ export function SyncPreviewPanel({
             >
               Save anyway
             </Button>
+            {showProtectTime && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onProtectTime}
+                className="h-11"
+              >
+                Protect time
+              </Button>
+            )}
             <Button
               type="button"
               variant="outline"
@@ -258,6 +318,26 @@ export function SyncPreviewPanel({
             >
               {confirmLabel ?? defaultConfirmLabel(preview.mode)}
             </Button>
+            {showProtectTime && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onProtectTime}
+                className="h-11"
+              >
+                Protect time
+              </Button>
+            )}
+            {onChangeTime && preview.when.isTimed && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onChangeTime}
+                className="h-11"
+              >
+                Change time
+              </Button>
+            )}
             <Button
               type="button"
               variant="ghost"

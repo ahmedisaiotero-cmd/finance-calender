@@ -135,7 +135,7 @@ function assertLifeAreaDestinationsOnly(
   const destinations = resolveSyncDestinations(plan);
   const sourceCheck = checkDestinationSources(plan);
 
-  assert.deepEqual(destinations, ["Relationships", "Calendar"]);
+  assert.deepEqual(destinations, ["Family", "Calendar"]);
   assert.equal(plan.timeline?.label, "Tomorrow");
   assert.equal(plan.timeline?.startTime, "11:00");
   assert.equal(plan.timeline?.endTime, "12:00");
@@ -159,7 +159,7 @@ function assertLifeAreaDestinationsOnly(
     "Calendar",
   ]);
   assertLifeAreaDestinationsOnly("call mom tomorrow 11am", [
-    "Relationships",
+    "Family",
     "Calendar",
   ]);
 }

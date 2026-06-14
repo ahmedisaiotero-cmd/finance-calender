@@ -1,18 +1,9 @@
 "use client";
 
+import type { SyncWorkspaceLens } from "@/lib/sync-lenses";
 import type { CapturedSyncItem, SyncDestination } from "@/lib/captured-items";
-import type { PulsePlanCategory } from "@/lib/pulse/types";
 
-export type SyncLifeStreamLens =
-  | "all"
-  | "calendar"
-  | "finance"
-  | "health"
-  | "work"
-  | "relationships"
-  | "goals"
-  | "school";
-
+export type SyncLifeStreamLens = SyncWorkspaceLens;
 export type SyncLens = SyncLifeStreamLens;
 
 type SyncLifeStreamProps = {
@@ -34,18 +25,7 @@ const LENS_DESTINATION: Partial<Record<SyncLifeStreamLens, SyncDestination>> = {
   relationships: "Relationships",
   goals: "Goals",
   school: "School",
-};
-
-const CATEGORY_LABELS: Partial<Record<PulsePlanCategory, string>> = {
-  workout: "Workout",
-  workday: "Work",
-  "date-night": "Date",
-  subscription: "Bill",
-  expense: "Expense",
-  reminder: "Reminder",
-  "savings-goal": "Goal",
-  task: "Task",
-  general: "Note",
+  family: "Family",
 };
 
 function itemDateKey(item: CapturedSyncItem) {
@@ -74,22 +54,16 @@ function formatClock(value?: string) {
 }
 
 function filterByLens(items: CapturedSyncItem[], lens: SyncLifeStreamLens) {
-  if (lens === "all") return items;
+  if (lens === "home") return items;
   const destination = LENS_DESTINATION[lens];
   if (!destination) return items;
   return items.filter((item) => item.destinations.includes(destination));
 }
 
-function typeLabel(item: CapturedSyncItem) {
-  if (item.timeline?.timelineRole === "deadline") return "Due";
-  return CATEGORY_LABELS[item.category] ?? "Item";
-}
-
 export function SyncLifeStream({
   items,
-  activeLens = "all",
+  activeLens = "home",
   showLenses = false,
-  onLensChange,
   onEditItem,
   onDeleteItem,
   limit,
@@ -106,7 +80,7 @@ export function SyncLifeStream({
     <section className="w-full space-y-3">
       {showLenses && (
         <div className="mb-3 flex flex-wrap gap-2">
-          {/* Lens pills reserved for in-page filtering if needed later */}
+          {/* Lens pills live in SyncWorkspace */}
         </div>
       )}
 
@@ -127,9 +101,17 @@ export function SyncLifeStream({
                     <p className="truncate text-[15px] font-medium tracking-[-0.02em] text-foreground/92">
                       {item.title}
                     </p>
-                    <span className="rounded-full bg-muted/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.06em] text-muted-foreground/65">
-                      {typeLabel(item)}
-                    </span>
+                    {item.protectedTime?.enabled && (
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.06em] text-primary/75">
+                        Protected
+                      </span>
+                    )}
+                    {item.meaning?.protection.recommended &&
+                      !item.protectedTime?.enabled && (
+                        <span className="rounded-full bg-muted/45 px-2 py-0.5 text-[10px] font-medium text-muted-foreground/70">
+                          Protection recommended
+                        </span>
+                      )}
                   </div>
                   <p className="mt-1.5 text-[13px] text-muted-foreground/68">
                     {itemMeta(item) || "Flexible"}

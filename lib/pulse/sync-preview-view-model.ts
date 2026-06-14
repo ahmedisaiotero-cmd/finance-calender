@@ -1,6 +1,14 @@
 import type { SyncDestination, CapturedSyncItem } from "@/lib/captured-items";
 import {
+  analyzeMeaning,
+  buildWhySummaryFromMeaning,
+  enrichOverlapWithMeaning,
+  type MeaningAnalysis,
+  type MeaningSuggestedAction,
+} from "@/lib/intelligence/meaning-engine";
+import {
   detectSyncTimeBlockOverlaps,
+  proposedSyncTimeBlocksFromPlan,
   type SyncTimeBlockOverlap,
 } from "@/lib/sync-time-blocks";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
@@ -10,7 +18,6 @@ import {
 } from "@/lib/intelligence/consequence-engine";
 import type { SyncUserContext } from "@/lib/intelligence/sync-user-context";
 import { titleCaseKeep } from "@/lib/pulse/parse-pulse-prompt";
-import { getSyncPreviewThought } from "@/lib/pulse/preview-copy";
 import { resolveSyncDestinations, sanitizeSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";
 import type { PulsePlan, PulsePlanCategory } from "@/lib/pulse/types";
 
@@ -55,16 +62,21 @@ export type SyncPreviewViewModel = {
   };
   why: {
     summary?: string;
+    importanceLabel?: string;
+    protectionRecommendation?: string;
     affectedAreas: {
       area: string;
       impact: "positive" | "negative" | "neutral" | "unknown";
       reason: string;
     }[];
     suggestedActions?: {
+      id: string;
       label: string;
+      actionType: MeaningSuggestedAction["actionType"];
       requiresConfirmation: boolean;
     }[];
   };
+  meaning?: MeaningAnalysis;
   confidence: {
     score: number;
     label: "high" | "medium" | "low";
@@ -176,43 +188,6 @@ function resolveTimelineRole(plan: PulsePlan): SyncPreviewTimelineRole {
   const role = plan.timeline?.timelineRole;
   if (!role) return "unknown";
   return role;
-}
-
-function buildWhySummary(
-  plan: PulsePlan,
-  analysis: ConsequenceAnalysis | null,
-): string {
-  const text = plan.prompt.toLowerCase();
-
-  if (plan.category === "work-schedule" && plan.timeline?.kind === "recurring") {
-    return "This gives Sync context for your week. This will repeat weekly until you change it.";
-  }
-
-  if (/\b(rent|bill)\b/.test(text) && /\b(due|by|before)\b/.test(text)) {
-    return "Keeps an upcoming bill visible.";
-  }
-
-  if (analysis?.affectedAreas.length) {
-    const relationships = analysis.affectedAreas.find(
-      (area) => area.area === "relationships",
-    );
-    if (relationships) return relationships.reason;
-
-    const health = analysis.affectedAreas.find((area) => area.area === "health");
-    if (health && plan.category === "workout") return health.reason;
-
-    const finance = analysis.affectedAreas.find((area) => area.area === "finance");
-    if (finance && /\b(rent|bill|due)\b/.test(text)) {
-      return "Keeps an upcoming bill visible.";
-    }
-
-    const calendar = analysis.affectedAreas.find((area) => area.area === "calendar");
-    if (calendar) return calendar.reason;
-
-    return analysis.affectedAreas[0].reason;
-  }
-
-  return getSyncPreviewThought(plan);
 }
 
 function resolvePreviewBanner(
@@ -355,7 +330,7 @@ export function buildSyncPreviewViewModel(
   );
   const endTime = formatClock(plan.timeline?.endTime);
 
-  const overlap =
+  const rawOverlap =
     mode !== "delete" &&
     mode !== "schedule-delete" &&
     destinations.includes("Calendar") &&
@@ -367,6 +342,29 @@ export function buildSyncPreviewViewModel(
           excludeCaptureId: options.excludeCaptureId,
         })[0]
       : undefined;
+
+  const proposedBlocks = proposedSyncTimeBlocksFromPlan(plan);
+
+  const meaning = analyzeMeaning({
+    title: options.targetTitle ?? buildPreviewTitle(plan),
+    normalizedText: plan.prompt,
+    category: plan.category,
+    destinations,
+    timeline: plan.timeline,
+    timeBlocks: proposedBlocks,
+    overlaps: rawOverlap ? [rawOverlap] : undefined,
+    items: options.calendarItems,
+  });
+
+  const conflictItem = rawOverlap?.conflictSourceItemId
+    ? options.calendarItems?.find(
+        (item) => item.id === rawOverlap.conflictSourceItemId,
+      )
+    : undefined;
+
+  const overlap = rawOverlap
+    ? enrichOverlapWithMeaning(rawOverlap, meaning, conflictItem)
+    : undefined;
 
   return {
     mode,
@@ -391,17 +389,26 @@ export function buildSyncPreviewViewModel(
       destinations,
     },
     why: {
-      summary: buildWhySummary(plan, consequenceAnalysis),
+      summary: buildWhySummaryFromMeaning(meaning, overlap),
+      importanceLabel:
+        meaning.importance === "high" ? meaning.meaningLabel : undefined,
+      protectionRecommendation:
+        meaning.protection.recommended && meaning.protection.reason
+          ? meaning.protection.reason
+          : undefined,
       affectedAreas: consequenceAnalysis.affectedAreas.map((area) => ({
         area: area.area,
         impact: area.impact,
         reason: area.reason,
       })),
-      suggestedActions: consequenceAnalysis.suggestedActions.map((action) => ({
+      suggestedActions: meaning.suggestedActions.map((action) => ({
+        id: action.id,
         label: action.label,
+        actionType: action.actionType,
         requiresConfirmation: action.requiresConfirmation,
       })),
     },
+    meaning,
     confidence: {
       ...confidence,
       needsConfirmation: resolveDisplayNeedsConfirmation(plan, mode, readyToSave),

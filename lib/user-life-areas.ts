@@ -202,6 +202,7 @@ export type NavItemId =
   | "health"
   | "work"
   | "relationships"
+  | "family"
   | "school"
   | "goals";
 
@@ -271,6 +272,13 @@ const NAV_CATALOG: NavItem[] = [
     lifeArea: "relationships",
   },
   {
+    id: "family",
+    label: "Family",
+    href: "/family",
+    icon: Users,
+    lifeArea: null,
+  },
+  {
     id: "school",
     label: "School",
     href: "/school",
@@ -304,6 +312,8 @@ const NAV_PATH_MATCHERS: Record<NavItemId, (pathname: string) => boolean> = {
   work: (pathname) => pathname === "/work" || pathname.startsWith("/work/"),
   relationships: (pathname) =>
     pathname === "/relationships" || pathname.startsWith("/relationships/"),
+  family: (pathname) =>
+    pathname === "/family" || pathname.startsWith("/family/"),
   school: (pathname) =>
     pathname === "/school" || pathname.startsWith("/school/"),
   goals: (pathname) => pathname === "/goals" || pathname.startsWith("/goals/"),
@@ -327,6 +337,13 @@ export function buildSidebarNavigation(
   for (const item of NAV_CATALOG) {
     if (ALWAYS_PRIMARY_IDS.includes(item.id)) {
       primary.push(item);
+      continue;
+    }
+
+    if (item.id === "family") {
+      if (futureSignals.hasFamilyConnection === true) {
+        primary.push(item);
+      }
       continue;
     }
 

@@ -40,6 +40,50 @@ function friendlyWhen(label: string | undefined): string {
   return label.toLowerCase();
 }
 
+function relationshipTitle(prompt: string, fallback: string): string {
+  const dateWith = prompt.match(
+    /\bdate\s+(?:night\s+)?(?:with\s+)?(?:my\s+)?(girlfriend|boyfriend|wife|husband|partner)\b/i,
+  );
+  if (dateWith) {
+    return `Date with ${titleCaseKeep(dateWith[1])}`;
+  }
+
+  const callMatch = prompt.match(
+    /\bcall\s+(mom|dad|mother|father|grandma|grandpa)\b/i,
+  );
+  if (callMatch) {
+    const labels: Record<string, string> = {
+      mom: "Mom",
+      mother: "Mom",
+      dad: "Dad",
+      father: "Dad",
+      grandma: "Grandma",
+      grandpa: "Grandpa",
+    };
+    return `Call ${labels[callMatch[1].toLowerCase()] ?? titleCaseKeep(callMatch[1])}`;
+  }
+
+  return derivePlanTitle(prompt, fallback);
+}
+
+export function familyEventTitle(prompt: string): string | null {
+  const daughter = /\b(?:my\s+)?daughter\b/i.test(prompt);
+  const son = /\b(?:my\s+)?son\b/i.test(prompt);
+  const school = /\b(school|class|recital|ceremony|graduation)\b/i.test(prompt);
+  const event = /\bevent\b/i.test(prompt);
+
+  if (daughter && (school || event)) return "Daughter's School Event";
+  if (son && (school || event)) return "Son's School Event";
+  if (daughter) return "Daughter's Event";
+  if (son) return "Son's Event";
+  if (/\bdoctor\b/i.test(prompt) && /\bappointment\b/i.test(prompt)) {
+    return "Doctor Appointment";
+  }
+  if (/\bdoctor\b/i.test(prompt)) return "Doctor Appointment";
+
+  return null;
+}
+
 /** Capitalize the first letter only, preserving the rest of the prompt. */
 function derivePlanTitle(prompt: string, fallback: string): string {
   const cleaned = prompt
@@ -136,7 +180,7 @@ function buildWorkday(prompt: string): PulseTemplateResult {
 
 function buildDateNight(prompt: string): PulseTemplateResult {
   return {
-    title: derivePlanTitle(prompt, "Date Night"),
+    title: relationshipTitle(prompt, "Date Night"),
     summary: "A relaxed evening with a little prep and room to enjoy the moment.",
     durationMinutes: 180,
     includeCalendar: true,
@@ -289,8 +333,9 @@ function buildTask(
   prompt: string,
   parsed: PulseParsedInput,
 ): PulseTemplateResult {
+  const familyTitle = familyEventTitle(prompt);
   const subject = extractSubject(prompt, "task");
-  const subjectTitle = subject ? titleCaseKeep(subject) : null;
+  const subjectTitle = familyTitle ?? (subject ? titleCaseKeep(subject) : null);
   const whenLabel =
     parsed.timeLabel && parsed.timeLabel !== "Flexible"
       ? parsed.timeLabel
@@ -319,8 +364,9 @@ function buildTask(
 }
 
 function buildGeneral(prompt: string): PulseTemplateResult {
+  const familyTitle = familyEventTitle(prompt);
   return {
-    title: derivePlanTitle(prompt, "Personal Plan"),
+    title: familyTitle ?? derivePlanTitle(prompt, "Personal Plan"),
     summary: "A simple structure to turn your intent into clear next steps.",
     durationMinutes: 60,
     includeCalendar: true,

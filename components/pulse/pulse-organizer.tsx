@@ -13,6 +13,7 @@ import {
 } from "@/lib/capture-action-resolver";
 import { detectDuplicateCapture } from "@/lib/capture-duplicate-detection";
 import { MOCK_SYNC_USER_CONTEXT } from "@/lib/intelligence/sync-user-context";
+import type { MeaningActionType } from "@/lib/intelligence/meaning-engine";
 import {
   type CapturedSyncItem,
   type SyncDestination,
@@ -62,6 +63,10 @@ const STARTER_CHIPS = [
   {
     label: "Spending",
     prompt: "I spent $20 yesterday",
+  },
+  {
+    label: "Family event",
+    prompt: "My daughter has an event at her school tomorrow at 7 am",
   },
   {
     label: "Call someone",
@@ -475,13 +480,83 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
       return;
     }
 
+    saveCapturedPlan({ protectTime: false });
+  };
+
+  const saveCapturedPlan = (options?: {
+    protectTime?: boolean;
+    reliefOverride?: string;
+  }) => {
+    if (!plan || !preview || selectedDestinations.length === 0) return;
+
+    const title = compactTitle(plan);
+    const meaning = preview.meaning;
+    const now = new Date().toISOString();
+    const protectedTime = options?.protectTime
+      ? {
+          enabled: true,
+          reason: meaning?.protection.reason ?? "Protected by you",
+          createdAt: now,
+        }
+      : undefined;
+
     const capturedItem = addCapturedItem(
       { ...plan, status: "saved" },
       sanitizeSyncDestinations(selectedDestinations),
       title,
+      { meaning, protectedTime },
     );
     setPlan({ ...plan, status: "saved" });
-    setReliefMessage(getSyncReliefMessage(plan, capturedItem));
+    setReliefMessage(
+      options?.reliefOverride ??
+        (options?.protectTime
+          ? `Protected time for "${capturedItem.title}".`
+          : getSyncReliefMessage(plan, capturedItem)),
+    );
+  };
+
+  const handleProtectTime = () => {
+    saveCapturedPlan({ protectTime: true });
+  };
+
+  const handleSuggestedAction = (actionType: MeaningActionType) => {
+    if (!plan || !preview) return;
+
+    if (actionType === "protect_time") {
+      handleProtectTime();
+      return;
+    }
+
+    if (actionType === "set_leave_reminder") {
+      saveCapturedPlan({
+        protectTime: false,
+        reliefOverride: `Saved "${compactTitle(plan)}". Leave reminder noted — you can set the exact alert next.`,
+      });
+      return;
+    }
+
+    if (actionType === "adjust_work") {
+      saveCapturedPlan({
+        protectTime: false,
+        reliefOverride: `Saved "${compactTitle(plan)}". Work availability adjustment is noted for later.`,
+      });
+      return;
+    }
+
+    if (actionType === "reschedule_conflict") {
+      handleChangeTime();
+      return;
+    }
+
+    if (actionType === "add_reminder") {
+      saveCapturedPlan({
+        protectTime: false,
+        reliefOverride: `Saved "${compactTitle(plan)}". Reminder suggestion noted.`,
+      });
+      return;
+    }
+
+    handleSavePlan();
   };
 
   const handleUpdateExisting = () => {
@@ -513,6 +588,7 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
       { ...plan, status: "saved", id: crypto.randomUUID() },
       sanitizeSyncDestinations(selectedDestinations),
       compactTitle(plan),
+      { meaning: preview?.meaning },
     );
     setReliefMessage(getSyncReliefMessage(plan, capturedItem));
     resetPreview();
@@ -730,6 +806,8 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
                 : undefined
             }
             onConfirm={handleSavePlan}
+            onProtectTime={handleProtectTime}
+            onSuggestedAction={handleSuggestedAction}
             onDismiss={handleDismissPreview}
             onChangeTime={handleChangeTime}
             onUpdateExisting={

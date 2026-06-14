@@ -4,24 +4,29 @@ import { useEffect, useMemo, useState } from "react";
 
 import { SyncCalendarGrid } from "@/components/calendar/sync-calendar-grid";
 import { PulseOrganizer } from "@/components/pulse/pulse-organizer";
-import { SyncLifeStream, type SyncLens } from "@/components/sync/sync-life-stream";
+import { SyncLensPills } from "@/components/sync/sync-lens-pills";
+import { SyncLifeStream } from "@/components/sync/sync-life-stream";
 import { SyncWorkBlocks } from "@/components/sync/sync-work-blocks";
 import { useCapturedItems } from "@/lib/captured-items";
 import {
   buildSyncTimeBlocksForRange,
   filterSyncTimeBlocksByArea,
 } from "@/lib/sync-time-blocks";
-import { generateAmbientInsightFromBlocks } from "@/lib/time-block-insights";
-import { loadActiveWorkSchedule } from "@/lib/user-timeline-context";
-
 import {
   LENS_HEADINGS,
   lensItemCount,
-  lensSummaryLine,
+  lensNextLine,
+  lensWorkScheduleLine,
 } from "@/lib/sync-lens-copy";
+import { generateAmbientInsightFromBlocks } from "@/lib/time-block-insights";
+import { loadActiveWorkSchedule } from "@/lib/user-timeline-context";
+
+import type { SyncWorkspaceLens } from "@/lib/sync-lenses";
+
+export type { SyncWorkspaceLens } from "@/lib/sync-lenses";
 
 export type SyncWorkspaceProps = {
-  activeLens?: SyncLens;
+  activeLens: SyncWorkspaceLens;
   showInput?: boolean;
 };
 
@@ -47,7 +52,7 @@ function ambientInsight(
 }
 
 export function SyncWorkspace({
-  activeLens = "all",
+  activeLens,
   showInput = false,
 }: SyncWorkspaceProps) {
   const { activeItems, softDeleteCapturedItem } = useCapturedItems();
@@ -58,13 +63,14 @@ export function SyncWorkspace({
     setMounted(true);
   }, []);
 
-  const isHome = activeLens === "all" && showInput;
+  const isHome = activeLens === "home";
   const heading = isHome ? null : LENS_HEADINGS[activeLens];
   const visibleItems = mounted ? activeItems : [];
   const ambient = mounted ? ambientInsight(activeItems) : AMBIENT_FALLBACK;
-  const nextInLens = mounted ? lensSummaryLine(activeItems, activeLens) : null;
   const itemCount = mounted ? lensItemCount(activeItems, activeLens) : 0;
-  const hasStreamItems = mounted && lensItemCount(activeItems, activeLens) > 0;
+  const hasStreamItems = itemCount > 0;
+  const workSchedule = mounted ? loadActiveWorkSchedule() ?? null : null;
+
   const workBlocks = useMemo(() => {
     if (!mounted || activeLens !== "work") return [];
     const end = new Date();
@@ -74,12 +80,19 @@ export function SyncWorkspace({
         items: activeItems,
         startDate: new Date(),
         endDate: end,
-        workSchedule: loadActiveWorkSchedule() ?? null,
+        workSchedule: workSchedule ?? null,
       }),
       "work",
     );
-  }, [mounted, activeLens, activeItems]);
-  const workSchedule = mounted ? loadActiveWorkSchedule() ?? null : null;
+  }, [mounted, activeLens, activeItems, workSchedule]);
+
+  const nextInLens = mounted
+    ? lensNextLine(activeItems, activeLens, workBlocks)
+    : null;
+  const workScheduleLine =
+    mounted && activeLens === "work"
+      ? lensWorkScheduleLine(workSchedule)
+      : null;
 
   const handleDeleteItem = (item: (typeof activeItems)[number]) => {
     const confirmed = window.confirm(`Remove "${item.title}" from Sync?`);
@@ -91,6 +104,33 @@ export function SyncWorkspace({
   const handleEditItem = (item: (typeof activeItems)[number]) => {
     setNotice(`To update this, use a command like: change ${item.title} to Friday.`);
   };
+
+  const streamSection = (
+    <div className={isHome ? "mt-10" : "mt-6"}>
+      {!isHome && itemCount > 0 && (
+        <p className="mb-4 text-[12px] font-medium uppercase tracking-[0.08em] text-muted-foreground/45">
+          {itemCount} item{itemCount === 1 ? "" : "s"} in view
+        </p>
+      )}
+      {isHome && hasStreamItems && (
+        <p className="mb-4 text-center text-[12px] font-medium uppercase tracking-[0.08em] text-muted-foreground/45">
+          In your life stream
+        </p>
+      )}
+      <SyncLifeStream
+        items={visibleItems}
+        activeLens={activeLens}
+        onEditItem={handleEditItem}
+        onDeleteItem={handleDeleteItem}
+        limit={isHome ? HOME_STREAM_LIMIT : undefined}
+        emptyMessage={
+          isHome
+            ? HOME_EMPTY_STREAM
+            : "Nothing here yet. Capture something when it matters."
+        }
+      />
+    </div>
+  );
 
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-10" data-page="sync-workspace">
@@ -105,9 +145,11 @@ export function SyncWorkspace({
             </p>
           </header>
 
-          <div className="mt-8">
-            <PulseOrganizer variant="home" />
-          </div>
+          {showInput && (
+            <div className="mt-8">
+              <PulseOrganizer variant="home" />
+            </div>
+          )}
 
           <p className="mt-8 text-center text-[13px] text-muted-foreground/58">
             {ambient}
@@ -119,21 +161,9 @@ export function SyncWorkspace({
             </p>
           )}
 
-          <div className="mt-10">
-            {hasStreamItems && (
-              <p className="mb-4 text-center text-[12px] font-medium uppercase tracking-[0.08em] text-muted-foreground/45">
-                In your life stream
-              </p>
-            )}
-            <SyncLifeStream
-              items={visibleItems}
-              activeLens={activeLens}
-              onEditItem={handleEditItem}
-              onDeleteItem={handleDeleteItem}
-              limit={HOME_STREAM_LIMIT}
-              emptyMessage={HOME_EMPTY_STREAM}
-            />
-          </div>
+          {streamSection}
+
+          <SyncLensPills activeLens={activeLens} className="mt-8" />
         </section>
       ) : (
         <>
@@ -145,18 +175,20 @@ export function SyncWorkspace({
               <p className="mt-2 max-w-2xl text-[14px] leading-relaxed text-muted-foreground/68">
                 {heading.subtitle}
               </p>
-              {nextInLens && activeLens !== "work" && (
-                <p className="mt-2 text-[13px] text-muted-foreground/58">
+              {nextInLens && (
+                <p className="mt-2 text-[13px] font-medium text-muted-foreground/72">
                   {nextInLens}
                 </p>
               )}
-              {!nextInLens && itemCount === 0 && mounted && activeLens !== "work" && (
+              {!nextInLens && itemCount === 0 && mounted && (
                 <p className="mt-2 text-[13px] text-muted-foreground/58">
                   Nothing here yet. Capture something when it matters.
                 </p>
               )}
             </header>
           )}
+
+          <SyncLensPills activeLens={activeLens} className="mt-5" />
 
           {showInput && (
             <div className="mt-8">
@@ -165,46 +197,29 @@ export function SyncWorkspace({
           )}
 
           {notice && (
-            <p className="mt-4 text-center text-[13px] text-muted-foreground/68">
-              {notice}
-            </p>
+            <p className="mt-4 text-[13px] text-muted-foreground/68">{notice}</p>
           )}
 
           {activeLens === "work" && mounted && (
-            <div className="mt-6">
+            <div className="mt-6 space-y-3">
+              {workScheduleLine && (
+                <p className="text-[13px] text-muted-foreground/62">
+                  {workScheduleLine}
+                </p>
+              )}
               <SyncWorkBlocks blocks={workBlocks} workSchedule={workSchedule} />
             </div>
           )}
 
           {activeLens === "calendar" && mounted && (
-            <div className="mt-10">
+            <div className="mt-8">
               <SyncCalendarGrid items={activeItems} />
             </div>
           )}
 
-          {activeLens !== "work" && (
-          <div
-            className={
-              activeLens === "calendar"
-                ? "mt-8"
-                : showInput
-                  ? "mt-10"
-                  : "mt-6"
-            }
-          >
-            {itemCount > 0 && (
-              <p className="mb-4 text-[12px] font-medium uppercase tracking-[0.08em] text-muted-foreground/45">
-                {itemCount} item{itemCount === 1 ? "" : "s"} in view
-              </p>
-            )}
-            <SyncLifeStream
-              items={visibleItems}
-              activeLens={activeLens}
-              onEditItem={handleEditItem}
-              onDeleteItem={handleDeleteItem}
-            />
+          <div className={activeLens === "calendar" ? "mt-8" : undefined}>
+            {streamSection}
           </div>
-          )}
         </>
       )}
     </div>

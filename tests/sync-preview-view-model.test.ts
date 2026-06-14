@@ -86,14 +86,14 @@ function assertPreviewDestinations(
 
   assertPreviewDestinations(
     "call mom tomorrow 11 am",
-    ["Relationships", "Calendar"],
+    ["Family", "Calendar"],
     "Tomorrow",
   );
   assert.equal(preview.what.title, "Call Mom");
   assert.equal(preview.when.isTimed, true);
   assert.equal(preview.when.startTime, "11:00 AM");
   assert.equal(preview.when.endTime, "12:00 PM");
-  assert.equal(preview.why.summary, "Helps maintain an important relationship.");
+  assert.match(preview.why.summary ?? "", /family commitment|important relationship/i);
   assert.equal(preview.readyToSave, true);
   assert.equal(preview.banner, "Ready to save.");
 }
@@ -103,7 +103,7 @@ function assertPreviewDestinations(
 
   assertPreviewDestinations("gym tomorrow at 6pm", ["Health", "Calendar"], "Tomorrow");
   assert.equal(preview.what.title, "Gym");
-  assert.equal(preview.why.summary, "This supports your health rhythm.");
+  assert.match(preview.why.summary ?? "", /wellness rhythm|health rhythm/i);
 }
 
 {
@@ -111,7 +111,7 @@ function assertPreviewDestinations(
 
   assertPreviewDestinations("rent due next Friday", ["Finance", "Calendar"]);
   assert.equal(preview.what.title, "Rent");
-  assert.equal(preview.why.summary, "Keeps an upcoming bill visible.");
+  assert.match(preview.why.summary ?? "", /bill|practical item|radar/i);
 }
 
 {

@@ -61,7 +61,7 @@ function plan(input: string) {
   const result = plan("call mom tomorrow 11am");
 
   assert.equal(result.title, "Call Mom");
-  assert.deepEqual(resolveSyncDestinations(result), ["Relationships", "Calendar"]);
+  assert.deepEqual(resolveSyncDestinations(result), ["Family", "Calendar"]);
   assert.ok(!resolveSyncDestinations(result).includes("Goals"));
 }
 

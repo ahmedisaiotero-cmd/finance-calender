@@ -15,6 +15,10 @@ import type {
   PulsePlanFrequency,
   PulseMoneyType,
 } from "@/lib/pulse/types";
+import type {
+  MeaningAnalysis,
+  ProtectedTimeState,
+} from "@/lib/intelligence/meaning-engine";
 import type { TimelineResolution } from "@/lib/timeline/resolve-timeline";
 
 export type SyncDestination =
@@ -24,7 +28,8 @@ export type SyncDestination =
   | "Work"
   | "School"
   | "Goals"
-  | "Relationships";
+  | "Relationships"
+  | "Family";
 
 /** Life-area destinations only — never timeline or date labels. */
 export const LIFE_AREA_DESTINATIONS: SyncDestination[] = [
@@ -35,6 +40,7 @@ export const LIFE_AREA_DESTINATIONS: SyncDestination[] = [
   "School",
   "Goals",
   "Relationships",
+  "Family",
 ];
 
 export type CaptureStatus = "active" | "completed" | "cancelled";
@@ -56,6 +62,8 @@ export type CapturedSyncItem = {
   frequency?: PulsePlanFrequency;
   moneyType?: PulseMoneyType;
   timeline?: TimelineResolution;
+  meaning?: MeaningAnalysis;
+  protectedTime?: ProtectedTimeState;
   notes?: string;
   status: CaptureStatus;
   createdAt: string;
@@ -70,6 +78,10 @@ type CapturedItemsContextValue = {
     plan: PulsePlan,
     destinations: SyncDestination[],
     title?: string,
+    extras?: {
+      meaning?: MeaningAnalysis;
+      protectedTime?: ProtectedTimeState;
+    },
   ) => CapturedSyncItem;
   updateCapturedItem: (
     id: string,
@@ -182,7 +194,15 @@ export function CapturedItemsProvider({
   }, [items, loaded]);
 
   const addCapturedItem = useCallback(
-    (plan: PulsePlan, destinations: SyncDestination[], title?: string) => {
+    (
+      plan: PulsePlan,
+      destinations: SyncDestination[],
+      title?: string,
+      extras?: {
+        meaning?: MeaningAnalysis;
+        protectedTime?: ProtectedTimeState;
+      },
+    ) => {
       const now = new Date().toISOString();
       const captured: CapturedSyncItem = {
         id: plan.id,
@@ -198,6 +218,8 @@ export function CapturedItemsProvider({
         frequency: plan.parsedInput?.frequency,
         moneyType: plan.parsedInput?.moneyType,
         timeline: plan.timeline,
+        meaning: extras?.meaning,
+        protectedTime: extras?.protectedTime,
         status: "active",
         createdAt: plan.createdAt ?? now,
         updatedAt: now,

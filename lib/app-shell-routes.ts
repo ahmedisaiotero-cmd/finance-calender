@@ -1,13 +1,6 @@
 import { SYNC_PRODUCT } from "@/lib/sync-copy";
 
-export type ShellLayout =
-  | "default"
-  | "dashboard"
-  | "wide"
-  | "home"
-  | "health"
-  | "finance"
-  | "calendar";
+export type ShellLayout = "default" | "home" | "workspace";
 
 export type AppShellRouteConfig = {
   layout: ShellLayout;
@@ -15,32 +8,26 @@ export type AppShellRouteConfig = {
   description?: string;
 };
 
+const WORKSPACE_LAYOUT: AppShellRouteConfig = {
+  layout: "workspace",
+  title: SYNC_PRODUCT.name,
+};
+
 export const APP_SHELL_ROUTES: Record<string, AppShellRouteConfig> = {
   "/": { layout: "home", title: "Today" },
-  "/calendar": { layout: "calendar", title: "Calendar" },
-  "/finance": { layout: "finance", title: "Finance" },
-  "/health": { layout: "health", title: "Health" },
-  "/fitness": { layout: "health", title: "Health" },
+  "/calendar": WORKSPACE_LAYOUT,
+  "/finance": WORKSPACE_LAYOUT,
+  "/health": WORKSPACE_LAYOUT,
+  "/fitness": WORKSPACE_LAYOUT,
+  "/work": WORKSPACE_LAYOUT,
+  "/relationships": WORKSPACE_LAYOUT,
+  "/family": WORKSPACE_LAYOUT,
+  "/school": WORKSPACE_LAYOUT,
+  "/goals": WORKSPACE_LAYOUT,
   "/settings": {
     layout: "default",
     title: "Settings",
     description: "Manage how Sync connects to the tools you already use.",
-  },
-  "/goals": {
-    layout: "home",
-    title: "Goals",
-  },
-  "/work": {
-    layout: "home",
-    title: "Work",
-  },
-  "/relationships": {
-    layout: "home",
-    title: "Relationships",
-  },
-  "/school": {
-    layout: "home",
-    title: "School",
   },
 };
 

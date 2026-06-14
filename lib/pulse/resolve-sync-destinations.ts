@@ -62,8 +62,20 @@ function isFinanceLanguage(plan: PulsePlan) {
   );
 }
 
+function isFamilyLanguage(plan: PulsePlan) {
+  return /\b(daughter|son|child|children|kids|mom|dad|mother|father|parents|family\s+event|family)\b/i.test(
+    plan.prompt,
+  );
+}
+
 function isRelationshipLanguage(plan: PulsePlan) {
-  return /\b(mom|dad|mother|father|parent|grandma|grandpa|grandmother|grandfather|family|friend|friends|partner|wife|husband|girlfriend|boyfriend|anniversary|birthday|call|dinner with|date night)\b/i.test(
+  return /\b(grandma|grandpa|grandmother|grandfather|friend|friends|partner|wife|husband|girlfriend|boyfriend|anniversary|birthday|dinner with|date night|date with|date\b)\b/i.test(
+    plan.prompt,
+  );
+}
+
+function isHealthLanguage(plan: PulsePlan) {
+  return /\b(doctor|dentist|therapy|appointment|checkup|medical|hospital)\b/i.test(
     plan.prompt,
   );
 }
@@ -95,8 +107,18 @@ function inferCategoryDestinations(plan: PulsePlan): SyncDestination[] {
     return ["Finance", "Calendar"];
   }
 
+  if (isFamilyLanguage(plan)) {
+    const destinations: SyncDestination[] = ["Family", "Calendar"];
+    if (isSchoolLanguage(plan)) destinations.push("School");
+    return unique(destinations);
+  }
+
   if (isRelationshipLanguage(plan)) {
     return unique(["Relationships", "Calendar"]);
+  }
+
+  if (isHealthLanguage(plan)) {
+    return hasTimelineDestination(plan) ? ["Health", "Calendar"] : ["Health"];
   }
 
   if (isSchoolLanguage(plan)) {

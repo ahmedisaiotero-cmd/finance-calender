@@ -4,6 +4,7 @@ import { useMemo } from "react";
 
 import { useCapturedItems } from "@/lib/captured-items";
 import { deriveStableNavConnectionSignals } from "@/lib/life-area-signals";
+import { loadActiveWorkSchedule } from "@/lib/user-timeline-context";
 import {
   buildSidebarNavigation,
   type ExpandableLifeAreaId,
@@ -34,33 +35,39 @@ export function useSidebarNavigation(): SidebarNavigation {
     [activeItems],
   );
 
+  const hasWorkSchedule = Boolean(loadActiveWorkSchedule());
+
   const enabledAreas = useMemo(
     () => ({
       finance: contentEnabled.finance || mockLifeAreaEnabled.finance,
       health: contentEnabled.health || mockLifeAreaEnabled.health,
       goals: contentEnabled.goals || mockLifeAreaEnabled.goals,
-      work: contentEnabled.work || mockLifeAreaEnabled.work,
+      work:
+        contentEnabled.work || mockLifeAreaEnabled.work || hasWorkSchedule,
       school: contentEnabled.school || mockLifeAreaEnabled.school,
       relationships:
         contentEnabled.relationships || mockLifeAreaEnabled.relationships,
     }),
-    [contentEnabled],
+    [contentEnabled, hasWorkSchedule],
   );
 
   return useMemo(() => {
     const signals = deriveStableNavConnectionSignals({
       financeDb: contentEnabled.finance,
       healthAccountConnected: contentEnabled.health,
-      workAccountConnected: contentEnabled.work,
+      workAccountConnected: contentEnabled.work || hasWorkSchedule,
       schoolAccountConnected: contentEnabled.school,
       hasGoals: contentEnabled.goals,
     });
     signals.hasRelationshipsConnection = contentEnabled.relationships;
+    signals.hasFamilyConnection = activeItems.some((item) =>
+      item.destinations.includes("Family"),
+    );
 
     const states = resolveLifeAreaStates(enabledAreas, signals);
 
     return buildSidebarNavigation(states, true, signals);
-  }, [contentEnabled, enabledAreas]);
+  }, [activeItems, contentEnabled, enabledAreas, hasWorkSchedule]);
 }
 
 /** Active life areas for Pulse and feature gating. */

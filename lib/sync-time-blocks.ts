@@ -14,7 +14,8 @@ export type SyncTimeBlockArea =
   | "finance"
   | "relationships"
   | "goals"
-  | "school";
+  | "school"
+  | "family";
 
 export type SyncTimeBlockType =
   | "event"
@@ -34,6 +35,7 @@ export type SyncTimeBlock = {
   isTimed: boolean;
   blockType: SyncTimeBlockType;
   destinations: string[];
+  protected?: boolean;
 };
 
 export type SyncTimeBlockOverlap = {
@@ -43,6 +45,11 @@ export type SyncTimeBlockOverlap = {
   proposedTitle: string;
   proposedRange: string;
   dateLabel: string;
+  severity?: "notice" | "important";
+  conflictMeaning?: string;
+  existingProtected?: boolean;
+  existingArea?: SyncTimeBlockArea;
+  conflictSourceItemId?: string;
 };
 
 const DAY_CODES = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const;
@@ -104,6 +111,7 @@ function resolveBlockArea(item: CapturedSyncItem): SyncTimeBlockArea {
     return "goals";
   }
   if (item.destinations.includes("School")) return "school";
+  if (item.destinations.includes("Family")) return "family";
   return "calendar";
 }
 
@@ -193,6 +201,7 @@ export function captureItemToSyncTimeBlock(
     isTimed,
     blockType: resolveBlockType(timeline),
     destinations: [...item.destinations],
+    protected: item.protectedTime?.enabled === true,
   };
 }
 
@@ -506,6 +515,10 @@ export function detectSyncTimeBlockOverlaps(options: {
         proposedTitle: block.title,
         proposedRange: formatSyncTimeBlockRange(block),
         dateLabel: friendlyDateLabel(block.date),
+        severity: conflict.protected ? "important" : "notice",
+        existingProtected: conflict.protected,
+        existingArea: conflict.area,
+        conflictSourceItemId: conflict.sourceItemId,
       });
     }
   }
@@ -525,6 +538,7 @@ function syncTimeBlockToTimelineEvent(block: SyncTimeBlock): TimelineEvent {
     relationships: "relationships",
     goals: "goals",
     school: "personal",
+    family: "personal",
   };
 
   const range = formatSyncTimeBlockRange(block);
