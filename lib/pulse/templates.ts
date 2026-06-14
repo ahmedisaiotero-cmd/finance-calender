@@ -46,7 +46,7 @@ function derivePlanTitle(prompt: string, fallback: string): string {
     .trim()
     .replace(/^(i|we)\s+/i, "")
     .replace(
-      /^(organize|plan|schedule|set up|create|need to|have to)\s+(a|an|my)?\s*/i,
+      /^(organize|plan|schedule|set up|create|need to|have to|have|had|going to|will)\s+(a|an|my)?\s*/i,
       "",
     )
     .replace(
@@ -60,7 +60,10 @@ function derivePlanTitle(prompt: string, fallback: string): string {
     .trim();
 
   if (!cleaned) return fallback;
-  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  return titleCaseKeep(cleaned.replace(/\bmy\s+/gi, "")).replace(
+    /\b(With|For|On|At|To|In)\b/g,
+    (word) => word.toLowerCase(),
+  );
 }
 
 function buildWorkout(prompt: string): PulseTemplateResult {
@@ -83,6 +86,25 @@ function buildWorkout(prompt: string): PulseTemplateResult {
       {
         title: "Cool down",
         items: ["Static stretching", "Hydrate and log session"],
+      },
+    ],
+  };
+}
+
+function buildWorkSchedule(): PulseTemplateResult {
+  return {
+    title: "Work Schedule",
+    summary: "Your standing weekly work rhythm for Sync to understand your week.",
+    durationMinutes: 600,
+    includeCalendar: true,
+    previewLabel: "A weekly work schedule that repeats until you change it",
+    sections: [
+      {
+        title: "Schedule",
+        items: [
+          "Repeats weekly on your work days",
+          "Stays active until you update or remove it",
+        ],
       },
     ],
   };
@@ -326,6 +348,8 @@ export function buildPulseTemplate(
       return buildWorkout(prompt);
     case "workday":
       return buildWorkday(prompt);
+    case "work-schedule":
+      return buildWorkSchedule();
     case "date-night":
       return buildDateNight(prompt);
     case "subscription":

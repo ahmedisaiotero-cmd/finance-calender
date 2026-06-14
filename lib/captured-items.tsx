@@ -23,7 +23,8 @@ export type SyncDestination =
   | "Health"
   | "Work"
   | "School"
-  | "Goals";
+  | "Goals"
+  | "Relationships";
 
 /** Life-area destinations only — never timeline or date labels. */
 export const LIFE_AREA_DESTINATIONS: SyncDestination[] = [
@@ -33,7 +34,10 @@ export const LIFE_AREA_DESTINATIONS: SyncDestination[] = [
   "Work",
   "School",
   "Goals",
+  "Relationships",
 ];
+
+export type CaptureStatus = "active" | "completed" | "cancelled";
 
 const CAPTURED_ITEMS_STORAGE_KEY = "sync.capturedItems";
 const SYNC_DESTINATIONS: SyncDestination[] = [...LIFE_AREA_DESTINATIONS];
@@ -43,6 +47,8 @@ export type CapturedSyncItem = {
   title: string;
   category: PulsePlanCategory;
   prompt: string;
+  originalPrompt?: string;
+  normalizationCorrections?: string[];
   destinations: SyncDestination[];
   dateLabel: string;
   timeLabel: string;
@@ -50,17 +56,28 @@ export type CapturedSyncItem = {
   frequency?: PulsePlanFrequency;
   moneyType?: PulseMoneyType;
   timeline?: TimelineResolution;
+  notes?: string;
+  status: CaptureStatus;
   createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
 };
 
 type CapturedItemsContextValue = {
   items: CapturedSyncItem[];
+  activeItems: CapturedSyncItem[];
   addCapturedItem: (
     plan: PulsePlan,
     destinations: SyncDestination[],
     title?: string,
   ) => CapturedSyncItem;
+  updateCapturedItem: (
+    id: string,
+    updates: Partial<CapturedSyncItem>,
+  ) => CapturedSyncItem | null;
   removeCapturedItem: (id: string) => void;
+  softDeleteCapturedItem: (id: string) => void;
+  duplicateCapturedItem: (id: string) => CapturedSyncItem | null;
   getItemsForDestination: (destination: SyncDestination) => CapturedSyncItem[];
 };
 
@@ -89,6 +106,17 @@ function normalizeStoredDestinations(
   return [...new Set(normalized)];
 }
 
+function normalizeStoredItem(item: CapturedSyncItem): CapturedSyncItem {
+  const now = new Date().toISOString();
+  return {
+    ...item,
+    destinations: normalizeStoredDestinations(item.destinations),
+    status: item.status ?? "active",
+    updatedAt: item.updatedAt ?? item.createdAt ?? now,
+    deletedAt: item.deletedAt ?? null,
+  };
+}
+
 function isCapturedSyncItem(value: unknown): value is CapturedSyncItem {
   if (!value || typeof value !== "object") return false;
 
@@ -114,13 +142,19 @@ function parseStoredCapturedItems(value: string | null): CapturedSyncItem[] {
     if (!Array.isArray(parsed)) return [];
     return parsed
       .filter(isCapturedSyncItem)
-      .map((item) => ({
+      .map((item) => normalizeStoredItem({
         ...item,
         destinations: normalizeStoredDestinations(item.destinations),
+        status: item.status ?? "active",
+        updatedAt: item.updatedAt ?? item.createdAt,
       }));
   } catch {
     return [];
   }
+}
+
+function isActiveItem(item: CapturedSyncItem) {
+  return item.status !== "cancelled" && !item.deletedAt;
 }
 
 export function CapturedItemsProvider({
@@ -149,11 +183,14 @@ export function CapturedItemsProvider({
 
   const addCapturedItem = useCallback(
     (plan: PulsePlan, destinations: SyncDestination[], title?: string) => {
+      const now = new Date().toISOString();
       const captured: CapturedSyncItem = {
         id: plan.id,
         title: title ?? plan.title,
         category: plan.category,
         prompt: plan.prompt,
+        originalPrompt: plan.originalPrompt,
+        normalizationCorrections: plan.normalizationCorrections,
         destinations,
         dateLabel: plan.dateLabel,
         timeLabel: plan.timeLabel,
@@ -161,7 +198,10 @@ export function CapturedItemsProvider({
         frequency: plan.parsedInput?.frequency,
         moneyType: plan.parsedInput?.moneyType,
         timeline: plan.timeline,
-        createdAt: plan.createdAt,
+        status: "active",
+        createdAt: plan.createdAt ?? now,
+        updatedAt: now,
+        deletedAt: null,
       };
 
       setItems((current) => [
@@ -174,24 +214,106 @@ export function CapturedItemsProvider({
     [],
   );
 
+  const updateCapturedItem = useCallback(
+    (id: string, updates: Partial<CapturedSyncItem>) => {
+      let updated: CapturedSyncItem | null = null;
+
+      setItems((current) =>
+        current.map((item) => {
+          if (item.id !== id) return item;
+          updated = normalizeStoredItem({
+            ...item,
+            ...updates,
+            destinations: updates.destinations
+              ? normalizeStoredDestinations(updates.destinations)
+              : item.destinations,
+            updatedAt: new Date().toISOString(),
+          });
+          return updated;
+        }),
+      );
+
+      return updated;
+    },
+    [],
+  );
+
   const removeCapturedItem = useCallback((id: string) => {
     setItems((current) => current.filter((item) => item.id !== id));
   }, []);
 
+  const softDeleteCapturedItem = useCallback((id: string) => {
+    const now = new Date().toISOString();
+    setItems((current) =>
+      current.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              status: "cancelled",
+              deletedAt: now,
+              updatedAt: now,
+            }
+          : item,
+      ),
+    );
+  }, []);
+
+  const duplicateCapturedItem = useCallback((id: string) => {
+    let duplicate: CapturedSyncItem | null = null;
+    const now = new Date().toISOString();
+
+    setItems((current) => {
+      const source = current.find((item) => item.id === id);
+      if (!source) return current;
+
+      duplicate = {
+        ...source,
+        id: crypto.randomUUID(),
+        title: `${source.title} (copy)`,
+        status: "active",
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: null,
+      };
+
+      return [duplicate, ...current];
+    });
+
+    return duplicate;
+  }, []);
+
+  const activeItems = useMemo(
+    () => items.filter(isActiveItem),
+    [items],
+  );
+
   const getItemsForDestination = useCallback(
     (destination: SyncDestination) =>
-      items.filter((item) => item.destinations.includes(destination)),
-    [items],
+      activeItems.filter((item) => item.destinations.includes(destination)),
+    [activeItems],
   );
 
   const value = useMemo(
     () => ({
       items,
+      activeItems,
       addCapturedItem,
+      updateCapturedItem,
       removeCapturedItem,
+      softDeleteCapturedItem,
+      duplicateCapturedItem,
       getItemsForDestination,
     }),
-    [items, addCapturedItem, removeCapturedItem, getItemsForDestination],
+    [
+      items,
+      activeItems,
+      addCapturedItem,
+      updateCapturedItem,
+      removeCapturedItem,
+      softDeleteCapturedItem,
+      duplicateCapturedItem,
+      getItemsForDestination,
+    ],
   );
 
   return (

@@ -7,6 +7,7 @@ import {
   Menu,
   Settings,
   Target,
+  Users,
   Wallet,
   Briefcase,
   type LucideIcon,
@@ -60,6 +61,13 @@ const MENU_ITEMS: DockItem[] = [
     destination: "Goals",
   },
   { id: "work", label: "Work", href: "/work", icon: Briefcase, destination: "Work" },
+  {
+    id: "relationships",
+    label: "Relationships",
+    href: "/relationships",
+    icon: Users,
+    destination: "Relationships",
+  },
 ];
 
 function destinationForNav(id: string): DockItem["destination"] {
@@ -68,6 +76,7 @@ function destinationForNav(id: string): DockItem["destination"] {
   if (id === "health") return "Health";
   if (id === "goals") return "Goals";
   if (id === "work") return "Work";
+  if (id === "relationships") return "Relationships";
   if (id === "school") return "School";
   return null;
 }

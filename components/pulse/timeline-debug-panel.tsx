@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { analyzeConsequences } from "@/lib/intelligence/consequence-engine";
 import { MOCK_SYNC_USER_CONTEXT } from "@/lib/intelligence/sync-user-context";
@@ -21,6 +21,7 @@ import {
   resolveTimeline,
   type UserTimelineContext,
 } from "@/lib/timeline/resolve-timeline";
+import { detectSyncCommandIntent } from "@/lib/sync-command-intent";
 
 const DEV_MOCK_SCHEDULE_ENABLED =
   process.env.NODE_ENV !== "production" &&
@@ -38,6 +39,11 @@ const DEBUG_USER_TIMELINE_CONTEXT: UserTimelineContext = DEV_MOCK_SCHEDULE_ENABL
 
 export function TimelineDebugPanel() {
   const [input, setInput] = useState("I worked Sunday through Monday");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const debug = useMemo(() => {
     const normalizedInput = normalizeCaptureInput(input);
@@ -68,10 +74,13 @@ export function TimelineDebugPanel() {
       userContext: MOCK_SYNC_USER_CONTEXT,
     });
 
+    const commandIntent = detectSyncCommandIntent(input);
+
     return {
       original: normalizedInput.original,
       normalized: normalizedInput.normalized,
       corrections: normalizedInput.corrections,
+      commandIntent,
       userTimelineContext: DEBUG_USER_TIMELINE_CONTEXT,
       devMockScheduleEnabled: DEV_MOCK_SCHEDULE_ENABLED,
       detectedIntent: parsed.moneyType ?? category,
@@ -111,12 +120,14 @@ export function TimelineDebugPanel() {
     };
   }, [input]);
 
+  if (!mounted) return null;
+
   return (
-    <section className="w-full max-w-2xl rounded-[1.15rem] border border-dashed border-border/35 bg-card/30 p-4">
-      <div className="flex flex-col gap-2">
-        <p className="text-[12px] font-medium uppercase tracking-[0.12em] text-muted-foreground/50">
-          Parser debug
-        </p>
+    <details className="mx-auto mt-6 w-full max-w-2xl rounded-[1.15rem] border border-dashed border-border/25 bg-card/20 p-4">
+      <summary className="cursor-pointer text-[12px] font-medium uppercase tracking-[0.12em] text-muted-foreground/50">
+        Parser debug
+      </summary>
+      <div className="mt-3 flex flex-col gap-2">
         <input
           value={input}
           onChange={(event) => setInput(event.target.value)}
@@ -128,6 +139,6 @@ export function TimelineDebugPanel() {
       <pre className="mt-3 max-h-72 overflow-auto rounded-xl bg-background/45 p-3 text-[11px] leading-relaxed text-muted-foreground/78">
         {JSON.stringify(debug, null, 2)}
       </pre>
-    </section>
+    </details>
   );
 }

@@ -37,10 +37,6 @@ function createPlan(input: string) {
   });
 }
 
-function destinationsFor(input: string) {
-  return resolveSyncDestinations(createPlan(input));
-}
-
 function analyze(
   captureText: string,
   category: string,
@@ -79,7 +75,8 @@ function analyze(
 
 {
   const plan = createPlan("i workedmonday");
-  assert.equal(plan.prompt, "i workedmonday");
+  assert.equal(plan.prompt, "i worked monday");
+  assert.equal(plan.originalPrompt, "i workedmonday");
   assert.equal(plan.category, "workday");
   assert.equal(plan.timeline?.kind, "single_date");
   assert.equal(plan.timeline?.tense, "past");
@@ -138,7 +135,7 @@ function assertLifeAreaDestinationsOnly(
   const destinations = resolveSyncDestinations(plan);
   const sourceCheck = checkDestinationSources(plan);
 
-  assert.deepEqual(destinations, ["Calendar"]);
+  assert.deepEqual(destinations, ["Relationships", "Calendar"]);
   assert.equal(plan.timeline?.label, "Tomorrow");
   assert.equal(plan.timeline?.startTime, "11:00");
   assert.equal(plan.timeline?.endTime, "12:00");
@@ -161,7 +158,10 @@ function assertLifeAreaDestinationsOnly(
     "Work",
     "Calendar",
   ]);
-  assertLifeAreaDestinationsOnly("call mom tomorrow 11am", ["Calendar"]);
+  assertLifeAreaDestinationsOnly("call mom tomorrow 11am", [
+    "Relationships",
+    "Calendar",
+  ]);
 }
 
 {
@@ -312,7 +312,7 @@ function assertLifeAreaDestinationsOnly(
   assert.equal(result.endTime, "19:00");
   assert.equal(result.isTimed, true);
   assert.equal(result.timeSource, "input");
-  assert.equal(result.needsConfirmation, true);
+  assert.equal(result.needsConfirmation, false);
 }
 
 {
@@ -336,17 +336,18 @@ function assertLifeAreaDestinationsOnly(
 
 {
   const result = resolveWithoutContext("work Monday");
-  assert.equal(result.kind, "single_date");
-  assert.equal(result.tense, "unknown");
+  assert.equal(result.kind, "recurring");
+  assert.equal(result.tense, "present");
   assert.equal(result.needsConfirmation, true);
-  assert.equal(result.startDate, undefined);
+  assert.equal(result.startDate, "2026-06-15");
   assert.equal(result.isTimed, false);
   assert.equal(result.timeSource, "none");
 }
 
 {
   const result = resolveWithoutContext("work Monday 7 to 3");
-  assert.equal(result.kind, "single_date");
+  assert.equal(result.kind, "recurring");
+  assert.deepEqual(result.recurrence?.days, ["MO"]);
   assert.equal(result.startTime, "07:00");
   assert.equal(result.endTime, "15:00");
   assert.equal(result.isTimed, true);
@@ -358,7 +359,7 @@ function assertLifeAreaDestinationsOnly(
   const result = resolve("pay rent next Friday");
   assert.equal(result.kind, "single_date");
   assert.equal(result.tense, "future");
-  assert.equal(result.startDate, "2026-06-12");
+  assert.equal(result.startDate, "2026-06-19");
 }
 
 {
@@ -391,10 +392,10 @@ function assertLifeAreaDestinationsOnly(
 
 {
   const result = resolveWithoutContext("work Monday");
-  assert.equal(result.kind, "single_date");
-  assert.equal(result.tense, "unknown");
+  assert.equal(result.kind, "recurring");
+  assert.equal(result.tense, "present");
   assert.equal(result.needsConfirmation, true);
-  assert.equal(result.startDate, undefined);
+  assert.equal(result.startDate, "2026-06-15");
 }
 
 {
@@ -524,27 +525,27 @@ function assertLifeAreaDestinationsOnly(
         title: "Rent",
         category: "expense",
         destinations: ["Finance"],
-        timeline: resolveWithoutContext("rent is due next Friday"),
+        timeline: resolveWithoutContext("rent is due Friday"),
       },
       {
         id: "work-a",
         title: "Work Shift",
         category: "workday",
         destinations: ["Work", "Calendar"],
-        timeline: resolveWithoutContext("work next Friday 11 to 9"),
+        timeline: resolveWithoutContext("work Friday 11 to 9"),
       },
       {
         id: "project",
         title: "Sync project",
         destinations: ["Goals", "Calendar"],
-        timeline: resolveWithoutContext("work on Sync next Friday 7 to 9"),
+        timeline: resolveWithoutContext("work on Sync Friday 7 to 9"),
       },
       {
         id: "work-b",
         title: "Extra shift",
         category: "workday",
         destinations: ["Work", "Calendar"],
-        timeline: resolveWithoutContext("work next Friday 7 to 3"),
+        timeline: resolveWithoutContext("work Friday 7 to 3"),
       },
     ],
   });
@@ -578,7 +579,7 @@ function assertLifeAreaDestinationsOnly(
         destinations: ["Finance", "Calendar"],
         moneyType: "income",
         amount: "$1,200",
-        timeline: resolveWithoutContext("I get paid next Friday 1200 dollars"),
+        timeline: resolveWithoutContext("I get paid Friday 1200 dollars"),
       },
     ],
   });

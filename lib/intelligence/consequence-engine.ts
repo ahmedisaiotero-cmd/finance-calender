@@ -146,11 +146,33 @@ function isHealthRelated(text: string, category: string, destinations: string[])
 }
 
 function isGoalRelated(text: string, category: string, destinations: string[]) {
+  if (
+    category === "date-night" ||
+    destinations.includes("Relationships") ||
+    /\b(mom|dad|call|birthday|anniversary|friend|dinner with)\b/.test(text)
+  ) {
+    return false;
+  }
+
   return (
     category === "task" ||
     category === "savings-goal" ||
     destinations.includes("Goals") ||
     /\b(sync|business|project|studied|study|goal)\b/.test(text)
+  );
+}
+
+function isRelationshipRelated(
+  text: string,
+  category: string,
+  destinations: string[],
+) {
+  return (
+    category === "date-night" ||
+    destinations.includes("Relationships") ||
+    /\b(mom|dad|mother|father|parent|grandma|grandpa|family|friend|friends|partner|wife|husband|girlfriend|boyfriend|anniversary|birthday|call|dinner with)\b/.test(
+      text,
+    )
   );
 }
 
@@ -234,6 +256,21 @@ export function analyzeConsequences(
       negative ? "notice" : "info",
     );
     if (negative) addAction(suggestedActions, "health", "Reset workout plan", "adjust_plan");
+  }
+
+  if (isRelationshipRelated(text, input.category, input.destinations)) {
+    addAffected(
+      affectedAreas,
+      "relationships",
+      "positive",
+      "Helps maintain an important relationship.",
+    );
+    addInsight(
+      insights,
+      "relationships",
+      "This supports someone important to you.",
+      "info",
+    );
   }
 
   if (isGoalRelated(text, input.category, input.destinations)) {

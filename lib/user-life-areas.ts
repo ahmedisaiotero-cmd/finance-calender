@@ -5,6 +5,7 @@ import {
   Dumbbell,
   GraduationCap,
   LayoutDashboard,
+  Users,
   Target,
   Wallet,
 } from "lucide-react";
@@ -17,6 +18,7 @@ export const LIFE_AREA_IDS = [
   "health",
   "goals",
   "work",
+  "relationships",
   "school",
   "family",
   "travel",
@@ -32,6 +34,7 @@ export const EXPANDABLE_LIFE_AREA_IDS = [
   "finance",
   "health",
   "work",
+  "relationships",
   "school",
   "goals",
 ] as const;
@@ -47,7 +50,7 @@ export const CORE_LIFE_AREA_IDS = [
 ] as const satisfies readonly CoreLifeAreaId[];
 
 /** @deprecated Use EXPANDABLE_LIFE_AREA_IDS */
-export const OPTIONAL_LIFE_AREA_IDS = ["goals", "work", "school"] as const;
+export const OPTIONAL_LIFE_AREA_IDS = ["goals", "work", "relationships", "school"] as const;
 
 // —— Enable + connect model ——
 
@@ -84,6 +87,7 @@ export const mockLifeAreaEnabled: Record<ExpandableLifeAreaId, boolean> = {
   finance: false,
   health: false,
   work: false,
+  relationships: false,
   school: false,
   goals: false,
 };
@@ -95,6 +99,7 @@ export const mockUserLifeAreas = {
   health: mockLifeAreaEnabled.health,
   goals: mockLifeAreaEnabled.goals,
   work: mockLifeAreaEnabled.work,
+  relationships: mockLifeAreaEnabled.relationships,
   school: mockLifeAreaEnabled.school,
 };
 
@@ -103,6 +108,7 @@ export type LifeAreaConnectionSignals = {
   healthConnected?: boolean;
   hasGoals?: boolean;
   hasWorkConnection?: boolean;
+  hasRelationshipsConnection?: boolean;
   hasSchoolConnection?: boolean;
   hasFamilyConnection?: boolean;
   hasTravelConnection?: boolean;
@@ -116,6 +122,7 @@ const CONNECTION_SIGNAL_KEYS: Record<
   health: "healthConnected",
   goals: "hasGoals",
   work: "hasWorkConnection",
+  relationships: "hasRelationshipsConnection",
   school: "hasSchoolConnection",
 };
 
@@ -154,6 +161,7 @@ export function toActiveLifeAreas(
     health: isLifeAreaInPrimary(states.health),
     goals: isLifeAreaInPrimary(states.goals),
     work: isLifeAreaInPrimary(states.work),
+    relationships: isLifeAreaInPrimary(states.relationships),
     school: isLifeAreaInPrimary(states.school),
     family: futureSignals.hasFamilyConnection === true,
     travel: futureSignals.hasTravelConnection === true,
@@ -169,6 +177,7 @@ export function resolveUserLifeAreas(
     finance: manual.finance,
     health: manual.health,
     work: manual.work,
+    relationships: manual.relationships,
     school: manual.school,
     goals: manual.goals,
   };
@@ -192,6 +201,7 @@ export type NavItemId =
   | "finance"
   | "health"
   | "work"
+  | "relationships"
   | "school"
   | "goals";
 
@@ -254,6 +264,13 @@ const NAV_CATALOG: NavItem[] = [
     lifeArea: "work",
   },
   {
+    id: "relationships",
+    label: "Relationships",
+    href: "/relationships",
+    icon: Users,
+    lifeArea: "relationships",
+  },
+  {
     id: "school",
     label: "School",
     href: "/school",
@@ -285,6 +302,8 @@ const NAV_PATH_MATCHERS: Record<NavItemId, (pathname: string) => boolean> = {
     pathname === "/fitness" ||
     pathname.startsWith("/fitness/"),
   work: (pathname) => pathname === "/work" || pathname.startsWith("/work/"),
+  relationships: (pathname) =>
+    pathname === "/relationships" || pathname.startsWith("/relationships/"),
   school: (pathname) =>
     pathname === "/school" || pathname.startsWith("/school/"),
   goals: (pathname) => pathname === "/goals" || pathname.startsWith("/goals/"),
@@ -345,6 +364,7 @@ export type PulseLifeDomain =
   | CoreLifeAreaId
   | "goals"
   | "work"
+  | "relationships"
   | "school";
 
 const PULSE_DOMAIN_TO_LIFE_AREA: Record<PulseLifeDomain, LifeAreaId> = {
@@ -353,6 +373,7 @@ const PULSE_DOMAIN_TO_LIFE_AREA: Record<PulseLifeDomain, LifeAreaId> = {
   health: "health",
   goals: "goals",
   work: "work",
+  relationships: "relationships",
   school: "school",
 };
 

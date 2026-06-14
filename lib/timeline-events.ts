@@ -34,6 +34,8 @@ export type TimelineEvent = {
   status?: string;
   amount?: number;
   durationMinutes?: number;
+  captureId?: string;
+  isAllDay?: boolean;
   detail?: TimelineEventDetail;
 };
 
@@ -80,8 +82,10 @@ export function filterTimelineByLens(
   lens: CalendarLens,
 ): TimelineEvent[] {
   if (lens === "all") return events;
+  if (lens === "career") {
+    return events.filter((event) => event.lifeCategory === "work");
+  }
   if (
-    lens === "career" ||
     lens === "relationships" ||
     lens === "personal" ||
     lens === "family" ||
@@ -89,9 +93,9 @@ export function filterTimelineByLens(
     lens === "reflection" ||
     lens === "work"
   ) {
-    return [];
+    return events.filter((event) => event.lifeCategory === lens);
   }
-  return events.filter((e) => e.lifeCategory === lens);
+  return events.filter((event) => event.lifeCategory === lens);
 }
 
 export function groupTimelineByDate(events: TimelineEvent[]) {

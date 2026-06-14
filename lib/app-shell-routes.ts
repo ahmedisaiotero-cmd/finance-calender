@@ -27,22 +27,20 @@ export const APP_SHELL_ROUTES: Record<string, AppShellRouteConfig> = {
     description: "Manage how Sync connects to the tools you already use.",
   },
   "/goals": {
-    layout: "default",
+    layout: "home",
     title: "Goals",
-    description:
-      "What you are working toward — when this area is active for you.",
   },
   "/work": {
-    layout: "default",
+    layout: "home",
     title: "Work",
-    description:
-      "Signals from your work tools — when this area is active for you.",
+  },
+  "/relationships": {
+    layout: "home",
+    title: "Relationships",
   },
   "/school": {
-    layout: "default",
+    layout: "home",
     title: "School",
-    description:
-      "Signals from your academic tools — when this area is active for you.",
   },
 };
 

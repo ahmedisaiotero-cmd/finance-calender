@@ -83,33 +83,77 @@ function isWorkoutLike(text: string) {
   return /\b(gym|workout|exercise|run|lift)\b/.test(text);
 }
 
+function resolveRangeWithMeridiem(
+  text: string,
+  startHourText: string,
+  startMinuteText: string | undefined,
+  startMeridiem: string | undefined,
+  endHourText: string,
+  endMinuteText: string | undefined,
+  endMeridiem: string | undefined,
+) {
+  const startMinute = startMinuteText ? Number(startMinuteText) : 0;
+  const endMinute = endMinuteText ? Number(endMinuteText) : 0;
+  let startHour = Number(startHourText);
+  let endHour = Number(endHourText);
+  if (
+    Number.isNaN(startHour) ||
+    Number.isNaN(endHour) ||
+    Number.isNaN(startMinute) ||
+    Number.isNaN(endMinute)
+  ) {
+    return {};
+  }
+
+  const normalizedStartMeridiem = startMeridiem?.toLowerCase();
+  const normalizedEndMeridiem = endMeridiem?.toLowerCase();
+
+  if (normalizedEndMeridiem === "pm" && endHour < 12) endHour += 12;
+  if (normalizedEndMeridiem === "am" && endHour === 12) endHour = 0;
+  if (normalizedStartMeridiem === "pm" && startHour < 12) startHour += 12;
+  if (normalizedStartMeridiem === "am" && startHour === 12) startHour = 0;
+
+  if (!normalizedStartMeridiem && normalizedEndMeridiem === "pm") {
+    const startAsAm = startHour < 12 ? startHour : startHour;
+    const startAsPm = startHour < 12 ? startHour + 12 : startHour;
+    const endAsPm = endHour;
+
+    if (endAsPm > startAsAm && endAsPm - startAsAm <= 16) {
+      startHour = startAsAm;
+    } else if (endAsPm > startAsPm && endAsPm - startAsPm <= 12) {
+      startHour = startAsPm;
+    } else if (endAsPm > startAsAm) {
+      startHour = startAsPm;
+    }
+  }
+
+  if (!normalizedStartMeridiem && !normalizedEndMeridiem) {
+    if (endHour < startHour) endHour += 12;
+    else if (isWorkRelated(text) && endHour <= 11 && endHour <= startHour) {
+      endHour += 12;
+    }
+  }
+
+  return {
+    startTime: padTime(startHour, startMinute),
+    endTime: padTime(endHour, endMinute),
+  };
+}
+
 function resolveImpliedRange(
   text: string,
   startHourText: string,
   endHourText: string,
 ) {
-  const startHour = Number(startHourText);
-  const endHour = Number(endHourText);
-  if (Number.isNaN(startHour) || Number.isNaN(endHour)) {
-    return {};
-  }
-
-  let normalizedStart = startHour;
-  let normalizedEnd = endHour;
-
-  if (endHour < startHour) {
-    normalizedEnd = endHour + 12;
-  } else if (isWorkRelated(text) && /\b(work|shift)\b/.test(text)) {
-    if (startHour <= 6) normalizedStart = startHour + 12;
-    if (endHour <= 11 && normalizedEnd <= normalizedStart) {
-      normalizedEnd = endHour + 12;
-    }
-  }
-
-  return {
-    startTime: padTime(normalizedStart),
-    endTime: padTime(normalizedEnd),
-  };
+  return resolveRangeWithMeridiem(
+    text,
+    startHourText,
+    undefined,
+    undefined,
+    endHourText,
+    undefined,
+    undefined,
+  );
 }
 
 export function resolveTime(input: string): ResolvedTime {
@@ -137,6 +181,33 @@ export function resolveTime(input: string): ResolvedTime {
         isTimed: true,
         durationMinutes: durationBetween(startTime, endTime),
         confidence: 0.96,
+        source: "input",
+        label: `${displayTime(startTime)} - ${displayTime(endTime)}`,
+      };
+    }
+  }
+
+  const impliedRangeWithMeridiem = text.match(
+    /\b(?:(?:from|between)\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:-|to|through|thru)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i,
+  );
+  if (impliedRangeWithMeridiem) {
+    const { startTime, endTime } = resolveRangeWithMeridiem(
+      text,
+      impliedRangeWithMeridiem[1],
+      impliedRangeWithMeridiem[2],
+      impliedRangeWithMeridiem[3],
+      impliedRangeWithMeridiem[4],
+      impliedRangeWithMeridiem[5],
+      impliedRangeWithMeridiem[6],
+    );
+
+    if (startTime && endTime) {
+      return {
+        startTime,
+        endTime,
+        isTimed: true,
+        durationMinutes: durationBetween(startTime, endTime),
+        confidence: isWorkRelated(text) ? 0.9 : 0.82,
         source: "input",
         label: `${displayTime(startTime)} - ${displayTime(endTime)}`,
       };

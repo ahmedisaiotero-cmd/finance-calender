@@ -1,5 +1,5 @@
-import { FinanceContent } from "@/components/finance/finance-content";
+import { SyncWorkspace } from "@/components/sync/sync-workspace";
 
 export default function FinancePage() {
-  return <FinanceContent />;
+  return <SyncWorkspace activeLens="finance" showInput={false} />;
 }

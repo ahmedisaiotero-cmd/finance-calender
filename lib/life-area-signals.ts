@@ -10,7 +10,7 @@ import { mockLifeAreaEnabled } from "@/lib/user-life-areas";
  * Move Health to Optional Areas: set `health: false`.
  */
 export const mockAccountConnections = {
-  health: true,
+  health: false,
 } as const;
 
 export type StableAccountConnectionInput = {
@@ -30,9 +30,7 @@ export function deriveStableNavConnectionSignals(
   return deriveNavConnectionSignals({
     financeConnected: input.financeDb,
     healthConnected:
-      input.healthAccountConnected === true ||
-      mockAccountConnections.health ||
-      mockLifeAreaEnabled.health,
+      input.healthAccountConnected === true || mockLifeAreaEnabled.health,
     hasWorkConnection: input.workAccountConnected === true,
     hasSchoolConnection: input.schoolAccountConnected === true,
     hasGoals: input.hasGoals === true,

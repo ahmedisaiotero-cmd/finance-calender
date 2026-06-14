@@ -5,12 +5,26 @@ type NormalizationResult = {
 };
 
 const TYPO_CORRECTIONS: Array<[RegExp, string, string]> = [
+  [/\bhacve\b/g, "have", "hacve -> have"],
+  [/\brecieved\b/g, "received", "recieved -> received"],
   [/\bwroked\b/g, "worked", "wroked -> worked"],
   [/\bworkd\b/g, "worked", "workd -> worked"],
   [/\bthru\b/g, "through", "thru -> through"],
   [/\btommorow\b/g, "tomorrow", "tommorow -> tomorrow"],
   [/\bmonady\b/g, "monday", "monady -> monday"],
+  [/\bmondayy\b/g, "monday", "mondayy -> monday"],
+  [/\btusday\b/g, "tuesday", "tusday -> tuesday"],
+  [/\btueday\b/g, "tuesday", "tueday -> tuesday"],
+  [/\bwensday\b/g, "wednesday", "wensday -> wednesday"],
+  [/\bwednsday\b/g, "wednesday", "wednsday -> wednesday"],
+  [/\bwendsday\b/g, "wednesday", "wendsday -> wednesday"],
+  [/\bthrusday\b/g, "thursday", "thrusday -> thursday"],
+  [/\bthuresday\b/g, "thursday", "thuresday -> thursday"],
   [/\bfirday\b/g, "friday", "firday -> friday"],
+  [/\bfrday\b/g, "friday", "frday -> friday"],
+  [/\bsaterday\b/g, "saturday", "saterday -> saturday"],
+  [/\bsatday\b/g, "saturday", "satday -> saturday"],
+  [/\bsundy\b/g, "sunday", "sundy -> sunday"],
 ];
 
 const DATE_WORDS = [
@@ -37,6 +51,11 @@ const GLUED_PREFIXES = [
   "rent",
   "appointment",
   "doctor",
+  "date",
+  "dinner",
+  "call",
+  "school",
+  "assignment",
 ];
 
 function applyCorrection(

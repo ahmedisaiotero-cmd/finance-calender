@@ -3,6 +3,7 @@ import type { TimelineResolution } from "@/lib/timeline/resolve-timeline";
 export type PulsePlanCategory =
   | "workout"
   | "workday"
+  | "work-schedule"
   | "date-night"
   | "subscription"
   | "expense"
@@ -62,6 +63,8 @@ export type PulsePlan = {
   category: PulsePlanCategory;
   status: PulsePlanStatus;
   prompt: string;
+  originalPrompt?: string;
+  normalizationCorrections?: string[];
   summary: string;
   dateLabel: string;
   timeLabel: string;

@@ -7,7 +7,8 @@ import type { PulsePlan, PulsePlanCategory } from "@/lib/pulse/types";
 const CATEGORY_DESTINATIONS: Record<PulsePlanCategory, SyncDestination[]> = {
   workout: ["Health", "Calendar"],
   workday: ["Work", "Calendar"],
-  "date-night": ["Calendar"],
+  "work-schedule": ["Work", "Calendar"],
+  "date-night": ["Relationships", "Calendar"],
   subscription: ["Finance", "Calendar"],
   expense: ["Finance"],
   reminder: ["Calendar"],
@@ -61,6 +62,22 @@ function isFinanceLanguage(plan: PulsePlan) {
   );
 }
 
+function isRelationshipLanguage(plan: PulsePlan) {
+  return /\b(mom|dad|mother|father|parent|grandma|grandpa|grandmother|grandfather|family|friend|friends|partner|wife|husband|girlfriend|boyfriend|anniversary|birthday|call|dinner with|date night)\b/i.test(
+    plan.prompt,
+  );
+}
+
+function isSchoolLanguage(plan: PulsePlan) {
+  return /\b(school|class|homework|assignment|exam|study|studying)\b/i.test(
+    plan.prompt,
+  );
+}
+
+function isGoalLanguage(plan: PulsePlan) {
+  return /\b(sync|project|business|goal|progress|work on)\b/i.test(plan.prompt);
+}
+
 function inferCategoryDestinations(plan: PulsePlan): SyncDestination[] {
   if (plan.parsedInput?.moneyType === "income") {
     return hasTimelineDestination(plan) ? ["Finance", "Calendar"] : ["Finance"];
@@ -76,6 +93,18 @@ function inferCategoryDestinations(plan: PulsePlan): SyncDestination[] {
 
   if (plan.category === "reminder" && isFinanceLanguage(plan)) {
     return ["Finance", "Calendar"];
+  }
+
+  if (isRelationshipLanguage(plan)) {
+    return unique(["Relationships", "Calendar"]);
+  }
+
+  if (isSchoolLanguage(plan)) {
+    return hasTimelineDestination(plan) ? ["School", "Calendar"] : ["School"];
+  }
+
+  if (isGoalLanguage(plan)) {
+    return hasTimelineDestination(plan) ? ["Goals", "Calendar"] : ["Goals"];
   }
 
   return unique(CATEGORY_DESTINATIONS[plan.category] ?? ["Calendar"]);

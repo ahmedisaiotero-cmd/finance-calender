@@ -4,14 +4,15 @@ import { SyncDomainPage } from "@/components/domain/sync-domain-page";
 import { useCapturedItems } from "@/lib/captured-items";
 
 export function FinanceContent() {
-  const { getItemsForDestination } = useCapturedItems();
+  const { activeItems, getItemsForDestination } = useCapturedItems();
   const capturedFinanceItems = getItemsForDestination("Finance");
 
   return (
     <SyncDomainPage
       title="Finance"
       supportingCopy="Bills, spending, subscriptions, and goals Sync has captured for you."
-      items={capturedFinanceItems}
+      items={activeItems}
+      lens="finance"
       insights={[
         capturedFinanceItems.length > 0
           ? `${capturedFinanceItems.length} money item${capturedFinanceItems.length === 1 ? "" : "s"} captured.`

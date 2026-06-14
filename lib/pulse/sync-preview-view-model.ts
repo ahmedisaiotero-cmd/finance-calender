@@ -1,4 +1,9 @@
-import type { SyncDestination } from "@/lib/captured-items";
+import type { SyncDestination, CapturedSyncItem } from "@/lib/captured-items";
+import {
+  detectSyncTimeBlockOverlaps,
+  type SyncTimeBlockOverlap,
+} from "@/lib/sync-time-blocks";
+import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
 import {
   analyzeConsequences,
   type ConsequenceAnalysis,
@@ -7,7 +12,7 @@ import type { SyncUserContext } from "@/lib/intelligence/sync-user-context";
 import { titleCaseKeep } from "@/lib/pulse/parse-pulse-prompt";
 import { getSyncPreviewThought } from "@/lib/pulse/preview-copy";
 import { resolveSyncDestinations, sanitizeSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";
-import type { PulseMoneyType, PulsePlan, PulsePlanCategory } from "@/lib/pulse/types";
+import type { PulsePlan, PulsePlanCategory } from "@/lib/pulse/types";
 
 export type SyncPreviewTimelineRole =
   | "event"
@@ -17,7 +22,19 @@ export type SyncPreviewTimelineRole =
   | "schedule"
   | "unknown";
 
+export type SyncPreviewMode =
+  | "create"
+  | "edit"
+  | "delete"
+  | "duplicate"
+  | "schedule-save"
+  | "schedule-delete"
+  | "schedule-update";
+
 export type SyncPreviewViewModel = {
+  mode: SyncPreviewMode;
+  banner?: string;
+  readyToSave: boolean;
   what: {
     title: string;
     subtitle?: string;
@@ -31,6 +48,7 @@ export type SyncPreviewViewModel = {
     endTime?: string;
     isTimed: boolean;
     timelineRole: SyncPreviewTimelineRole;
+    overlap?: SyncTimeBlockOverlap;
   };
   where: {
     destinations: SyncDestination[];
@@ -57,6 +75,7 @@ export type SyncPreviewViewModel = {
 const CATEGORY_LABELS: Record<PulsePlanCategory, string> = {
   workout: "Workout",
   workday: "Workday",
+  "work-schedule": "Work Schedule",
   "date-night": "Date Night",
   subscription: "Subscription",
   expense: "Expense",
@@ -76,8 +95,13 @@ const TIMELINE_ROLE_LABELS: Record<SyncPreviewTimelineRole, string> = {
 };
 
 type BuildSyncPreviewOptions = {
+  mode?: SyncPreviewMode;
   selectedDestinations?: SyncDestination[];
   userContext?: SyncUserContext;
+  targetTitle?: string;
+  calendarItems?: CapturedSyncItem[];
+  workSchedule?: PersistedWorkSchedule | null;
+  excludeCaptureId?: string;
 };
 
 function formatClock(value?: string) {
@@ -160,11 +184,20 @@ function buildWhySummary(
 ): string {
   const text = plan.prompt.toLowerCase();
 
+  if (plan.category === "work-schedule" && plan.timeline?.kind === "recurring") {
+    return "This gives Sync context for your week. This will repeat weekly until you change it.";
+  }
+
   if (/\b(rent|bill)\b/.test(text) && /\b(due|by|before)\b/.test(text)) {
     return "Keeps an upcoming bill visible.";
   }
 
   if (analysis?.affectedAreas.length) {
+    const relationships = analysis.affectedAreas.find(
+      (area) => area.area === "relationships",
+    );
+    if (relationships) return relationships.reason;
+
     const health = analysis.affectedAreas.find((area) => area.area === "health");
     if (health && plan.category === "workout") return health.reason;
 
@@ -182,6 +215,74 @@ function buildWhySummary(
   return getSyncPreviewThought(plan);
 }
 
+function resolvePreviewBanner(
+  plan: PulsePlan,
+  mode: SyncPreviewMode,
+  readyToSave: boolean,
+  destinations: SyncDestination[],
+): string | undefined {
+  if (mode === "schedule-delete") {
+    return "Sync thinks you want to remove your standing work schedule.";
+  }
+  if (mode === "schedule-update") {
+    return "Sync thinks you want to update your work schedule.";
+  }
+  if (mode === "schedule-save") {
+    return "This will become standing context for your week.";
+  }
+  if (mode === "delete") {
+    return "Sync thinks you want to remove this.";
+  }
+  if (mode === "edit") {
+    return "Sync thinks you meant...";
+  }
+  if (mode === "duplicate") {
+    return "This looks similar to an existing item.";
+  }
+  if (readyToSave) {
+    return "Ready to save.";
+  }
+  if (plan.timeline?.needsConfirmation) {
+    return "Sync thinks you meant...";
+  }
+  if (destinations.length === 0) {
+    return "Sync thinks you meant...";
+  }
+  return undefined;
+}
+
+function isReadyToSave(
+  plan: PulsePlan,
+  mode: SyncPreviewMode,
+  destinations: SyncDestination[],
+): boolean {
+  if (
+    mode === "schedule-save" ||
+    mode === "schedule-update" ||
+    mode === "schedule-delete"
+  ) {
+    return false;
+  }
+
+  if (mode !== "create") return false;
+
+  const score = plan.timeline?.confidence ?? 0;
+  const hasDate = Boolean(
+    plan.timeline?.startDate || plan.timeline?.deadlineDate,
+  );
+  const hasTime = Boolean(
+    plan.timeline?.isTimed &&
+      (plan.timeline.startTime || plan.timeline.deadlineTime),
+  );
+  const hasDestination = destinations.length > 0;
+  const isStructurallyClear =
+    hasDate &&
+    hasDestination &&
+    (hasTime || plan.timeline?.timelineRole === "deadline");
+
+  return score >= 0.9 && isStructurallyClear;
+}
+
 function resolveConfidence(plan: PulsePlan): SyncPreviewViewModel["confidence"] {
   const score = plan.timeline?.confidence ?? 0.5;
   const label = plan.timeline?.confidenceLabel ?? "medium";
@@ -190,21 +291,53 @@ function resolveConfidence(plan: PulsePlan): SyncPreviewViewModel["confidence"] 
   return { score, label, needsConfirmation };
 }
 
+function resolveDisplayNeedsConfirmation(
+  plan: PulsePlan,
+  mode: SyncPreviewMode,
+  readyToSave: boolean,
+): boolean {
+  if (
+    mode === "schedule-save" ||
+    mode === "schedule-update" ||
+    mode === "schedule-delete"
+  ) {
+    return true;
+  }
+  if (readyToSave) return false;
+  if (mode !== "create") return true;
+  return plan.timeline?.needsConfirmation ?? false;
+}
+
 export function getDestinationChipLabels(
   preview: SyncPreviewViewModel,
 ): SyncDestination[] {
   return [...preview.where.destinations];
 }
 
+function resolvePreviewMode(
+  plan: PulsePlan,
+  mode: SyncPreviewMode,
+): SyncPreviewMode {
+  if (mode !== "create") return mode;
+  if (plan.category === "work-schedule" && plan.timeline?.kind === "recurring") {
+    return "schedule-save";
+  }
+  return mode;
+}
+
 export function buildSyncPreviewViewModel(
   plan: PulsePlan,
   options: BuildSyncPreviewOptions = {},
 ): SyncPreviewViewModel {
+  const requestedMode = options.mode ?? "create";
+  const mode = resolvePreviewMode(plan, requestedMode);
   const resolvedDestinations = resolveSyncDestinations(plan);
   const destinations =
     resolvedDestinations.length > 0
       ? resolvedDestinations
       : sanitizeSyncDestinations(options.selectedDestinations ?? []);
+  const readyToSave = isReadyToSave(plan, mode, destinations);
+  const confidence = resolveConfidence(plan);
 
   const consequenceAnalysis = analyzeConsequences({
     captureText: plan.prompt,
@@ -222,9 +355,25 @@ export function buildSyncPreviewViewModel(
   );
   const endTime = formatClock(plan.timeline?.endTime);
 
+  const overlap =
+    mode !== "delete" &&
+    mode !== "schedule-delete" &&
+    destinations.includes("Calendar") &&
+    options.calendarItems
+      ? detectSyncTimeBlockOverlaps({
+          plan,
+          items: options.calendarItems,
+          workSchedule: options.workSchedule,
+          excludeCaptureId: options.excludeCaptureId,
+        })[0]
+      : undefined;
+
   return {
+    mode,
+    banner: resolvePreviewBanner(plan, mode, readyToSave, destinations),
+    readyToSave,
     what: {
-      title: buildPreviewTitle(plan),
+      title: options.targetTitle ?? buildPreviewTitle(plan),
       subtitle: buildPreviewSubtitle(plan),
       category: CATEGORY_LABELS[plan.category],
       intent: TIMELINE_ROLE_LABELS[timelineRole],
@@ -236,6 +385,7 @@ export function buildSyncPreviewViewModel(
       endTime,
       isTimed: Boolean(plan.timeline?.isTimed && (startTime || endTime)),
       timelineRole,
+      overlap,
     },
     where: {
       destinations,
@@ -252,6 +402,9 @@ export function buildSyncPreviewViewModel(
         requiresConfirmation: action.requiresConfirmation,
       })),
     },
-    confidence: resolveConfidence(plan),
+    confidence: {
+      ...confidence,
+      needsConfirmation: resolveDisplayNeedsConfirmation(plan, mode, readyToSave),
+    },
   };
 }

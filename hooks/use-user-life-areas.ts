@@ -2,11 +2,11 @@
 
 import { useMemo } from "react";
 
-import { useTransactions } from "@/hooks/use-transactions";
 import { useCapturedItems } from "@/lib/captured-items";
 import { deriveStableNavConnectionSignals } from "@/lib/life-area-signals";
 import {
   buildSidebarNavigation,
+  type ExpandableLifeAreaId,
   mockLifeAreaEnabled,
   resolveLifeAreaStates,
   type ActiveLifeAreas,
@@ -14,42 +14,53 @@ import {
 } from "@/lib/user-life-areas";
 
 /**
- * Resolves sidebar navigation from stable account signals only.
- * Timeline loading or event content never toggles nav items.
+ * Nav life areas appear when captured content exists for that area,
+ * or when manually enabled via mockLifeAreaEnabled / settings.
  */
 export function useSidebarNavigation(): SidebarNavigation {
-  const { usingDatabase: txDb } = useTransactions();
-  const { items } = useCapturedItems();
+  const { activeItems } = useCapturedItems();
+
+  const contentEnabled = useMemo<Record<ExpandableLifeAreaId, boolean>>(
+    () => ({
+      finance: activeItems.some((item) => item.destinations.includes("Finance")),
+      health: activeItems.some((item) => item.destinations.includes("Health")),
+      goals: activeItems.some((item) => item.destinations.includes("Goals")),
+      work: activeItems.some((item) => item.destinations.includes("Work")),
+      school: activeItems.some((item) => item.destinations.includes("School")),
+      relationships: activeItems.some((item) =>
+        item.destinations.includes("Relationships"),
+      ),
+    }),
+    [activeItems],
+  );
+
+  const enabledAreas = useMemo(
+    () => ({
+      finance: contentEnabled.finance || mockLifeAreaEnabled.finance,
+      health: contentEnabled.health || mockLifeAreaEnabled.health,
+      goals: contentEnabled.goals || mockLifeAreaEnabled.goals,
+      work: contentEnabled.work || mockLifeAreaEnabled.work,
+      school: contentEnabled.school || mockLifeAreaEnabled.school,
+      relationships:
+        contentEnabled.relationships || mockLifeAreaEnabled.relationships,
+    }),
+    [contentEnabled],
+  );
 
   return useMemo(() => {
-    const hasFinanceCaptures = items.some((item) =>
-      item.destinations.includes("Finance"),
-    );
-    const hasHealthCaptures = items.some((item) =>
-      item.destinations.includes("Health"),
-    );
-    const hasGoalCaptures = items.some((item) =>
-      item.destinations.includes("Goals"),
-    );
-    const hasWorkCaptures = items.some((item) =>
-      item.destinations.includes("Work"),
-    );
-    const hasSchoolCaptures = items.some((item) =>
-      item.destinations.includes("School"),
-    );
     const signals = deriveStableNavConnectionSignals({
-      financeDb: txDb || hasFinanceCaptures,
-      // Future: healthAccountConnected from OAuth registry
+      financeDb: contentEnabled.finance,
+      healthAccountConnected: contentEnabled.health,
+      workAccountConnected: contentEnabled.work,
+      schoolAccountConnected: contentEnabled.school,
+      hasGoals: contentEnabled.goals,
     });
-    signals.healthConnected = hasHealthCaptures;
-    signals.hasGoals = hasGoalCaptures;
-    signals.hasWorkConnection = hasWorkCaptures;
-    signals.hasSchoolConnection = hasSchoolCaptures;
+    signals.hasRelationshipsConnection = contentEnabled.relationships;
 
-    const states = resolveLifeAreaStates(mockLifeAreaEnabled, signals);
+    const states = resolveLifeAreaStates(enabledAreas, signals);
 
     return buildSidebarNavigation(states, true, signals);
-  }, [items, txDb]);
+  }, [contentEnabled, enabledAreas]);
 }
 
 /** Active life areas for Pulse and feature gating. */

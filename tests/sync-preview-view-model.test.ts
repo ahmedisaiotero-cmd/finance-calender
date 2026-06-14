@@ -84,12 +84,18 @@ function assertPreviewDestinations(
 {
   const preview = buildPreview("call mom tomorrow 11 am");
 
-  assertPreviewDestinations("call mom tomorrow 11 am", ["Calendar"], "Tomorrow");
-  assert.equal(preview.what.title, "Call mom");
+  assertPreviewDestinations(
+    "call mom tomorrow 11 am",
+    ["Relationships", "Calendar"],
+    "Tomorrow",
+  );
+  assert.equal(preview.what.title, "Call Mom");
   assert.equal(preview.when.isTimed, true);
   assert.equal(preview.when.startTime, "11:00 AM");
   assert.equal(preview.when.endTime, "12:00 PM");
-  assert.equal(preview.why.summary, "Adds structure to your timeline.");
+  assert.equal(preview.why.summary, "Helps maintain an important relationship.");
+  assert.equal(preview.readyToSave, true);
+  assert.equal(preview.banner, "Ready to save.");
 }
 
 {

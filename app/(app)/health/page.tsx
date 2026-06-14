@@ -1,5 +1,5 @@
-import { HealthContent } from "@/components/health/health-content";
+import { SyncWorkspace } from "@/components/sync/sync-workspace";
 
 export default function HealthPage() {
-  return <HealthContent />;
+  return <SyncWorkspace activeLens="health" showInput={false} />;
 }

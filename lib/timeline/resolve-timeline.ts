@@ -1,4 +1,5 @@
 import { resolveTime, type ResolvedTime } from "@/lib/timeline/resolve-time";
+import { dayMatchesScheduleDay } from "@/lib/user-timeline-context";
 
 export type TimelineResolution = {
   kind: "single_date" | "date_range" | "recurring" | "relative" | "unknown";
@@ -128,10 +129,101 @@ function daysBetween(startDay: string, endDay: string) {
   return days;
 }
 
-function formatDaySpan(days: string[]) {
-  if (days.length === 0) return "";
-  if (days.length === 1) return days[0];
-  return `${days[0]}-${days[days.length - 1]}`;
+function formatWeeklyDaysLabel(days: string[]) {
+  if (days.length === 0) return "Weekly";
+  if (days.length === 1) return `Every ${days[0]}`;
+  if (days.length === 2) return `Every ${days[0]} and ${days[1]}`;
+  return `Every ${days.slice(0, -1).join(", ")} and ${days[days.length - 1]}`;
+}
+
+export function isPastWorkLogLanguage(text: string) {
+  return /\b(worked|had\s+work|did\s+work)\b/.test(text);
+}
+
+export function isStandingWorkScheduleLanguage(text: string) {
+  if (isPastWorkLogLanguage(text)) return false;
+  return (
+    /\bmy\s+work\s+schedule\s+is\b/.test(text) ||
+    /\bmy\s+schedule\s+is\b/.test(text) ||
+    /\bi\s+usually\s+work\b/.test(text) ||
+    /\bi\s+work\s+every\b/.test(text) ||
+    /\bwork\s+schedule\b/.test(text) ||
+    /\bmy\s+shifts?\s+are\b/.test(text) ||
+    /\bi\s+work\b/.test(text)
+  );
+}
+
+function weekdayIndexFromDateKey(dateKey?: string) {
+  if (!dateKey) return null;
+  const [year, month, day] = dateKey.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day).getDay();
+}
+
+function resolutionMatchesWorkSchedule(
+  resolution: TimelineResolution,
+  schedule: NonNullable<UserTimelineContext["workSchedule"]>,
+) {
+  if (resolution.kind === "date_range" && resolution.startDate) {
+    const startIndex = weekdayIndexFromDateKey(resolution.startDate);
+    const endIndex = weekdayIndexFromDateKey(resolution.endDate);
+    if (startIndex == null || endIndex == null) return false;
+    for (let index = startIndex; ; index = (index + 1) % 7) {
+      if (dayMatchesScheduleDay(index, schedule.days)) return true;
+      if (index === endIndex) break;
+    }
+    return false;
+  }
+
+  const index = weekdayIndexFromDateKey(resolution.startDate);
+  if (index == null) return false;
+  return dayMatchesScheduleDay(index, schedule.days);
+}
+
+function resolveStandingWorkSchedule(
+  input: string,
+  text: string,
+  time: ResolvedTime,
+): TimelineResolution | null {
+  if (!isStandingWorkScheduleLanguage(text)) return null;
+
+  const range = text.match(
+    new RegExp(
+      `${DAY_PATTERN}\\s+(?:through|thru|to|until)\\s+${DAY_PATTERN}`,
+      "i",
+    ),
+  );
+  if (!range) return null;
+
+  const startDay = normalizeDay(range[1]);
+  const endDay = normalizeDay(range[2]);
+  if (!startDay || !endDay) return null;
+
+  const fullDays = daysBetween(startDay, endDay);
+  const days = fullDays.map(dayCode);
+  const timed = Boolean(time.startTime && time.endTime);
+
+  return buildResolution(input, {
+    kind: "recurring",
+    recurrence: { frequency: "weekly", days },
+    startTime: timed ? time.startTime : undefined,
+    endTime: timed ? time.endTime : undefined,
+    isTimed: timed,
+    timeSource: timed ? time.source : "none",
+    durationMinutes: timed ? time.durationMinutes : undefined,
+    timelineRole: "schedule",
+    confidence: timed ? 0.95 : 0.88,
+    tense: "present",
+    needsConfirmation: true,
+    label: [
+      formatWeeklyDaysLabel(fullDays),
+      timed && time.startTime && time.endTime
+        ? `${displayTime(time.startTime)}-${displayTime(time.endTime)}`
+        : null,
+    ]
+      .filter(Boolean)
+      .join(", "),
+  });
 }
 
 function parseNumber(value: string) {
@@ -189,13 +281,9 @@ function resolveDatePhrase(
   if (explicitDay) {
     const day = normalizeDay(explicitDay[2]);
     if (!day) return null;
-    const direction =
-      explicitDay[1] === "last"
-        ? "past"
-        : explicitDay[1] === "next"
-          ? "future"
-          : "this";
-    const date = resolveWeekdayDate(day, now, direction);
+    const direction = explicitDay[1] === "last" ? "past" : "this";
+    let date = resolveWeekdayDate(day, now, direction);
+    if (date && explicitDay[1] === "next") date = addDays(date, 7);
     return date ? { date, label: `${explicitDay[1]} ${day}` } : null;
   }
 
@@ -276,7 +364,7 @@ function resolveWeekdayDate(
 
   if (direction === "past") {
     const diff = (currentIndex - targetIndex + 7) % 7;
-    return addDays(now, diff === 0 ? 0 : -diff);
+    return addDays(now, diff === 0 ? -7 : -diff);
   }
 
   if (direction === "future") {
@@ -288,6 +376,10 @@ function resolveWeekdayDate(
 }
 
 function detectTense(text: string): TimelineResolution["tense"] {
+  if (/\b(get paid|getting paid|payday|paid on|paid friday|paid next)\b/.test(text)) {
+    return "future";
+  }
+
   if (
     /\b(worked|went|had|did|finished|completed|spent|paid|studied|slept|ran|was|were|yesterday|last)\b/.test(
       text,
@@ -304,7 +396,11 @@ function detectTense(text: string): TimelineResolution["tense"] {
     return "future";
   }
 
-  if (/\b(appointment|meeting|doctor|dentist|gym|workout)\b/.test(text)) {
+  if (
+    /\b(have|need to|appointment|meeting|doctor|dentist|gym|workout|date|dinner|call)\b/.test(
+      text,
+    )
+  ) {
     return "future";
   }
 
@@ -348,6 +444,13 @@ function enrichWorkTimeMetadata(
     return resolution;
   }
 
+  if (
+    resolution.timelineRole === "schedule" &&
+    isStandingWorkScheduleLanguage(input.toLowerCase())
+  ) {
+    return resolution;
+  }
+
   if (resolution.startTime && resolution.endTime) {
     return {
       ...resolution,
@@ -361,7 +464,7 @@ function enrichWorkTimeMetadata(
   }
 
   const schedule = options.userContext?.workSchedule;
-  if (schedule) {
+  if (schedule && resolutionMatchesWorkSchedule(resolution, schedule)) {
     return {
       ...resolution,
       startTime: schedule.startTime,
@@ -388,6 +491,9 @@ function resolveRecurring(
   text: string,
   time: ResolvedTime,
 ): TimelineResolution | null {
+  const standingSchedule = resolveStandingWorkSchedule(input, text, time);
+  if (standingSchedule) return standingSchedule;
+
   const monthly = text.match(/\bevery month on the (\d{1,2})(?:st|nd|rd|th)?\b/);
   if (monthly) {
     const dayOfMonth = Number(monthly[1]);
@@ -423,39 +529,6 @@ function resolveRecurring(
       confidence: 0.92,
       tense: "present",
       label: `Every ${day}`,
-    });
-  }
-
-  const workRange = text.match(
-    new RegExp(
-      `\\bi\\s+work\\s+${DAY_PATTERN}\\s+(?:through|thru|to|until)\\s+${DAY_PATTERN}\\b`,
-    ),
-  );
-  if (workRange) {
-    const startDay = normalizeDay(workRange[1]);
-    const endDay = normalizeDay(workRange[2]);
-    if (!startDay || !endDay) return null;
-    const fullDays = daysBetween(startDay, endDay);
-    const days = fullDays.map(dayCode);
-    return buildResolution(input, {
-      kind: "recurring",
-      recurrence: { frequency: "weekly", days },
-      startTime: time.startTime,
-      endTime: time.endTime,
-      isTimed: time.isTimed,
-      timeSource: time.source,
-      durationMinutes: time.durationMinutes,
-      timelineRole: "schedule",
-      confidence: 0.9,
-      tense: "present",
-      label: [
-        `Every ${formatDaySpan(fullDays)}`,
-        time.startTime && time.endTime
-          ? `${displayTime(time.startTime)}-${displayTime(time.endTime)}`
-          : null,
-      ]
-        .filter(Boolean)
-        .join(", "),
     });
   }
 
@@ -698,9 +771,9 @@ function resolveWeekday(
     const modifier = explicit[1] as "last" | "next" | "this";
     const day = normalizeDay(explicit[2]);
     if (!day) return null;
-    const direction =
-      modifier === "last" ? "past" : modifier === "next" ? "future" : "this";
-    const date = resolveWeekdayDate(day, now, direction);
+    const direction = modifier === "last" ? "past" : "this";
+    let date = resolveWeekdayDate(day, now, direction);
+    if (date && modifier === "next") date = addDays(date, 7);
     if (!date) return null;
     return buildResolution(input, {
       kind: "single_date",
@@ -759,16 +832,36 @@ function resolveWeekday(
     });
   }
 
+  if (tense === "present" && isWorkRelated(text)) {
+    const date = resolveWeekdayDate(day, now, "future");
+    if (!date) return null;
+    return buildResolution(input, {
+      kind: "recurring",
+      recurrence: { frequency: "weekly", days: [dayCode(day)] },
+      startDate: toDateKey(date),
+      startTime: time.startTime,
+      endTime: time.endTime,
+      isTimed: time.isTimed,
+      timeSource: time.source,
+      durationMinutes: time.durationMinutes,
+      timelineRole: "schedule",
+      confidence: 0.88,
+      tense,
+      label: `Every ${day}`,
+    });
+  }
+
   return buildResolution(input, {
     kind: "single_date",
+    startDate: toDateKey(resolveWeekdayDate(day, now, "future") ?? now),
     startTime: time.startTime,
     endTime: time.endTime,
     isTimed: time.isTimed,
     timeSource: time.source,
     durationMinutes: time.durationMinutes,
     timelineRole: time.isTimed ? "event" : "task",
-    confidence: 0.52,
-    tense: "unknown",
+    confidence: time.isTimed ? 0.74 : 0.68,
+    tense: "future",
     label: day,
     needsConfirmation: true,
   });
@@ -807,7 +900,9 @@ export function resolveTimeline(
     });
 
   const timeAwareResolution =
-    time.isTimed && !hasInputTimeRange(text)
+    time.isTimed &&
+    !hasInputTimeRange(text) &&
+    !(resolution.startDate && resolution.confidence >= 0.9)
       ? { ...resolution, needsConfirmation: true }
       : resolution;
 

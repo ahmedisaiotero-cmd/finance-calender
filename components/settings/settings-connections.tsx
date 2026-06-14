@@ -29,6 +29,12 @@ const AREA_ENABLE_COPY: Record<
     connectHref: "/settings#area-work",
     connectLabel: "Enable Work",
   },
+  relationships: {
+    label: "Relationships",
+    hint: "Capture calls, birthdays, dates, and plans with people who matter.",
+    connectHref: "/settings#area-relationships",
+    connectLabel: "Enable Relationships",
+  },
   school: {
     label: "School",
     hint: "Connect an academic calendar or LMS when classes matter to your week.",

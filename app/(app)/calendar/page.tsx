@@ -1,5 +1,5 @@
-import { FinanceCalendarContent } from "@/components/finance/finance-calendar-content";
+import { SyncWorkspace } from "@/components/sync/sync-workspace";
 
 export default function CalendarPage() {
-  return <FinanceCalendarContent />;
+  return <SyncWorkspace activeLens="calendar" showInput={false} />;
 }

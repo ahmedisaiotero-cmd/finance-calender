@@ -2,8 +2,7 @@
 
 import { usePathname } from "next/navigation";
 
-import { MobileHeader } from "@/components/dashboard/mobile-header";
-import { Sidebar } from "@/components/dashboard/sidebar";
+import { SyncCenteredNav } from "@/components/sync/sync-centered-nav";
 import { getAppShellRoute } from "@/lib/app-shell-routes";
 import { SYNC_PRODUCT } from "@/lib/sync-copy";
 import { cn } from "@/lib/utils";
@@ -28,9 +27,8 @@ export function PersistentAppShell({
 
   return (
     <div className="sync-app-shell flex min-h-screen bg-background">
-      <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
-        <MobileHeader />
+        <SyncCenteredNav />
         <main className="flex-1 overflow-auto">
           <div
             className={cn(

@@ -4,14 +4,15 @@ import { SyncDomainPage } from "@/components/domain/sync-domain-page";
 import { useCapturedItems } from "@/lib/captured-items";
 
 export function HealthContent() {
-  const { getItemsForDestination } = useCapturedItems();
+  const { activeItems, getItemsForDestination } = useCapturedItems();
   const capturedHealthItems = getItemsForDestination("Health");
 
   return (
     <SyncDomainPage
       title="Health"
       supportingCopy="Movement, recovery, and health moments Sync has helped you plan."
-      items={capturedHealthItems}
+      items={activeItems}
+      lens="health"
       insights={[
         capturedHealthItems.length > 0
           ? "You've made space for your body this week."

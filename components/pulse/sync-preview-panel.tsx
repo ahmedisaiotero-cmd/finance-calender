@@ -7,6 +7,7 @@ import type { SyncDestination } from "@/lib/captured-items";
 import { logSyncPreviewDebug } from "@/lib/pulse/sync-preview-debug";
 import {
   getDestinationChipLabels,
+  type SyncPreviewMode,
   type SyncPreviewViewModel,
 } from "@/lib/pulse/sync-preview-view-model";
 import type { PulsePlan } from "@/lib/pulse/types";
@@ -16,9 +17,19 @@ type SyncPreviewPanelProps = {
   plan: PulsePlan;
   preview: SyncPreviewViewModel;
   selectedDestinations: SyncDestination[];
-  onToggleDestination: (destination: SyncDestination) => void;
-  onSave: () => void;
+  editPreview?: {
+    title: string;
+    from: string;
+    to: string;
+  };
+  onToggleDestination?: (destination: SyncDestination) => void;
+  onConfirm: () => void;
   onDismiss: () => void;
+  onChangeTime?: () => void;
+  onUpdateExisting?: () => void;
+  onKeepBoth?: () => void;
+  confirmLabel?: string;
+  disableConfirm?: boolean;
 };
 
 function formatWhenTime(preview: SyncPreviewViewModel): string | null {
@@ -47,16 +58,41 @@ function PreviewSection({
   );
 }
 
+function defaultConfirmLabel(mode: SyncPreviewMode) {
+  if (mode === "schedule-delete") return "Remove Schedule";
+  if (mode === "schedule-update") return "Update Schedule";
+  if (mode === "schedule-save") return "Save Schedule";
+  if (mode === "delete") return "Remove";
+  if (mode === "edit") return "Update";
+  if (mode === "duplicate") return "Keep Both";
+  return "Synchronize";
+}
+
 export function SyncPreviewPanel({
   plan,
   preview,
   selectedDestinations,
+  editPreview,
   onToggleDestination,
-  onSave,
+  onConfirm,
   onDismiss,
+  onChangeTime,
+  onUpdateExisting,
+  onKeepBoth,
+  confirmLabel,
+  disableConfirm = false,
 }: SyncPreviewPanelProps) {
   const destinationChips = getDestinationChipLabels(preview);
   const whenTime = formatWhenTime(preview);
+  const hasOverlap = Boolean(preview.when.overlap);
+  const isDelete =
+    preview.mode === "delete" || preview.mode === "schedule-delete";
+  const isDuplicate = preview.mode === "duplicate";
+  const canEditDestinations =
+    preview.mode === "create" ||
+    preview.mode === "edit" ||
+    preview.mode === "schedule-save" ||
+    preview.mode === "schedule-update";
 
   useEffect(() => {
     logSyncPreviewDebug(plan, preview, selectedDestinations);
@@ -64,10 +100,35 @@ export function SyncPreviewPanel({
 
   return (
     <article className="pulse-organizer-plan mx-auto mt-5 max-w-2xl rounded-[1.15rem] bg-card/45 p-5 sm:p-6">
-      {preview.confidence.needsConfirmation && (
-        <p className="mb-4 text-[13px] font-medium text-primary/80">
-          Sync thinks you meant...
+      {preview.banner && (
+        <p
+          className={cn(
+            "mb-4 text-[13px] font-medium",
+            preview.readyToSave
+              ? "text-emerald-600/85 dark:text-emerald-400/85"
+              : "text-primary/80",
+          )}
+        >
+          {preview.banner}
         </p>
+      )}
+
+      {preview.mode === "edit" && editPreview && (
+        <div className="mb-5 rounded-2xl border border-border/25 bg-background/25 p-4">
+          <p className="text-[13px] font-medium text-muted-foreground/72">
+            Sync thinks you want to update:
+          </p>
+          <p className="mt-2 text-[17px] font-medium tracking-[-0.03em] text-foreground/95">
+            {editPreview.title}
+          </p>
+          <p className="mt-1 text-[14px] text-muted-foreground/72">
+            {editPreview.from || "Current timing"}
+          </p>
+          <p className="my-2 text-[18px] leading-none text-muted-foreground/45">↓</p>
+          <p className="text-[14px] font-medium text-foreground/85">
+            {editPreview.to || "Updated timing"}
+          </p>
+        </div>
       )}
 
       <div className="grid gap-5 sm:grid-cols-2">
@@ -82,82 +143,131 @@ export function SyncPreviewPanel({
           )}
         </PreviewSection>
 
-        <PreviewSection label="When">
-          <p className="text-[15px] font-medium text-foreground/88">
-            {preview.when.label}
-          </p>
-          {whenTime && (
-            <p className="text-[14px] text-muted-foreground/72">{whenTime}</p>
-          )}
-          {!whenTime && preview.when.date && (
-            <p className="text-[14px] text-muted-foreground/72">
-              {preview.when.date}
+        {!isDelete && (
+          <PreviewSection label="When">
+            <p className="text-[15px] font-medium text-foreground/88">
+              {preview.when.label}
             </p>
-          )}
-        </PreviewSection>
-
-        <PreviewSection label="Goes to">
-          <div className="flex flex-wrap gap-2">
-            {destinationChips.map((destination) => {
-              const selected = selectedDestinations.includes(destination);
-
-              return (
-                <button
-                  key={destination}
-                  type="button"
-                  onClick={() => onToggleDestination(destination)}
-                  className={cn(
-                    "rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors",
-                    selected
-                      ? "border-primary/30 bg-primary/10 text-foreground/90"
-                      : "border-border/30 bg-muted/15 text-muted-foreground/65 hover:text-foreground/80",
-                  )}
-                  aria-pressed={selected}
-                >
-                  {destination}
-                </button>
-              );
-            })}
-          </div>
-        </PreviewSection>
-
-        <PreviewSection label="Why it matters">
-          <p className="text-[14px] leading-relaxed text-muted-foreground/72">
-            {preview.why.summary}
-          </p>
-          {preview.why.suggestedActions &&
-            preview.why.suggestedActions.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {preview.why.suggestedActions.slice(0, 2).map((action) => (
-                  <span
-                    key={action.label}
-                    className="rounded-full border border-border/25 bg-muted/10 px-3 py-1 text-[12px] text-muted-foreground/68"
-                  >
-                    {action.label}
-                  </span>
-                ))}
+            {whenTime && (
+              <p className="text-[14px] text-muted-foreground/72">{whenTime}</p>
+            )}
+            {hasOverlap && preview.when.overlap && (
+              <div className="mt-2 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
+                <p className="text-[13px] font-medium text-amber-800/90 dark:text-amber-300/90">
+                  {preview.when.overlap.headline}
+                </p>
+                <p className="mt-1 text-[13px] text-muted-foreground/75">
+                  {preview.when.overlap.existingTitle}:{" "}
+                  {preview.when.overlap.existingRange}
+                </p>
+                <p className="text-[13px] text-muted-foreground/75">
+                  New item: {preview.when.overlap.proposedRange}
+                </p>
               </div>
             )}
+            {!whenTime && preview.when.date && (
+              <p className="text-[14px] text-muted-foreground/72">
+                {preview.when.date}
+              </p>
+            )}
+          </PreviewSection>
+        )}
+
+        {!isDelete && (
+          <PreviewSection label="Goes to">
+            {canEditDestinations && onToggleDestination ? (
+              <div className="flex flex-wrap gap-2">
+                {destinationChips.map((destination) => {
+                  const selected = selectedDestinations.includes(destination);
+
+                  return (
+                    <button
+                      key={destination}
+                      type="button"
+                      onClick={() => onToggleDestination(destination)}
+                      className={cn(
+                        "rounded-full border px-3 py-1.5 text-[13px] font-medium transition-colors",
+                        selected
+                          ? "border-primary/30 bg-primary/10 text-foreground/90"
+                          : "border-border/30 bg-muted/15 text-muted-foreground/65 hover:text-foreground/80",
+                      )}
+                      aria-pressed={selected}
+                    >
+                      {destination}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-[14px] text-muted-foreground/72">
+                {destinationChips.join(" · ")}
+              </p>
+            )}
+          </PreviewSection>
+        )}
+
+        <PreviewSection label={isDelete ? "What happens" : "Why it matters"}>
+          <p className="text-[14px] leading-relaxed text-muted-foreground/72">
+            {isDelete
+              ? "This will be removed from your calendar and life areas. You can always capture it again."
+              : preview.why.summary}
+          </p>
         </PreviewSection>
       </div>
 
-      <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
-        <Button
-          type="button"
-          onClick={onSave}
-          disabled={plan.status !== "draft" || selectedDestinations.length === 0}
-          className="h-11"
-        >
-          Synchronize
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={onDismiss}
-          className="h-11 text-muted-foreground/72"
-        >
-          Dismiss
-        </Button>
+      <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
+        {isDuplicate && onUpdateExisting && (
+          <Button type="button" onClick={onUpdateExisting} className="h-11">
+            Update Existing
+          </Button>
+        )}
+        {hasOverlap ? (
+          <>
+            <Button
+              type="button"
+              onClick={isDuplicate && onKeepBoth ? onKeepBoth : onConfirm}
+              disabled={disableConfirm}
+              className="h-11"
+            >
+              Save anyway
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onChangeTime ?? onDismiss}
+              className="h-11"
+            >
+              Change time
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onDismiss}
+              className="h-11 text-muted-foreground/72"
+            >
+              Cancel
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              type="button"
+              onClick={isDuplicate && onKeepBoth ? onKeepBoth : onConfirm}
+              disabled={disableConfirm}
+              className="h-11"
+            >
+              {confirmLabel ?? defaultConfirmLabel(preview.mode)}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onDismiss}
+              className="h-11 text-muted-foreground/72"
+            >
+              Cancel
+            </Button>
+          </>
+        )}
       </div>
     </article>
   );
