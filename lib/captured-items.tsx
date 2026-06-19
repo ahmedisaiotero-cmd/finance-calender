@@ -123,7 +123,13 @@ function normalizeStoredItem(item: CapturedSyncItem): CapturedSyncItem {
   return {
     ...item,
     destinations: normalizeStoredDestinations(item.destinations),
+    timeline: item.timeline,
+    meaning: item.meaning,
+    protectedTime: item.protectedTime,
+    originalPrompt: item.originalPrompt,
+    normalizationCorrections: item.normalizationCorrections,
     status: item.status ?? "active",
+    createdAt: item.createdAt ?? now,
     updatedAt: item.updatedAt ?? item.createdAt ?? now,
     deletedAt: item.deletedAt ?? null,
   };

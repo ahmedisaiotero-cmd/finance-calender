@@ -1,4 +1,5 @@
 import { toDateKey } from "@/lib/calendar-utils";
+import type { CapturedSyncItem } from "@/lib/captured-items";
 import type { SyncTimeBlock } from "@/lib/sync-time-blocks";
 import {
   formatSyncClock,
@@ -138,6 +139,53 @@ export function generateAmbientInsightFromBlocks(
   }
 
   return "Nothing urgent right now.";
+}
+
+export function generateHomeAmbientInsight(
+  blocks: SyncTimeBlock[],
+  items: CapturedSyncItem[],
+  reference = new Date(),
+): string {
+  const tomorrowKey = toDateKey(addDays(reference, 1));
+
+  const hasLifeContent =
+    blocks.length > 0 ||
+    items.some(
+      (item) =>
+        item.status !== "cancelled" &&
+        !item.deletedAt &&
+        (item.timeline?.startDate ||
+          item.timeline?.deadlineDate ||
+          (item.dateLabel &&
+            item.dateLabel !== "Upcoming" &&
+            item.dateLabel !== "Flexible")),
+    );
+
+  if (!hasLifeContent) {
+    return "Nothing urgent right now.";
+  }
+
+  const protectedTomorrow = items.filter(
+    (item) =>
+      item.status !== "cancelled" &&
+      !item.deletedAt &&
+      item.protectedTime?.enabled &&
+      (item.timeline?.startDate === tomorrowKey ||
+        item.timeline?.deadlineDate === tomorrowKey ||
+        item.dateLabel === "Tomorrow"),
+  );
+
+  if (
+    protectedTomorrow.some((item) => item.destinations.includes("Family"))
+  ) {
+    return "Tomorrow has a protected family commitment.";
+  }
+
+  if (protectedTomorrow.length > 0) {
+    return "Tomorrow has protected time on your calendar.";
+  }
+
+  return generateAmbientInsightFromBlocks(blocks, reference);
 }
 
 export function summarizeWorkLensSchedule(blocks: SyncTimeBlock[]) {

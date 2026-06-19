@@ -1,3 +1,4 @@
+import { detectSyncCommandIntent } from "@/lib/sync-command-intent";
 import { resolveTime, type ResolvedTime } from "@/lib/timeline/resolve-time";
 import { dayMatchesScheduleDay } from "@/lib/user-timeline-context";
 
@@ -608,6 +609,11 @@ function resolveRange(
   tense: TimelineResolution["tense"],
   time: ResolvedTime,
 ) {
+  const commandIntent = detectSyncCommandIntent(input);
+  if (commandIntent.type === "edit" || commandIntent.type === "delete") {
+    return null;
+  }
+
   const range = text.match(
     new RegExp(
       `(?:from\\s+)?${DAY_PATTERN}(?:\\s+(night|morning|afternoon|evening))?\\s+(?:through|thru|to|until|and)\\s+${DAY_PATTERN}(?:\\s+(night|morning|afternoon|evening))?`,

@@ -41,7 +41,6 @@ const emptyStates = resolveLifeAreaStates({
 {
   const nav = buildSidebarNavigation(emptyStates, true, {
     hasFamilyConnection: true,
-    hasWorkConnection: false,
   });
   assert.ok(nav.primary.some((item) => item.id === "family"));
 }

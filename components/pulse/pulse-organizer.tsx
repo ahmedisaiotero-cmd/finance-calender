@@ -27,7 +27,12 @@ import {
 } from "@/lib/pulse/resolve-sync-destinations";
 import { buildSyncPreviewViewModel } from "@/lib/pulse/sync-preview-view-model";
 import type { PulseMoneyType, PulsePlan, PulsePlanCategory } from "@/lib/pulse/types";
-import type { SyncCommandIntent } from "@/lib/sync-command-intent";
+import { detectAmbiguity } from "@/lib/trust/ambiguity-detection";
+import {
+  formatReferenceCandidateLabel,
+  resolveCaptureReference,
+} from "@/lib/trust/reference-resolution";
+import { detectSyncCommandIntent, type SyncCommandIntent } from "@/lib/sync-command-intent";
 import {
   detectScheduleCommandIntent,
   extractScheduleUpdateQuery,
@@ -53,6 +58,10 @@ const STARTER_CHIPS = [
     prompt: "I have a date Wednesday at 9pm",
   },
   {
+    label: "Family event",
+    prompt: "My daughter has a school event tomorrow at 7am",
+  },
+  {
     label: "Rent due",
     prompt: "Rent is due next Friday",
   },
@@ -61,15 +70,7 @@ const STARTER_CHIPS = [
     prompt: "Gym tomorrow at 6pm",
   },
   {
-    label: "Spending",
-    prompt: "I spent $20 yesterday",
-  },
-  {
-    label: "Family event",
-    prompt: "My daughter has an event at her school tomorrow at 7 am",
-  },
-  {
-    label: "Call someone",
+    label: "Call mom",
     prompt: "Call mom tomorrow at 11am",
   },
 ] as const;
@@ -91,6 +92,11 @@ type ActionChoices = {
   intent: "edit" | "delete";
   commandIntent: Extract<SyncCommandIntent, { type: "edit" | "delete" }>;
   targets: CapturedSyncItem[];
+};
+
+type AmbiguityChoices = {
+  reason?: string;
+  interpretations: import("@/lib/trust/ambiguity-detection").SyncInterpretation[];
 };
 
 type CompactTitleInput = {
@@ -138,6 +144,7 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [reliefMessage, setReliefMessage] = useState<string | null>(null);
   const [actionChoices, setActionChoices] = useState<ActionChoices | null>(null);
+  const [ambiguityChoices, setAmbiguityChoices] = useState<AmbiguityChoices | null>(null);
   const [userTimelineContext, setUserTimelineContext] = useState(
     () => toResolveTimelineContext(loadUserTimelineContext()),
   );
@@ -198,6 +205,7 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
     setFlow({ kind: "create" });
     setSelectedDestinations([]);
     setActionChoices(null);
+    setAmbiguityChoices(null);
   }, []);
 
   const generatePreview = useCallback(
@@ -260,16 +268,64 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
         return;
       }
 
+      const commandIntent = detectSyncCommandIntent(trimmed);
+      const referenceResolution =
+        commandIntent.type === "create"
+          ? undefined
+          : resolveCaptureReference({
+              commandText: trimmed,
+              items: activeItems,
+            });
+
+      const ambiguity = detectAmbiguity({
+        text: trimmed,
+        commandIntent,
+        referenceResolution,
+      });
+
+      if (
+        ambiguity.ambiguous &&
+        ambiguity.interpretations.some(
+          (interpretation) =>
+            typeof interpretation.payload === "object" &&
+            interpretation.payload !== null &&
+            "needsClarification" in interpretation.payload,
+        )
+      ) {
+        setPrompt(trimmed);
+        setAmbiguityChoices(ambiguity);
+        setReliefMessage(ambiguity.reason ?? "Sync needs a little more clarity.");
+        resetPreview();
+        return;
+      }
+
+      if (
+        commandIntent.type === "edit" &&
+        ambiguity.ambiguous &&
+        ambiguity.interpretations.length > 1
+      ) {
+        setPrompt(trimmed);
+        setAmbiguityChoices(ambiguity);
+        setReliefMessage(ambiguity.reason ?? "Which interpretation did you mean?");
+        resetPreview();
+        return;
+      }
+
       const action = resolveCaptureAction(trimmed, activeItems);
 
       if (action.intent === "delete") {
-        if (action.targets.length === 0) {
+        if (referenceResolution?.status === "not_found" || action.targets.length === 0) {
+          setPrompt(trimmed);
+          setAmbiguityChoices(ambiguity);
           setReliefMessage("I couldn't find a matching item to remove.");
           resetPreview();
           return;
         }
 
-        if (action.targets.length > 1) {
+        if (
+          referenceResolution?.status === "multiple_matches" ||
+          action.targets.length > 1
+        ) {
           setPrompt(trimmed);
           setActionChoices({
             intent: "delete",
@@ -293,13 +349,18 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
       }
 
       if (action.intent === "edit") {
-        if (!action.primaryTarget) {
+        if (referenceResolution?.status === "not_found" || !action.primaryTarget) {
+          setPrompt(trimmed);
+          setAmbiguityChoices(ambiguity);
           setReliefMessage("I couldn't find a matching item to update.");
           resetPreview();
           return;
         }
 
-        if (action.targets.length > 1) {
+        if (
+          referenceResolution?.status === "multiple_matches" ||
+          action.targets.length > 1
+        ) {
           setPrompt(trimmed);
           setActionChoices({
             intent: "edit",
@@ -614,6 +675,69 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
     );
   };
 
+  const handleSelectAmbiguity = (
+    interpretation: AmbiguityChoices["interpretations"][number],
+  ) => {
+    const payload = interpretation.payload;
+    if (
+      payload &&
+      typeof payload === "object" &&
+      "needsClarification" in payload
+    ) {
+      return;
+    }
+
+    setAmbiguityChoices(null);
+
+    if (interpretation.intent === "create" && payload && typeof payload === "object" && "plan" in payload) {
+      const nextPlan = payload.plan as PulsePlan;
+      setPlan(nextPlan);
+      setFlow(
+        nextPlan.category === "work-schedule" &&
+          nextPlan.timeline?.kind === "recurring"
+          ? { kind: "schedule-save" }
+          : { kind: "create" },
+      );
+      setSelectedDestinations(resolveSyncDestinations(nextPlan));
+      setReliefMessage(null);
+      return;
+    }
+
+    if (
+      interpretation.intent === "edit" &&
+      payload &&
+      typeof payload === "object" &&
+      "commandIntent" in payload
+    ) {
+      const commandIntent = payload.commandIntent as Extract<
+        SyncCommandIntent,
+        { type: "edit" }
+      >;
+      const reference = resolveCaptureReference({
+        commandText: prompt,
+        items: activeItems,
+      });
+      if (!reference.target) {
+        setReliefMessage("I couldn't find a matching item to update.");
+        return;
+      }
+      const nextPlan = buildEditPlanFromCommand(
+        reference.target,
+        commandIntent,
+        prompt,
+        { userContext: timelineOptions.userContext },
+      );
+      setPlan(nextPlan);
+      setFlow({
+        kind: "edit",
+        targetId: reference.target.id,
+        commandIntent,
+      });
+      setSelectedDestinations(sanitizeSyncDestinations(reference.target.destinations));
+      setReliefMessage(null);
+    }
+  };
+
   const handleSelectActionChoice = (item: CapturedSyncItem) => {
     if (!actionChoices) return;
     const commandIntent = actionChoices.commandIntent;
@@ -756,6 +880,43 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
           </div>
         )}
 
+        {ambiguityChoices && (
+          <div className="mx-auto mt-4 max-w-2xl rounded-2xl border border-border/25 bg-card/35 p-4">
+            <p className="text-[14px] font-medium text-foreground/85">
+              Sync needs your help
+            </p>
+            {ambiguityChoices.reason && (
+              <p className="mt-1 text-[13px] text-muted-foreground/68">
+                {ambiguityChoices.reason}
+              </p>
+            )}
+            <ul className="mt-3 space-y-2">
+              {ambiguityChoices.interpretations.map((interpretation) => {
+                const needsClarification =
+                  typeof interpretation.payload === "object" &&
+                  interpretation.payload !== null &&
+                  "needsClarification" in interpretation.payload;
+
+                return (
+                  <li key={interpretation.id}>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectAmbiguity(interpretation)}
+                      disabled={needsClarification}
+                      className="w-full rounded-xl border border-border/20 px-3 py-2 text-left text-[14px] hover:bg-muted/15 disabled:cursor-default disabled:opacity-70"
+                    >
+                      {interpretation.label}
+                      <span className="mt-0.5 block text-[12px] text-muted-foreground/60">
+                        {interpretation.description}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+
         {actionChoices && (
           <div className="mx-auto mt-4 max-w-2xl rounded-2xl border border-border/25 bg-card/35 p-4">
             <p className="text-[14px] text-muted-foreground/75">
@@ -769,12 +930,7 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
                     onClick={() => handleSelectActionChoice(item)}
                     className="w-full rounded-xl border border-border/20 px-3 py-2 text-left text-[14px] hover:bg-muted/15"
                   >
-                    {item.title}
-                    <span className="mt-0.5 block text-[12px] text-muted-foreground/60">
-                      {[item.dateLabel, item.timeLabel]
-                        .filter((value) => value && value !== "Flexible")
-                        .join(" • ")}
-                    </span>
+                    {formatReferenceCandidateLabel(item)}
                   </button>
                 </li>
               ))}

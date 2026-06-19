@@ -247,15 +247,15 @@ function assessProtection(
   let reason: string | undefined;
   if (recommended) {
     if (workConflict && importance === "high") {
-      reason = "Important family or personal time that may need space from work.";
+      reason = "You may want to protect this time or adjust work availability.";
     } else if (/\bdoctor|appointment\b/i.test(text)) {
-      reason = "Health appointments are easier to keep when time is protected.";
+      reason = "You may want to protect this time.";
     } else if (input.destinations.includes("Family")) {
-      reason = "Family commitments often deserve protected space on your calendar.";
+      reason = "You may want to protect this time.";
     } else if (input.destinations.includes("Relationships")) {
-      reason = "Meaningful connection time is worth guarding from drift.";
+      reason = "You may want to protect this time.";
     } else {
-      reason = "This looks important enough to protect if you want the space.";
+      reason = "You may want to protect this time.";
     }
   } else if (eligible) {
     reason = "You can protect this time if it starts to feel crowded.";

@@ -7,10 +7,15 @@ import { PulseOrganizer } from "@/components/pulse/pulse-organizer";
 import { SyncLensPills } from "@/components/sync/sync-lens-pills";
 import { SyncLifeStream } from "@/components/sync/sync-life-stream";
 import { SyncWorkBlocks } from "@/components/sync/sync-work-blocks";
+import { toDateKey } from "@/lib/calendar-utils";
+import type { CapturedSyncItem } from "@/lib/captured-items";
 import { useCapturedItems } from "@/lib/captured-items";
 import {
   buildSyncTimeBlocksForRange,
   filterSyncTimeBlocksByArea,
+  formatSyncClock,
+  formatSyncTimeBlockRange,
+  type SyncTimeBlock,
 } from "@/lib/sync-time-blocks";
 import {
   LENS_HEADINGS,
@@ -18,7 +23,9 @@ import {
   lensNextLine,
   lensWorkScheduleLine,
 } from "@/lib/sync-lens-copy";
-import { generateAmbientInsightFromBlocks } from "@/lib/time-block-insights";
+import {
+  generateHomeAmbientInsight,
+} from "@/lib/time-block-insights";
 import { loadActiveWorkSchedule } from "@/lib/user-timeline-context";
 
 import type { SyncWorkspaceLens } from "@/lib/sync-lenses";
@@ -34,21 +41,171 @@ const AMBIENT_FALLBACK = "Nothing urgent right now.";
 const HOME_EMPTY_STREAM =
   "Tell Sync something above to start organizing your life.";
 const HOME_STREAM_LIMIT = 5;
+const HOME_WEEK_LIMIT = 5;
 
-function ambientInsight(
-  items: ReturnType<typeof useCapturedItems>["activeItems"],
-  reference = new Date(),
+function addDays(date: Date, amount: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + amount);
+  return next;
+}
+
+function friendlyDayLabel(dateKey: string, reference: Date) {
+  const today = toDateKey(reference);
+  const tomorrow = toDateKey(addDays(reference, 1));
+  if (dateKey === today) return "Today";
+  if (dateKey === tomorrow) return "Tomorrow";
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+    weekday: "long",
+  });
+}
+
+function blockSortKey(block: SyncTimeBlock) {
+  return `${block.date}T${block.startTime ?? "00:00"}`;
+}
+
+function blockTimeLabel(block: SyncTimeBlock) {
+  if (block.isTimed && block.startTime) {
+    return formatSyncTimeBlockRange(block);
+  }
+  return "All day";
+}
+
+function itemWhenLabel(item: CapturedSyncItem) {
+  const time =
+    item.timeline?.startTime && item.timeline?.endTime
+      ? `${formatSyncClock(item.timeline.startTime)} – ${formatSyncClock(item.timeline.endTime)}`
+      : item.timeline?.startTime
+        ? formatSyncClock(item.timeline.startTime)
+        : item.timeLabel !== "Flexible"
+          ? item.timeLabel
+          : null;
+
+  return [item.dateLabel, time]
+    .filter((value) => value && value !== "Upcoming" && value !== "Flexible")
+    .join(" · ");
+}
+
+function buildHorizonBlocks(
+  items: CapturedSyncItem[],
+  reference: Date,
+  dayCount: number,
 ) {
-  const end = new Date(reference);
-  end.setDate(end.getDate() + 7);
-  const blocks = buildSyncTimeBlocksForRange({
+  const end = addDays(reference, dayCount);
+  return buildSyncTimeBlocksForRange({
     items,
     startDate: reference,
     endDate: end,
     reference,
     workSchedule: loadActiveWorkSchedule() ?? null,
   });
-  return generateAmbientInsightFromBlocks(blocks, reference);
+}
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <h2 className="mb-3 text-[12px] font-medium uppercase tracking-[0.08em] text-muted-foreground/45">
+      {children}
+    </h2>
+  );
+}
+
+function CompactChips({
+  destinations,
+  protectedLabel,
+  protectionRecommended,
+}: {
+  destinations: string[];
+  protectedLabel?: boolean;
+  protectionRecommended?: boolean;
+}) {
+  if (
+    destinations.length === 0 &&
+    !protectedLabel &&
+    !protectionRecommended
+  ) {
+    return null;
+  }
+
+  return (
+    <div className="mt-1.5 flex flex-wrap gap-1.5">
+      {destinations.map((destination) => (
+        <span
+          key={destination}
+          className="rounded-full bg-muted/35 px-2 py-0.5 text-[10px] font-medium text-muted-foreground/70"
+        >
+          {destination}
+        </span>
+      ))}
+      {protectedLabel && (
+        <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.06em] text-primary/75">
+          Protected
+        </span>
+      )}
+      {protectionRecommended && !protectedLabel && (
+        <span className="rounded-full bg-muted/45 px-2 py-0.5 text-[10px] font-medium text-muted-foreground/70">
+          Protection recommended
+        </span>
+      )}
+    </div>
+  );
+}
+
+function CompactBlockRow({ block }: { block: SyncTimeBlock }) {
+  return (
+    <li className="rounded-2xl border border-border/15 bg-card/20 px-4 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <p className="shrink-0 text-[13px] font-medium text-muted-foreground/68">
+          {blockTimeLabel(block)}
+        </p>
+        <p className="min-w-0 flex-1 text-right text-[14px] font-medium tracking-[-0.02em] text-foreground/90">
+          {block.title}
+        </p>
+      </div>
+      <CompactChips
+        destinations={block.destinations}
+        protectedLabel={block.protected}
+      />
+    </li>
+  );
+}
+
+function CompactItemRow({
+  item,
+  showDay = false,
+  reference,
+}: {
+  item: CapturedSyncItem;
+  showDay?: boolean;
+  reference: Date;
+}) {
+  const dateKey =
+    item.timeline?.deadlineDate ?? item.timeline?.startDate ?? null;
+  const day =
+    showDay && dateKey ? friendlyDayLabel(dateKey, reference) : null;
+
+  return (
+    <li className="rounded-2xl border border-border/15 bg-card/20 px-4 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <p className="shrink-0 text-[13px] font-medium text-muted-foreground/68">
+          {day ? `${day} · ` : ""}
+          {itemWhenLabel(item) || "Flexible"}
+        </p>
+        <p className="min-w-0 flex-1 text-right text-[14px] font-medium tracking-[-0.02em] text-foreground/90">
+          {item.title}
+        </p>
+      </div>
+      {item.protectedTime?.reason && (
+        <p className="mt-1.5 text-[12px] text-muted-foreground/62">
+          {item.protectedTime.reason}
+        </p>
+      )}
+      <CompactChips
+        destinations={item.destinations}
+        protectedLabel={item.protectedTime?.enabled}
+        protectionRecommended={item.meaning?.protection.recommended}
+      />
+    </li>
+  );
 }
 
 export function SyncWorkspace({
@@ -58,6 +215,7 @@ export function SyncWorkspace({
   const { activeItems, softDeleteCapturedItem } = useCapturedItems();
   const [notice, setNotice] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const reference = useMemo(() => new Date(), []);
 
   useEffect(() => {
     setMounted(true);
@@ -66,25 +224,72 @@ export function SyncWorkspace({
   const isHome = activeLens === "home";
   const heading = isHome ? null : LENS_HEADINGS[activeLens];
   const visibleItems = mounted ? activeItems : [];
-  const ambient = mounted ? ambientInsight(activeItems) : AMBIENT_FALLBACK;
+  const workSchedule = mounted ? loadActiveWorkSchedule() ?? null : null;
+
+  const horizonBlocks = useMemo(() => {
+    if (!mounted || !isHome) return [];
+    return buildHorizonBlocks(activeItems, reference, 7);
+  }, [mounted, isHome, activeItems, reference]);
+
+  const ambientInsight = useMemo(() => {
+    if (!mounted || !isHome) return AMBIENT_FALLBACK;
+    return generateHomeAmbientInsight(horizonBlocks, activeItems, reference);
+  }, [mounted, isHome, horizonBlocks, activeItems, reference]);
+
+  const todayKey = mounted ? toDateKey(reference) : "";
+  const weekEndKey = mounted ? toDateKey(addDays(reference, 7)) : "";
+
+  const todayBlocks = useMemo(() => {
+    if (!mounted || !isHome) return [];
+    return [...horizonBlocks]
+      .filter((block) => block.date === todayKey)
+      .sort((a, b) => blockSortKey(a).localeCompare(blockSortKey(b)));
+  }, [mounted, isHome, horizonBlocks, todayKey]);
+
+  const weekBlocks = useMemo(() => {
+    if (!mounted || !isHome) return [];
+    const seen = new Set<string>();
+    return [...horizonBlocks]
+      .filter((block) => block.date > todayKey && block.date <= weekEndKey)
+      .sort((a, b) => blockSortKey(a).localeCompare(blockSortKey(b)))
+      .filter((block) => {
+        const key = `${block.date}:${block.startTime ?? ""}:${block.title}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .slice(0, HOME_WEEK_LIMIT);
+  }, [mounted, isHome, horizonBlocks, todayKey, weekEndKey]);
+
+  const protectedItems = useMemo(() => {
+    if (!mounted || !isHome) return [];
+    return activeItems
+      .filter((item) => item.protectedTime?.enabled)
+      .sort((a, b) => {
+        const aKey =
+          a.timeline?.deadlineDate ?? a.timeline?.startDate ?? a.createdAt;
+        const bKey =
+          b.timeline?.deadlineDate ?? b.timeline?.startDate ?? b.createdAt;
+        return aKey.localeCompare(bKey);
+      });
+  }, [mounted, isHome, activeItems]);
+
   const itemCount = mounted ? lensItemCount(activeItems, activeLens) : 0;
   const hasStreamItems = itemCount > 0;
-  const workSchedule = mounted ? loadActiveWorkSchedule() ?? null : null;
 
   const workBlocks = useMemo(() => {
     if (!mounted || activeLens !== "work") return [];
-    const end = new Date();
-    end.setDate(end.getDate() + 28);
+    const end = addDays(reference, 28);
     return filterSyncTimeBlocksByArea(
       buildSyncTimeBlocksForRange({
         items: activeItems,
-        startDate: new Date(),
+        startDate: reference,
         endDate: end,
         workSchedule: workSchedule ?? null,
       }),
       "work",
     );
-  }, [mounted, activeLens, activeItems, workSchedule]);
+  }, [mounted, activeLens, activeItems, workSchedule, reference]);
 
   const nextInLens = mounted
     ? lensNextLine(activeItems, activeLens, workBlocks)
@@ -113,9 +318,7 @@ export function SyncWorkspace({
         </p>
       )}
       {isHome && hasStreamItems && (
-        <p className="mb-4 text-center text-[12px] font-medium uppercase tracking-[0.08em] text-muted-foreground/45">
-          In your life stream
-        </p>
+        <SectionHeading>Life stream</SectionHeading>
       )}
       <SyncLifeStream
         items={visibleItems}
@@ -135,7 +338,7 @@ export function SyncWorkspace({
   return (
     <div className="mx-auto w-full max-w-5xl px-6 py-10" data-page="sync-workspace">
       {isHome ? (
-        <section className="mx-auto w-full max-w-2xl">
+        <section className="mx-auto w-full max-w-2xl space-y-10">
           <header className="text-center">
             <h1 className="text-[2.35rem] font-medium leading-none tracking-[-0.055em] text-foreground/95 sm:text-[3rem]">
               SYNC
@@ -146,24 +349,75 @@ export function SyncWorkspace({
           </header>
 
           {showInput && (
-            <div className="mt-8">
+            <div>
               <PulseOrganizer variant="home" />
             </div>
           )}
 
-          <p className="mt-8 text-center text-[13px] text-muted-foreground/58">
-            {ambient}
+          <p
+            className="text-center text-[13px] leading-relaxed text-muted-foreground/58"
+            suppressHydrationWarning
+          >
+            {mounted ? ambientInsight : AMBIENT_FALLBACK}
           </p>
 
-          {notice && (
-            <p className="mt-3 text-center text-[13px] text-muted-foreground/68">
+          {mounted && notice && (
+            <p className="text-center text-[13px] text-muted-foreground/68">
               {notice}
             </p>
           )}
 
-          {streamSection}
+          {mounted && todayBlocks.length > 0 && (
+            <section>
+              <SectionHeading>Today</SectionHeading>
+              <ul className="space-y-2">
+                {todayBlocks.map((block) => (
+                  <CompactBlockRow key={block.id} block={block} />
+                ))}
+              </ul>
+            </section>
+          )}
 
-          <SyncLensPills activeLens={activeLens} className="mt-8" />
+          {mounted && weekBlocks.length > 0 && (
+            <section>
+              <SectionHeading>This Week</SectionHeading>
+              <ul className="space-y-2">
+                {weekBlocks.map((block) => (
+                  <li
+                    key={block.id}
+                    className="rounded-2xl border border-border/15 bg-card/20 px-4 py-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="shrink-0 text-[13px] font-medium text-muted-foreground/68">
+                        {friendlyDayLabel(block.date, reference)} ·{" "}
+                        {blockTimeLabel(block)}
+                      </p>
+                      <p className="min-w-0 flex-1 text-right text-[14px] font-medium tracking-[-0.02em] text-foreground/90">
+                        {block.title}
+                      </p>
+                    </div>
+                    <CompactChips
+                      destinations={block.destinations}
+                      protectedLabel={block.protected}
+                    />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {mounted && protectedItems.length > 0 && (
+            <section>
+              <SectionHeading>Protected</SectionHeading>
+              <ul className="space-y-2">
+                {protectedItems.map((item) => (
+                  <CompactItemRow key={item.id} item={item} reference={reference} />
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {mounted && streamSection}
         </section>
       ) : (
         <>

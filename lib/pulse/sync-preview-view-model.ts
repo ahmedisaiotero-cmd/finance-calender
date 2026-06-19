@@ -2,10 +2,14 @@ import type { SyncDestination, CapturedSyncItem } from "@/lib/captured-items";
 import {
   analyzeMeaning,
   buildWhySummaryFromMeaning,
-  enrichOverlapWithMeaning,
   type MeaningAnalysis,
   type MeaningSuggestedAction,
 } from "@/lib/intelligence/meaning-engine";
+import { buildPriorityConflictOverlap } from "@/lib/trust/conflict-priority";
+import {
+  humanizeMeaningSummary,
+  humanizeProtectionReason,
+} from "@/lib/trust/human-language";
 import {
   detectSyncTimeBlockOverlaps,
   proposedSyncTimeBlocksFromPlan,
@@ -19,7 +23,7 @@ import {
 import type { SyncUserContext } from "@/lib/intelligence/sync-user-context";
 import { titleCaseKeep } from "@/lib/pulse/parse-pulse-prompt";
 import { resolveSyncDestinations, sanitizeSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";
-import type { PulsePlan, PulsePlanCategory } from "@/lib/pulse/types";
+import type { PulsePlan } from "@/lib/pulse/types";
 
 export type SyncPreviewTimelineRole =
   | "event"
@@ -82,28 +86,6 @@ export type SyncPreviewViewModel = {
     label: "high" | "medium" | "low";
     needsConfirmation: boolean;
   };
-};
-
-const CATEGORY_LABELS: Record<PulsePlanCategory, string> = {
-  workout: "Workout",
-  workday: "Workday",
-  "work-schedule": "Work Schedule",
-  "date-night": "Date Night",
-  subscription: "Subscription",
-  expense: "Expense",
-  reminder: "Reminder",
-  "savings-goal": "Savings Goal",
-  task: "Task",
-  general: "General",
-};
-
-const TIMELINE_ROLE_LABELS: Record<SyncPreviewTimelineRole, string> = {
-  event: "Event",
-  task: "Task",
-  deadline: "Deadline",
-  log: "Log",
-  schedule: "Schedule",
-  unknown: "Timeline",
 };
 
 type BuildSyncPreviewOptions = {
@@ -209,7 +191,7 @@ function resolvePreviewBanner(
     return "Sync thinks you want to remove this.";
   }
   if (mode === "edit") {
-    return "Sync thinks you meant...";
+    return "Sync thinks you want to update this.";
   }
   if (mode === "duplicate") {
     return "This looks similar to an existing item.";
@@ -363,8 +345,21 @@ export function buildSyncPreviewViewModel(
     : undefined;
 
   const overlap = rawOverlap
-    ? enrichOverlapWithMeaning(rawOverlap, meaning, conflictItem)
+    ? buildPriorityConflictOverlap(
+        rawOverlap,
+        {
+          meaning,
+          prompt: plan.prompt,
+          destinations,
+        },
+        conflictItem,
+      )
     : undefined;
+
+  const humanSummary = humanizeMeaningSummary(
+    buildWhySummaryFromMeaning(meaning, overlap),
+  );
+  const humanProtection = humanizeProtectionReason(meaning, destinations);
 
   return {
     mode,
@@ -373,8 +368,8 @@ export function buildSyncPreviewViewModel(
     what: {
       title: options.targetTitle ?? buildPreviewTitle(plan),
       subtitle: buildPreviewSubtitle(plan),
-      category: CATEGORY_LABELS[plan.category],
-      intent: TIMELINE_ROLE_LABELS[timelineRole],
+      category: "",
+      intent: undefined,
     },
     when: {
       label: resolveWhenLabel(plan),
@@ -389,13 +384,9 @@ export function buildSyncPreviewViewModel(
       destinations,
     },
     why: {
-      summary: buildWhySummaryFromMeaning(meaning, overlap),
-      importanceLabel:
-        meaning.importance === "high" ? meaning.meaningLabel : undefined,
-      protectionRecommendation:
-        meaning.protection.recommended && meaning.protection.reason
-          ? meaning.protection.reason
-          : undefined,
+      summary: humanSummary,
+      importanceLabel: undefined,
+      protectionRecommendation: humanProtection,
       affectedAreas: consequenceAnalysis.affectedAreas.map((area) => ({
         area: area.area,
         impact: area.impact,
