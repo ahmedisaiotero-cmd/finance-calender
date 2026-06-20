@@ -6,9 +6,10 @@ import {
   formatSyncClock,
   type SyncTimeBlock,
 } from "@/lib/sync-time-blocks";
-import { generateHomeAmbientInsight } from "@/lib/time-block-insights";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
 import { dayMatchesScheduleDay } from "@/lib/user-timeline-context";
+import { loadUserProfile, saveUserProfile } from "@/lib/sync-profile/user-profile";
+import type { SyncUserProfile } from "@/lib/sync-profile/user-profile";
 
 export type BriefSectionId = "today" | "noticing" | "possibility";
 
@@ -24,8 +25,6 @@ export type DailyBriefSnapshot = {
   sections: BriefSection[];
   isEmpty: boolean;
 };
-
-const PREFERRED_NAME_KEY = "sync.preferredName";
 
 function addDays(date: Date, amount: number) {
   const next = new Date(date);
@@ -93,7 +92,95 @@ function relativeDayPhrase(days: number) {
   return "coming up";
 }
 
+function displayItemTitle(item: CapturedSyncItem) {
+  if (item.title === "Reminder" || item.title.endsWith(" Reminder")) {
+    const dueMatch = item.prompt.match(/^([a-z0-9 '&.-]+)\s+is\s+due\b/i);
+    if (dueMatch) {
+      return dueMatch[1]
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+    }
+  }
+  return item.title.replace(/\s+Reminder$/i, "");
+}
+
+function normalizeBriefFact(text: string) {
+  return text.toLowerCase().replace(/[.!?]/g, "").trim();
+}
+
+function briefFactsOverlap(a: string, b: string) {
+  const left = normalizeBriefFact(a);
+  const right = normalizeBriefFact(b);
+  if (!left || !right) return false;
+  if (left === right) return true;
+  if (left.includes(right) || right.includes(left)) return true;
+
+  const sharedTopics = [
+    "payday",
+    "work starts",
+    "evening opens",
+    "open time after",
+    "haven't logged exercise",
+    "birthday",
+    "rent",
+    "overtime",
+  ];
+
+  return sharedTopics.some(
+    (topic) => left.includes(topic) && right.includes(topic),
+  );
+}
+
+function filterBriefLines(lines: string[], lede: string | null) {
+  if (!lede) return lines;
+  return lines.filter((line) => !briefFactsOverlap(line, lede));
+}
+
+function splitBriefSentences(paragraph: string) {
+  return paragraph
+    .split(/(?<=\.)\s+/)
+    .map((sentence) => sentence.trim())
+    .filter(Boolean);
+}
+
+function joinBriefSentences(sentences: string[]) {
+  return sentences.join(" ");
+}
+
+function isPaydayItem(item: CapturedSyncItem) {
+  const text = `${item.title} ${item.prompt}`.toLowerCase();
+  return (
+    item.parsedInput?.moneyType === "income" ||
+    item.moneyType === "income" ||
+    /\b(payday|pay day|get paid|paycheck)\b/.test(text) ||
+    item.title === "Payday" ||
+    item.title === "Upcoming Paycheck"
+  );
+}
+
+function paydayPhrase(item: CapturedSyncItem, reference: Date) {
+  const key =
+    item.timeline?.deadlineDate ??
+    item.timeline?.startDate ??
+    resolveCaptureDateKey(item, reference);
+  const days = daysUntil(key, reference);
+  if (days == null) return null;
+  if (days === 0) return "Payday is today";
+  if (days === 1) return "Payday is tomorrow";
+  if (days > 1 && days <= 21) return `Payday is in ${days} days`;
+  return null;
+}
+
+export function describeItemTiming(item: CapturedSyncItem, reference: Date) {
+  if (isPaydayItem(item)) {
+    return paydayPhrase(item, reference) ?? friendlyDeadline(item, reference);
+  }
+  return friendlyDeadline(item, reference);
+}
+
 function friendlyDeadline(item: CapturedSyncItem, reference: Date) {
+  const title = displayItemTitle(item);
   const key =
     item.timeline?.deadlineDate ??
     item.timeline?.startDate ??
@@ -102,19 +189,30 @@ function friendlyDeadline(item: CapturedSyncItem, reference: Date) {
   if (days == null) return item.dateLabel !== "Flexible" ? item.dateLabel : null;
 
   if (item.timeline?.timelineRole === "deadline" || item.category === "reminder") {
-    if (days === 0) return `${item.title} is due today`;
-    if (days === 1) return `${item.title} is due tomorrow`;
-    if (days > 1 && days <= 14) return `${item.title} is due in ${days} days`;
-    if (days > 14) return `${item.title} is due ${relativeDayPhrase(days)}`;
+    if (days === 0) return `${title} is due today`;
+    if (days === 1) return `${title} is due tomorrow`;
+    if (days > 1 && days <= 7 && key) {
+      const [y, m, d] = key.split("-").map(Number);
+      const weekday = new Date(y, m - 1, d).toLocaleDateString("en-US", {
+        weekday: "long",
+      });
+      return `${title} is due ${weekday}`;
+    }
+    if (days > 1 && days <= 14) return `${title} is due in ${days} days`;
+    if (days > 14) return `${title} is due ${relativeDayPhrase(days)}`;
   }
 
-  if (days === 0) return `${item.title} is today`;
-  if (days === 1) return `${item.title} is tomorrow`;
-  if (days > 1 && days <= 21) return `${item.title} is in ${days} days`;
+  if (days === 0) return `${title} is today`;
+  if (days === 1) return `${title} is tomorrow`;
+  if (days > 1 && days <= 21) return `${title} is in ${days} days`;
   return null;
 }
 
 function financeReminder(item: CapturedSyncItem, reference: Date) {
+  if (isPaydayItem(item)) {
+    return paydayPhrase(item, reference);
+  }
+
   if (
     !item.destinations.includes("Finance") &&
     item.category !== "expense" &&
@@ -122,12 +220,6 @@ function financeReminder(item: CapturedSyncItem, reference: Date) {
     item.category !== "reminder"
   ) {
     return null;
-  }
-
-  const prompt = item.prompt.toLowerCase();
-  if (/\b(payday|pay day)\b/.test(prompt) || /\bpayday\b/i.test(item.title)) {
-    const phrase = friendlyDeadline(item, reference);
-    return phrase ?? "Payday is coming up";
   }
 
   return friendlyDeadline(item, reference);
@@ -156,6 +248,7 @@ function buildTodayParagraph(
   items: CapturedSyncItem[],
   workSchedule: PersistedWorkSchedule | null | undefined,
   reference: Date,
+  lede: string | null,
 ) {
   const todayKey = toDateKey(reference);
   const sentences: string[] = [];
@@ -192,7 +285,7 @@ function buildTodayParagraph(
       if (!phrase) return false;
       const key = resolveCaptureDateKey(item, reference);
       const days = daysUntil(key, reference);
-      return days != null && days <= 7;
+      return days != null && days <= 1;
     });
 
   if (financeItem) {
@@ -206,24 +299,22 @@ function buildTodayParagraph(
       `${String(Math.floor(workEnd / 60)).padStart(2, "0")}:${String(workEnd % 60).padStart(2, "0")}`,
     );
     if (openLabel) {
-      sentences.push(`Your evening opens up after ${openLabel}.`);
+      sentences.push(`Your evening opens after ${openLabel}.`);
     }
   }
 
   if (sentences.length === 0) {
-    const openToday = occupiedMinutes(todayTimed) < 2 * 60;
-    if (openToday) {
-      sentences.push("Your calendar is mostly open today.");
-    }
+    return null;
   }
 
-  return sentences.length > 0 ? sentences.join(" ") : null;
+  return joinBriefSentences(filterBriefLines(sentences, lede));
 }
 
 function buildNoticingParagraphs(
   blocks: SyncTimeBlock[],
   items: CapturedSyncItem[],
   reference: Date,
+  lede: string | null,
 ) {
   const lines: string[] = [];
   const horizonEnd = toDateKey(addDays(reference, 30));
@@ -343,7 +434,15 @@ function buildNoticingParagraphs(
   }
 
   const unique = [...new Set(lines.map((line) => line.trim()).filter(Boolean))];
-  return unique.slice(0, 4);
+  const deduped: string[] = [];
+
+  for (const line of unique) {
+    if (lede && briefFactsOverlap(line, lede)) continue;
+    if (deduped.some((existing) => briefFactsOverlap(existing, line))) continue;
+    deduped.push(line);
+  }
+
+  return filterBriefLines(deduped, lede).slice(0, 4);
 }
 
 function describeHealthGap(items: CapturedSyncItem[], reference: Date) {
@@ -372,67 +471,210 @@ function describeHealthGap(items: CapturedSyncItem[], reference: Date) {
   return null;
 }
 
-function buildPossibilityParagraphs(blocks: SyncTimeBlock[], reference: Date) {
+function buildPossibilityParagraphs(
+  blocks: SyncTimeBlock[],
+  reference: Date,
+  lede: string | null,
+  todayParagraph: string | null,
+) {
   const lines: string[] = [];
-  let openEvenings = 0;
-
-  for (let offset = 0; offset < 7; offset += 1) {
-    const dateKey = toDateKey(addDays(reference, offset));
-    const dayBlocks = timedBlocksForDate(blocks, dateKey);
-    const occupied = occupiedMinutes(dayBlocks);
-    if (dayBlocks.length === 0 || occupied < 3 * 60) {
-      openEvenings += 1;
-    }
-  }
-
-  if (openEvenings >= 2) {
-    lines.push(
-      `You have ${openEvenings === 2 ? "two" : openEvenings} open evenings this week.`,
-    );
-  }
-
-  const tomorrowKey = toDateKey(addDays(reference, 1));
-  const tomorrowBlocks = timedBlocksForDate(blocks, tomorrowKey);
-  if (tomorrowBlocks.length === 0 || occupiedMinutes(tomorrowBlocks) < 4 * 60) {
-    lines.push("Tomorrow stays mostly open.");
-  }
-
   const todayKey = toDateKey(reference);
   const todayBlocks = timedBlocksForDate(blocks, todayKey);
   const lastEnd = latestBlockEnd(
     todayBlocks.filter((block) => block.area === "work"),
   );
+
   if (lastEnd > 0 && lastEnd < 21 * 60) {
     const openLabel = formatSyncClock(
       `${String(Math.floor(lastEnd / 60)).padStart(2, "0")}:${String(lastEnd % 60).padStart(2, "0")}`,
     );
-    if (openLabel && !lines.some((line) => line.includes(openLabel))) {
-      lines.push(`There is open time after ${openLabel} today.`);
+    if (openLabel) {
+      lines.push(`You have open time after ${openLabel} today.`);
     }
   }
 
-  return [...new Set(lines)].slice(0, 2);
+  const filtered = filterBriefLines(lines, lede);
+  if (todayParagraph) {
+    return filtered
+      .filter(
+        (line) =>
+          !splitBriefSentences(todayParagraph).some((sentence) =>
+            briefFactsOverlap(sentence, line),
+          ),
+      )
+      .slice(0, 1);
+  }
+
+  return filtered.slice(0, 1);
+}
+
+type BriefHighlight = { priority: number; text: string };
+
+function profilePriorityBoost(
+  item: CapturedSyncItem,
+  priorities: string[],
+): number {
+  if (priorities.length === 0) return 0;
+
+  const matchers: Record<string, (candidate: CapturedSyncItem) => boolean> = {
+    Family: isFamilyItem,
+    Money: (candidate) =>
+      isPaydayItem(candidate) ||
+      candidate.destinations.includes("Finance") ||
+      candidate.category === "expense" ||
+      candidate.category === "subscription",
+    Health: isHealthItem,
+    Work: (candidate) =>
+      candidate.destinations.includes("Work") ||
+      candidate.category === "workday" ||
+      candidate.category === "work-schedule",
+    Goals: (candidate) =>
+      candidate.destinations.includes("Goals") ||
+      candidate.category === "savings-goal",
+    Home: (candidate) =>
+      candidate.category === "reminder" &&
+      !candidate.destinations.includes("Finance"),
+  };
+
+  let boost = 0;
+  priorities.forEach((priority, index) => {
+    const matches = matchers[priority];
+    if (matches?.(item)) {
+      boost -= (priorities.length - index) * 5;
+    }
+  });
+
+  return boost;
+}
+
+function collectBriefHighlights(
+  items: CapturedSyncItem[],
+  blocks: SyncTimeBlock[],
+  workSchedule: PersistedWorkSchedule | null | undefined,
+  reference: Date,
+  priorities: string[],
+) {
+  const highlights: BriefHighlight[] = [];
+
+  const priorityBias = (item: CapturedSyncItem, base: number) =>
+    base + profilePriorityBoost(item, priorities);
+
+  for (const item of items.filter(activeItem)) {
+    const key = resolveCaptureDateKey(item, reference);
+    const days = daysUntil(key, reference);
+
+    if (isPaydayItem(item) && days != null && days >= 0 && days <= 21) {
+      const phrase = paydayPhrase(item, reference);
+      if (phrase) {
+        highlights.push({
+          priority: priorityBias(
+            item,
+            days <= 1 ? 4 + days : 10 + days,
+          ),
+          text: `${phrase}.`,
+        });
+      }
+      continue;
+    }
+
+    if (
+      item.timeline?.timelineRole === "deadline" ||
+      (item.category === "reminder" && item.destinations.includes("Finance"))
+    ) {
+      const phrase = friendlyDeadline(item, reference);
+      if (phrase && days != null && days >= 0 && days <= 14) {
+        highlights.push({
+          priority: priorityBias(
+            item,
+            days === 0 ? 2 : days === 1 ? 5 : 12 + days,
+          ),
+          text: `${phrase}.`,
+        });
+      }
+    }
+
+    if (isFamilyItem(item)) {
+      const phrase = friendlyDeadline(item, reference);
+      if (phrase && days != null && days >= 0 && days <= 30) {
+        highlights.push({
+          priority: priorityBias(item, 14 + days),
+          text: `${phrase}.`,
+        });
+      }
+    }
+  }
+
+  const healthGap = describeHealthGap(items, reference);
+  if (healthGap) {
+    highlights.push({ priority: 32, text: healthGap });
+  }
+
+  const todayKey = toDateKey(reference);
+  const todayTimed = timedBlocksForDate(blocks, todayKey);
+  const todayWork = todayTimed.filter((block) => block.area === "work");
+  const workBlock =
+    todayWork.find((block) => block.blockType === "schedule") ?? todayWork[0];
+
+  if (workBlock?.startTime) {
+    highlights.push({
+      priority: 20,
+      text: `Work starts at ${formatSyncClock(workBlock.startTime)}.`,
+    });
+  } else if (
+    workSchedule &&
+    dayMatchesScheduleDay(reference.getDay(), workSchedule.days)
+  ) {
+    highlights.push({
+      priority: 20,
+      text: `Work starts at ${formatSyncClock(workSchedule.startTime)}.`,
+    });
+  }
+
+  const personalToday = todayTimed.filter(
+    (block) => block.area !== "work" && block.blockType !== "schedule",
+  );
+  for (const block of personalToday.slice(0, 1)) {
+    const time = formatSyncClock(block.startTime);
+    highlights.push({
+      priority: 8,
+      text: time
+        ? `${block.title} at ${time} today.`
+        : `${block.title} is today.`,
+    });
+  }
+
+  return highlights.sort((a, b) => a.priority - b.priority);
+}
+
+function buildBriefLede(
+  items: CapturedSyncItem[],
+  blocks: SyncTimeBlock[],
+  workSchedule: PersistedWorkSchedule | null | undefined,
+  reference: Date,
+  priorities: string[],
+) {
+  const highlights = collectBriefHighlights(
+    items,
+    blocks,
+    workSchedule,
+    reference,
+    priorities,
+  );
+  if (highlights.length > 0) {
+    return highlights[0].text;
+  }
+
+  return "Here's what matters right now.";
 }
 
 export function loadPreferredName(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return window.localStorage.getItem(PREFERRED_NAME_KEY)?.trim() || null;
-  } catch {
-    return null;
-  }
+  const name = loadUserProfile().name.trim();
+  return name || null;
 }
 
 export function savePreferredName(name: string) {
-  if (typeof window === "undefined") return;
-  try {
-    const trimmed = name.trim();
-    if (trimmed) {
-      window.localStorage.setItem(PREFERRED_NAME_KEY, trimmed);
-    }
-  } catch {
-    // ignore storage failures
-  }
+  const profile = loadUserProfile();
+  saveUserProfile({ ...profile, name: name.trim() });
 }
 
 export function buildDailyBrief(input: {
@@ -440,17 +682,27 @@ export function buildDailyBrief(input: {
   workSchedule?: PersistedWorkSchedule | null;
   reference?: Date;
   userName?: string | null;
+  lifeProfile?: SyncUserProfile | null;
 }): DailyBriefSnapshot {
   const reference = input.reference ?? new Date();
   const activeItems = input.items.filter(activeItem);
   const workSchedule = input.workSchedule ?? null;
-  const userName = input.userName ?? null;
-  const hasUserContext = activeItems.length > 0 || workSchedule != null;
+  const userName = input.userName ?? input.lifeProfile?.name ?? null;
+  const lifeProfile = input.lifeProfile ?? null;
+  const hasUserContext =
+    activeItems.length > 0 ||
+    workSchedule != null ||
+    Boolean(
+      lifeProfile?.onboardingComplete &&
+        (lifeProfile.typicalWeek.trim() ||
+          lifeProfile.comingUp.trim() ||
+          lifeProfile.name.trim()),
+    );
 
   if (!hasUserContext) {
     return {
       userName,
-      lede: "Tell Sync what matters and your brief will build from your life.",
+      lede: "Tell Sync what matters. Your brief builds from what you share.",
       sections: [],
       isEmpty: true,
     };
@@ -465,23 +717,43 @@ export function buildDailyBrief(input: {
     workSchedule,
   });
 
+  const lede = buildBriefLede(
+    activeItems,
+    blocks,
+    workSchedule,
+    reference,
+    lifeProfile?.priorities ?? [],
+  );
+
   const todayParagraph = buildTodayParagraph(
     blocks,
     activeItems,
     workSchedule,
     reference,
+    lede,
   );
   const noticingParagraphs = buildNoticingParagraphs(
     blocks,
     activeItems,
     reference,
+    lede,
   );
-  const possibilityParagraphs = buildPossibilityParagraphs(blocks, reference);
+  const possibilityParagraphs = buildPossibilityParagraphs(
+    blocks,
+    reference,
+    lede,
+    todayParagraph,
+  );
 
   const sections: BriefSection[] = [];
 
   if (todayParagraph) {
-    sections.push({ id: "today", paragraphs: [todayParagraph] });
+    const todayBody = joinBriefSentences(
+      filterBriefLines(splitBriefSentences(todayParagraph), lede),
+    );
+    if (todayBody) {
+      sections.push({ id: "today", paragraphs: [todayBody] });
+    }
   }
 
   if (noticingParagraphs.length > 0) {
@@ -500,14 +772,15 @@ export function buildDailyBrief(input: {
     });
   }
 
-  const isEmpty = sections.length === 0;
-  const lede = isEmpty
-    ? "Tell Sync what matters and your brief will build from your life."
-    : generateHomeAmbientInsight(blocks, activeItems, reference);
+  const hasHeadline =
+    lede !== "Here's what matters right now." && lede.trim().length > 0;
+  const isEmpty = sections.length === 0 && !hasHeadline;
 
   return {
     userName,
-    lede,
+    lede: isEmpty
+      ? "Tell Sync what matters. Your brief builds from what you share."
+      : lede,
     sections,
     isEmpty,
   };

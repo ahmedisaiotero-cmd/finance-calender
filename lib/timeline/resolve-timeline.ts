@@ -764,6 +764,41 @@ function resolveRelative(
   return null;
 }
 
+function resolveAbsoluteCalendarDate(
+  input: string,
+  text: string,
+  now: Date,
+  tense: TimelineResolution["tense"],
+  time: ResolvedTime,
+) {
+  const date = resolveDatePhrase(text, now, tense);
+  if (!date) return null;
+
+  const isBirthday = /\bbirthday\b/.test(text);
+  const isPast = tense === "past";
+  const role: TimelineResolution["timelineRole"] = isPast
+    ? "log"
+    : isBirthday
+      ? "event"
+      : time.isTimed
+        ? "event"
+        : "event";
+
+  return buildResolution(input, {
+    kind: "single_date",
+    startDate: toDateKey(date.date),
+    startTime: time.startTime,
+    endTime: time.endTime,
+    isTimed: time.isTimed,
+    timeSource: time.source,
+    durationMinutes: time.durationMinutes,
+    timelineRole: role,
+    confidence: 0.88,
+    tense: tense === "unknown" ? "future" : tense,
+    label: date.label,
+  });
+}
+
 function resolveWeekday(
   input: string,
   text: string,
@@ -891,6 +926,7 @@ export function resolveTimeline(
     resolveRange(sourceText, text, now, tense, time) ??
     resolveRelative(sourceText, text, now, time) ??
     resolveWeekday(sourceText, text, now, time) ??
+    resolveAbsoluteCalendarDate(sourceText, text, now, tense, time) ??
     buildResolution(sourceText, {
       kind: "unknown",
       startTime: time.startTime,

@@ -1,0 +1,197 @@
+import type { SyncUserContext } from "@/lib/intelligence/sync-user-context";
+import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
+
+export type SyncUserProfile = {
+  name: string;
+  typicalWeek: string;
+  priorities: string[];
+  awareness: string[];
+  comingUp: string;
+  onboardingComplete: boolean;
+  updatedAt: string;
+};
+
+export const USER_PROFILE_KEY = "sync.userProfile";
+const LEGACY_LIFE_PROFILE_KEY = "sync.lifeProfile";
+const LEGACY_PREFERRED_NAME_KEY = "sync.preferredName";
+
+export const PRIORITY_OPTIONS = [
+  "Money",
+  "Health",
+  "Family",
+  "Work",
+  "Goals",
+  "Home",
+] as const;
+
+export const AWARENESS_OPTIONS = [
+  "Time",
+  "Money",
+  "Health",
+  "Relationships",
+  "Work",
+  "Goals",
+] as const;
+
+export const EMPTY_USER_PROFILE: SyncUserProfile = {
+  name: "",
+  typicalWeek: "",
+  priorities: [],
+  awareness: [],
+  comingUp: "",
+  onboardingComplete: false,
+  updatedAt: "",
+};
+
+function readLegacyLifeProfile(): Partial<SyncUserProfile> | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(LEGACY_LIFE_PROFILE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as Partial<SyncUserProfile>;
+  } catch {
+    return null;
+  }
+}
+
+function readLegacyPreferredName(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.localStorage.getItem(LEGACY_PREFERRED_NAME_KEY)?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+function migrateStoredProfile(): SyncUserProfile {
+  if (typeof window === "undefined") return EMPTY_USER_PROFILE;
+
+  try {
+    const raw = window.localStorage.getItem(USER_PROFILE_KEY);
+    if (raw) {
+      return { ...EMPTY_USER_PROFILE, ...JSON.parse(raw) } as SyncUserProfile;
+    }
+  } catch {
+    // fall through to legacy migration
+  }
+
+  const legacy = readLegacyLifeProfile();
+  const legacyName = readLegacyPreferredName();
+  const migrated: SyncUserProfile = {
+    ...EMPTY_USER_PROFILE,
+    ...legacy,
+    name: legacy?.name?.trim() || legacyName || "",
+  };
+
+  if (
+    migrated.name ||
+    migrated.typicalWeek ||
+    migrated.priorities.length > 0 ||
+    migrated.awareness.length > 0 ||
+    migrated.comingUp ||
+    migrated.onboardingComplete
+  ) {
+    saveUserProfile(migrated);
+  }
+
+  return migrated;
+}
+
+export function loadUserProfile(): SyncUserProfile {
+  return migrateStoredProfile();
+}
+
+export function saveUserProfile(profile: SyncUserProfile): SyncUserProfile {
+  if (typeof window === "undefined") return profile;
+  const next: SyncUserProfile = {
+    ...profile,
+    updatedAt: new Date().toISOString(),
+  };
+  window.localStorage.setItem(USER_PROFILE_KEY, JSON.stringify(next));
+  return next;
+}
+
+export function isOnboardingComplete(): boolean {
+  return loadUserProfile().onboardingComplete;
+}
+
+export function toggleProfileChip(list: string[], value: string) {
+  return list.includes(value)
+    ? list.filter((item) => item !== value)
+    : [...list, value];
+}
+
+export function splitComingUpLines(text: string) {
+  return text
+    .split(/[\n.]+/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 3);
+}
+
+export function profileToSyncUserContext(
+  profile: SyncUserProfile,
+  workSchedule?: PersistedWorkSchedule | null,
+): SyncUserContext {
+  const context: SyncUserContext = {};
+
+  if (workSchedule) {
+    context.workSchedule = {
+      days: workSchedule.days,
+      startTime: workSchedule.startTime,
+      endTime: workSchedule.endTime,
+    };
+  }
+
+  const goals: NonNullable<SyncUserContext["goals"]> = [];
+  if (profile.priorities.includes("Goals")) {
+    goals.push({ id: "profile-goals", title: "Goals", area: "personal" });
+  }
+  if (profile.priorities.includes("Money")) {
+    goals.push({ id: "profile-money", title: "Money", area: "finance" });
+  }
+  if (goals.length > 0) {
+    context.goals = goals;
+  }
+
+  const routines: NonNullable<SyncUserContext["routines"]> = [];
+  if (
+    profile.priorities.includes("Health") ||
+    profile.awareness.includes("Health")
+  ) {
+    routines.push({
+      id: "profile-health",
+      title: "Health",
+      area: "health",
+    });
+  }
+  if (
+    profile.priorities.includes("Work") ||
+    profile.awareness.includes("Work")
+  ) {
+    routines.push({
+      id: "profile-work",
+      title: "Work",
+      area: "work",
+    });
+  }
+  if (routines.length > 0) {
+    context.routines = routines;
+  }
+
+  return context;
+}
+
+/** @deprecated Use SyncUserProfile */
+export type LifeProfile = SyncUserProfile;
+
+/** @deprecated Use EMPTY_USER_PROFILE */
+export const EMPTY_LIFE_PROFILE = EMPTY_USER_PROFILE;
+
+/** @deprecated Use USER_PROFILE_KEY */
+export const LIFE_PROFILE_KEY = USER_PROFILE_KEY;
+
+/** @deprecated Use loadUserProfile */
+export const loadLifeProfile = loadUserProfile;
+
+/** @deprecated Use saveUserProfile */
+export const saveLifeProfile = saveUserProfile;

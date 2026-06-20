@@ -116,6 +116,105 @@ function capture(
 
   const noticing = brief.sections.find((section) => section.id === "noticing");
   assert.match(noticing?.paragraphs[0] ?? "", /Mom's Birthday|birthday|exercise/i);
+
+  assert.doesNotMatch(brief.lede, /Nothing urgent|mostly open|worth a quick check/i);
+  assert.match(brief.lede, /Work starts at 11:00 AM|Mom's Birthday|Rent|exercise|Payday/i);
+
+  const allBody = brief.sections.map((s) => s.paragraphs.join(" ")).join(" ");
+  const paydayMatches = allBody.match(/Payday/gi) ?? [];
+  assert.ok(
+    !brief.lede.match(/Payday/i) || paydayMatches.length === 0,
+    "payday should not repeat in body when it is the lede",
+  );
+}
+
+{
+  const items = [
+    capture({
+      id: "payday",
+      title: "Payday",
+      category: "expense",
+      destinations: ["Finance", "Calendar"],
+      dateLabel: "Friday",
+      prompt: "i get paid friday",
+      timeline: {
+        timelineRole: "task",
+        startDate: "2026-06-19",
+        label: "Friday",
+      },
+    }),
+    capture({
+      id: "rent",
+      title: "Rent",
+      category: "reminder",
+      destinations: ["Finance", "Calendar"],
+      dateLabel: "Next Friday",
+      timeline: {
+        timelineRole: "deadline",
+        deadlineDate: "2026-06-20",
+        startDate: "2026-06-20",
+        label: "Next Friday",
+      },
+      prompt: "rent is due next friday",
+    }),
+  ];
+
+  const brief = buildDailyBrief({
+    items,
+    workSchedule,
+    reference,
+    userName: "Ahmed",
+  });
+
+  assert.match(brief.lede, /Payday is in 5 days/i);
+  const body = brief.sections.map((section) => section.paragraphs.join(" ")).join(" ");
+  assert.doesNotMatch(body, /Payday is in 5 days/i);
+}
+
+{
+  const priorityItems = [
+    capture({
+      id: "work-today",
+      title: "Work",
+      category: "workday",
+      destinations: ["Work", "Calendar"],
+      dateLabel: "Today",
+      timeline: {
+        timelineRole: "event",
+        startDate: "2026-06-14",
+        startTime: "11:00",
+        label: "Today",
+      },
+    }),
+    capture({
+      id: "mom",
+      title: "Mom's Birthday",
+      destinations: ["Family", "Relationships", "Calendar"],
+      dateLabel: "In 8 days",
+      timeline: {
+        timelineRole: "event",
+        startDate: "2026-06-22",
+        label: "In 8 days",
+      },
+    }),
+  ];
+
+  const brief = buildDailyBrief({
+    items: priorityItems,
+    workSchedule,
+    reference,
+    lifeProfile: {
+      name: "Ahmed",
+      typicalWeek: "",
+      priorities: ["Family"],
+      awareness: [],
+      comingUp: "",
+      onboardingComplete: true,
+      updatedAt: reference.toISOString(),
+    },
+  });
+
+  assert.match(brief.lede, /Mom's Birthday|birthday/i);
 }
 
 console.log("build-daily-brief tests passed");

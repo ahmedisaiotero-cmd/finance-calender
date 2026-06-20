@@ -1,39 +1,147 @@
 import type { CapturedSyncItem } from "@/lib/captured-items";
-import { analyzeMeaning } from "@/lib/intelligence/meaning-engine";
-import { createPulsePlan } from "@/lib/pulse/create-pulse-plan";
-import { buildSyncPreviewViewModel } from "@/lib/pulse/sync-preview-view-model";
-import { sanitizeSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";
-import type { PulsePlan, PulsePlanCategory, PulseMoneyType } from "@/lib/pulse/types";
 import {
-  detectSyncTimeBlockOverlaps,
-  proposedSyncTimeBlocksFromPlan,
-} from "@/lib/sync-time-blocks";
+  enrichCapturePlan,
+  isSilentCaptureReady,
+  prepareCaptureFromText,
+  type PreparedCapture,
+} from "@/lib/sync-capture/save-capture";
+import { createPulsePlan } from "@/lib/pulse/create-pulse-plan";
+import { sanitizeSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";
+import type { PulsePlan } from "@/lib/pulse/types";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
+import { describeItemTiming } from "@/lib/mobile-prototype/build-daily-brief";
 
-function compactTitle(plan: {
-  category: PulsePlanCategory;
-  timeLabel: string;
+export type BriefCaptureResult = {
+  plan: PulsePlan & { status: "saved" };
+  destinations: ReturnType<typeof sanitizeSyncDestinations>;
   title: string;
-  parsedInput?: PulsePlan["parsedInput"];
-  moneyType?: PulseMoneyType;
-}): string {
-  if (plan.parsedInput?.moneyType === "income" || plan.moneyType === "income") {
-    return "Upcoming Paycheck";
+  meaning: PreparedCapture["meaning"];
+};
+
+export type BriefCaptureAttempt =
+  | { status: "saved"; result: BriefCaptureResult }
+  | {
+      status: "needs_clarification";
+      draftText: string;
+      message: string;
+      suggestions: string[];
+    }
+  | { status: "too_vague"; message: string }
+  | { status: "empty" };
+
+const VAGUE_CAPTURE_MESSAGE =
+  "Tell Sync something that happened or something coming up.";
+
+function isVagueCaptureInput(text: string) {
+  const normalized = text
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\s']/g, "")
+    .replace(/\s+/g, " ");
+
+  if (!normalized) return true;
+
+  const vagueExact = new Set([
+    "whats up",
+    "what's up",
+    "hey",
+    "hi",
+    "hello",
+    "sup",
+    "yo",
+    "how are you",
+    "hows it going",
+    "how's it going",
+    "good morning",
+    "good afternoon",
+    "good evening",
+    "thanks",
+    "thank you",
+    "ok",
+    "okay",
+    "yes",
+    "no",
+    "sure",
+    "maybe",
+    "idk",
+    "nvm",
+    "help",
+    "test",
+    "testing",
+  ]);
+
+  if (vagueExact.has(normalized)) return true;
+
+  const words = normalized.split(" ").filter(Boolean);
+  const hasSignal =
+    /\d/.test(normalized) ||
+    /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|today|tonight|next|paid|payday|due|birthday|rent|gym|work|mom|dad|trip|meeting|appointment|overtime)\b/.test(
+      normalized,
+    );
+
+  return words.length <= 2 && !hasSignal;
+}
+
+function clarificationForCapture(
+  plan: PulsePlan,
+  destinations: string[],
+): { message: string; suggestions: string[] } {
+  const timeline = plan.timeline;
+  const hasDate = Boolean(timeline?.startDate || timeline?.deadlineDate);
+
+  if (destinations.length === 0) {
+    return {
+      message: "I need a bit more to place this.",
+      suggestions: ["today", "tomorrow", "Friday"],
+    };
   }
 
-  if (plan.category === "workout" && plan.timeLabel !== "Flexible") {
-    return `${plan.timeLabel} Workout`;
+  if (!hasDate) {
+    return {
+      message: "When is this?",
+      suggestions: ["today", "tomorrow", "Friday", "next Friday"],
+    };
   }
 
-  if (plan.category === "reminder") {
-    return plan.title.replace(/\s+Reminder$/i, "");
+  return {
+    message: "Tell me a bit more so I can place this.",
+    suggestions: ["today", "tomorrow", "next week"],
+  };
+}
+
+export function attemptBriefCapture(
+  text: string,
+  context: {
+    items: CapturedSyncItem[];
+    workSchedule?: PersistedWorkSchedule | null;
+    reference?: Date;
+  },
+): BriefCaptureAttempt {
+  const trimmed = text.trim();
+  if (!trimmed) return { status: "empty" };
+
+  if (isVagueCaptureInput(trimmed)) {
+    return { status: "too_vague", message: VAGUE_CAPTURE_MESSAGE };
   }
 
-  if (plan.category === "savings-goal") {
-    return plan.title.replace(/\s+Savings Goal$/i, " Goal");
+  const result = captureFromBriefInput(trimmed, context);
+  if (result) {
+    return { status: "saved", result };
   }
 
-  return plan.title;
+  const reference = context.reference ?? new Date();
+  const rawPlan = createPulsePlan(trimmed, { timeline: { now: reference } });
+  const plan = enrichCapturePlan(rawPlan, reference);
+  const prepared = prepareCaptureFromText(trimmed, context);
+  const destinations = prepared?.destinations ?? [];
+  const clarification = clarificationForCapture(plan, destinations);
+
+  return {
+    status: "needs_clarification",
+    draftText: trimmed,
+    message: clarification.message,
+    suggestions: clarification.suggestions,
+  };
 }
 
 export function captureFromBriefInput(
@@ -43,43 +151,42 @@ export function captureFromBriefInput(
     workSchedule?: PersistedWorkSchedule | null;
     reference?: Date;
   },
-) {
-  const trimmed = text.trim();
-  if (!trimmed) return null;
-
-  const reference = context.reference ?? new Date();
-  const plan = createPulsePlan(trimmed, { timeline: { now: reference } });
-  const preview = buildSyncPreviewViewModel(plan, {
-    calendarItems: context.items,
-    workSchedule: context.workSchedule ?? undefined,
-  });
-
-  const destinations = sanitizeSyncDestinations(preview.where.destinations);
-  if (destinations.length === 0 || !preview.readyToSave) {
+): BriefCaptureResult | null {
+  const prepared = prepareCaptureFromText(text, context);
+  if (!prepared || !isSilentCaptureReady(prepared)) {
     return null;
   }
 
-  const overlaps = detectSyncTimeBlockOverlaps({
-    plan,
-    items: context.items,
-    workSchedule: context.workSchedule ?? undefined,
-  });
-
-  const meaning = analyzeMeaning({
-    title: compactTitle(plan),
-    normalizedText: plan.prompt,
-    category: plan.category,
-    destinations,
-    timeline: plan.timeline,
-    timeBlocks: proposedSyncTimeBlocksFromPlan(plan),
-    overlaps: overlaps.length > 0 ? overlaps : undefined,
-    items: context.items,
-  });
-
   return {
-    plan: { ...plan, status: "saved" as const },
-    destinations,
-    title: compactTitle(plan),
-    meaning,
+    plan: { ...prepared.plan, status: "saved" },
+    destinations: prepared.destinations,
+    title: prepared.title,
+    meaning: prepared.meaning,
   };
+}
+
+export function formatCaptureAcknowledgment(
+  captured: BriefCaptureResult,
+  reference = new Date(),
+) {
+  const stub: CapturedSyncItem = {
+    id: captured.plan.id,
+    title: captured.title,
+    category: captured.plan.category,
+    prompt: captured.plan.prompt,
+    destinations: captured.destinations,
+    dateLabel: captured.plan.dateLabel,
+    timeLabel: captured.plan.timeLabel,
+    timeline: captured.plan.timeline,
+    status: "active",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+
+  const timing = describeItemTiming(stub, reference);
+  if (timing) {
+    return `Remembered — ${timing}.`;
+  }
+
+  return `Remembered — ${captured.title}.`;
 }

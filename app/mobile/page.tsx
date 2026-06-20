@@ -1,5 +1,5 @@
-import { MobilePrototypeApp } from "@/components/mobile-prototype/mobile-prototype-app";
+import { SyncMobileApp } from "@/components/mobile-prototype/sync-mobile-app";
 
 export default function MobilePrototypePage() {
-  return <MobilePrototypeApp />;
+  return <SyncMobileApp />;
 }

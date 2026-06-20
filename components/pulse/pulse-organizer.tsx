@@ -11,8 +11,6 @@ import {
   buildUpdatedCaptureFromPlan,
   resolveCaptureAction,
 } from "@/lib/capture-action-resolver";
-import { detectDuplicateCapture } from "@/lib/capture-duplicate-detection";
-import { MOCK_SYNC_USER_CONTEXT } from "@/lib/intelligence/sync-user-context";
 import type { MeaningActionType } from "@/lib/intelligence/meaning-engine";
 import {
   type CapturedSyncItem,
@@ -26,7 +24,16 @@ import {
   sanitizeSyncDestinations,
 } from "@/lib/pulse/resolve-sync-destinations";
 import { buildSyncPreviewViewModel } from "@/lib/pulse/sync-preview-view-model";
-import type { PulseMoneyType, PulsePlan, PulsePlanCategory } from "@/lib/pulse/types";
+import type { PulsePlan } from "@/lib/pulse/types";
+import {
+  compactCaptureTitle,
+  prepareCaptureFromPlan,
+  saveCapture,
+} from "@/lib/sync-capture/save-capture";
+import {
+  loadUserProfile,
+  profileToSyncUserContext,
+} from "@/lib/sync-profile/user-profile";
 import { detectAmbiguity } from "@/lib/trust/ambiguity-detection";
 import {
   formatReferenceCandidateLabel,
@@ -99,34 +106,6 @@ type AmbiguityChoices = {
   interpretations: import("@/lib/trust/ambiguity-detection").SyncInterpretation[];
 };
 
-type CompactTitleInput = {
-  category: PulsePlanCategory;
-  timeLabel: string;
-  title: string;
-  parsedInput?: PulsePlan["parsedInput"];
-  moneyType?: PulseMoneyType;
-};
-
-function compactTitle(plan: CompactTitleInput): string {
-  if (plan.parsedInput?.moneyType === "income" || plan.moneyType === "income") {
-    return "Upcoming Paycheck";
-  }
-
-  if (plan.category === "workout" && plan.timeLabel !== "Flexible") {
-    return `${plan.timeLabel} Workout`;
-  }
-
-  if (plan.category === "reminder") {
-    return plan.title.replace(/\s+Reminder$/i, "");
-  }
-
-  if (plan.category === "savings-goal") {
-    return plan.title.replace(/\s+Savings Goal$/i, " Goal");
-  }
-
-  return plan.title;
-}
-
 export function PulseOrganizer({ variant = "default" }: { variant?: "default" | "home" }) {
   const {
     activeItems,
@@ -175,7 +154,10 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
         ? buildSyncPreviewViewModel(plan, {
             mode: previewMode,
             selectedDestinations,
-            userContext: MOCK_SYNC_USER_CONTEXT,
+            userContext: profileToSyncUserContext(
+              loadUserProfile(),
+              loadActiveWorkSchedule() ?? null,
+            ),
             calendarItems: activeItems,
             workSchedule: loadActiveWorkSchedule() ?? null,
             excludeCaptureId:
@@ -188,7 +170,7 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
                   : undefined,
           })
         : null,
-    [plan, previewMode, selectedDestinations, flow, activeItems],
+    [plan, previewMode, selectedDestinations, flow, activeItems, userTimelineContext],
   );
 
   useEffect(() => {
@@ -441,7 +423,7 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
       const days = plan.timeline?.recurrence?.days ?? [];
       if (days.length === 0) return;
 
-      const title = compactTitle(plan);
+      const title = compactCaptureTitle(plan);
       let sourceItemId = loadUserTimelineContext().workSchedule?.sourceItemId;
 
       if (flow.kind === "schedule-save") {
@@ -517,7 +499,7 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
           existing,
           plan,
           sanitizeSyncDestinations(selectedDestinations),
-          flow.commandIntent.operation === "rename" ? compactTitle(plan) : existing.title,
+          flow.commandIntent.operation === "rename" ? compactCaptureTitle(plan) : existing.title,
         ),
       );
 
@@ -533,11 +515,20 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
       return;
     }
 
-    const title = compactTitle(plan);
-    const duplicate = detectDuplicateCapture(plan, title, activeItems);
+    const prepared = prepareCaptureFromPlan(plan, {
+      items: activeItems,
+      workSchedule: loadActiveWorkSchedule() ?? null,
+      selectedDestinations,
+      previewMode,
+      excludeCaptureId: flow.kind === "edit" ? flow.targetId : undefined,
+    });
 
-    if (flow.kind === "create" && duplicate.isDuplicate && duplicate.bestMatch) {
-      setFlow({ kind: "duplicate", matchId: duplicate.bestMatch.item.id });
+    if (
+      flow.kind === "create" &&
+      prepared.duplicate.isDuplicate &&
+      prepared.duplicate.bestMatch
+    ) {
+      setFlow({ kind: "duplicate", matchId: prepared.duplicate.bestMatch.item.id });
       return;
     }
 
@@ -548,25 +539,23 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
     protectTime?: boolean;
     reliefOverride?: string;
   }) => {
-    if (!plan || !preview || selectedDestinations.length === 0) return;
+    if (!plan || selectedDestinations.length === 0) return;
 
-    const title = compactTitle(plan);
-    const meaning = preview.meaning;
-    const now = new Date().toISOString();
-    const protectedTime = options?.protectTime
-      ? {
-          enabled: true,
-          reason: meaning?.protection.reason ?? "Protected by you",
-          createdAt: now,
-        }
-      : undefined;
+    const prepared = prepareCaptureFromPlan(plan, {
+      items: activeItems,
+      workSchedule: loadActiveWorkSchedule() ?? null,
+      selectedDestinations,
+      previewMode,
+      excludeCaptureId: flow.kind === "edit" ? flow.targetId : undefined,
+    });
 
-    const capturedItem = addCapturedItem(
-      { ...plan, status: "saved" },
-      sanitizeSyncDestinations(selectedDestinations),
-      title,
-      { meaning, protectedTime },
-    );
+    const saved = saveCapture(prepared, addCapturedItem, {
+      protectTime: options?.protectTime,
+      skipDuplicateCheck: true,
+    });
+    if (!saved) return;
+
+    const capturedItem = saved.item;
     setPlan({ ...plan, status: "saved" });
     setReliefMessage(
       options?.reliefOverride ??
@@ -591,7 +580,7 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
     if (actionType === "set_leave_reminder") {
       saveCapturedPlan({
         protectTime: false,
-        reliefOverride: `Saved "${compactTitle(plan)}". Leave reminder noted — you can set the exact alert next.`,
+        reliefOverride: `Saved "${compactCaptureTitle(plan)}". Leave reminder noted — you can set the exact alert next.`,
       });
       return;
     }
@@ -599,7 +588,7 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
     if (actionType === "adjust_work") {
       saveCapturedPlan({
         protectTime: false,
-        reliefOverride: `Saved "${compactTitle(plan)}". Work availability adjustment is noted for later.`,
+        reliefOverride: `Saved "${compactCaptureTitle(plan)}". Work availability adjustment is noted for later.`,
       });
       return;
     }
@@ -612,7 +601,7 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
     if (actionType === "add_reminder") {
       saveCapturedPlan({
         protectTime: false,
-        reliefOverride: `Saved "${compactTitle(plan)}". Reminder suggestion noted.`,
+        reliefOverride: `Saved "${compactCaptureTitle(plan)}". Reminder suggestion noted.`,
       });
       return;
     }
@@ -631,7 +620,7 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
         existing,
         plan,
         sanitizeSyncDestinations(selectedDestinations),
-        compactTitle(plan),
+        compactCaptureTitle(plan),
       ),
     );
 
@@ -648,7 +637,7 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
     const capturedItem = addCapturedItem(
       { ...plan, status: "saved", id: crypto.randomUUID() },
       sanitizeSyncDestinations(selectedDestinations),
-      compactTitle(plan),
+      compactCaptureTitle(plan),
       { meaning: preview?.meaning },
     );
     setReliefMessage(getSyncReliefMessage(plan, capturedItem));

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { useCapturedItems } from "@/lib/captured-items";
-import { captureFromBriefInput } from "@/lib/mobile-prototype/capture-brief-input";
+import { captureFromBriefInput, formatCaptureAcknowledgment } from "@/lib/mobile-prototype/capture-brief-input";
 import {
   buildDailyBrief,
   formatBriefDate,
@@ -78,9 +78,9 @@ export function DailyBriefScreen() {
       addCapturedItem(captured.plan, captured.destinations, captured.title, {
         meaning: captured.meaning,
       });
-      setRecentNote(`Noted: ${captured.title}`);
+      setRecentNote(formatCaptureAcknowledgment(captured));
     } else {
-      setRecentNote("Add a little more detail so Sync can place this.");
+      setRecentNote("Add when or what this is about so Sync can remember it.");
     }
 
     setCaptureInput("");

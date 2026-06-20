@@ -1,4 +1,4 @@
-import { DailyBriefScreen } from "@/components/mobile-prototype/daily-brief-screen";
+import { SyncMobileApp } from "@/components/mobile-prototype/sync-mobile-app";
 
 export const metadata = {
   title: "Sync — Daily Brief",
@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function DailyBriefPage() {
-  return <DailyBriefScreen />;
+  return <SyncMobileApp initialTab="today" />;
 }

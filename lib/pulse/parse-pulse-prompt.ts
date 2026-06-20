@@ -183,6 +183,12 @@ export function extractSubject(
       ),
     );
     if (match) return cleanPhrase(match[1]) || null;
+
+    const dueMatch = prompt.match(
+      /^([A-Za-z0-9][A-Za-z0-9 &'+.-]*?)\s+is\s+due\b/i,
+    );
+    if (dueMatch) return cleanPhrase(dueMatch[1]) || null;
+
     return null;
   }
 

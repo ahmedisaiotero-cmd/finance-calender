@@ -1,0 +1,18 @@
+export {
+  AWARENESS_OPTIONS,
+  EMPTY_LIFE_PROFILE,
+  EMPTY_USER_PROFILE,
+  LIFE_PROFILE_KEY,
+  PRIORITY_OPTIONS,
+  USER_PROFILE_KEY,
+  isOnboardingComplete,
+  loadLifeProfile,
+  loadUserProfile,
+  saveLifeProfile,
+  saveUserProfile,
+  splitComingUpLines,
+  toggleProfileChip,
+  profileToSyncUserContext,
+  type LifeProfile,
+  type SyncUserProfile,
+} from "@/lib/sync-profile/user-profile";

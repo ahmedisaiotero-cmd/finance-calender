@@ -15,8 +15,8 @@ const body = DM_Sans({
 });
 
 export const metadata = {
-  title: "Sync — Mobile Prototype",
-  description: "Mobile-first Sync briefing prototype",
+  title: "Sync",
+  description: "Personal life briefing and memory",
 };
 
 export const viewport = {
