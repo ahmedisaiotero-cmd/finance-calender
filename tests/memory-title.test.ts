@@ -27,6 +27,18 @@ const titleCases = [
     prompt: "anniversary is on friday",
     expected: "Anniversary",
   },
+  {
+    prompt: "I don't work tomorrow",
+    expected: "Day Off Tomorrow",
+  },
+  {
+    prompt: "rent is due friday",
+    expected: "Rent Due",
+  },
+  {
+    prompt: "I went to the gym yesterday",
+    expected: "Workout",
+  },
 ] as const;
 
 for (const { prompt, expected } of titleCases) {
@@ -60,6 +72,43 @@ for (const { prompt, expected } of titleCases) {
   };
 
   assert.equal(displayMemoryTitle(item), "Mom's Birthday");
+}
+
+{
+  const item: CapturedSyncItem = {
+    id: "legacy-gf",
+    title: "Girlfrienda Bday Is April 25",
+    category: "task",
+    prompt: "my girlfrienda bday is april 25",
+    originalPrompt: "my girlfrienda bday is april 25",
+    destinations: ["Relationships", "Calendar"],
+    dateLabel: "April 25",
+    timeLabel: "Flexible",
+    status: "active",
+    createdAt: reference.toISOString(),
+    updatedAt: reference.toISOString(),
+  };
+
+  assert.equal(displayMemoryTitle(item), "Girlfriend's Birthday");
+}
+
+{
+  const item: CapturedSyncItem = {
+    id: "legacy-work",
+    title: "Work",
+    category: "workday",
+    prompt: "I don't work tomorrow",
+    originalPrompt: "I don't work tomorrow",
+    workAvailability: "off",
+    destinations: ["Work", "Calendar"],
+    dateLabel: "Tomorrow",
+    timeLabel: "Flexible",
+    status: "active",
+    createdAt: reference.toISOString(),
+    updatedAt: reference.toISOString(),
+  };
+
+  assert.equal(displayMemoryTitle(item), "Day Off Tomorrow");
 }
 
 console.log("memory-title tests passed");

@@ -92,12 +92,16 @@ function looksLikeRawCaptureTitle(title: string) {
   const normalized = title.trim().toLowerCase();
   if (!normalized) return false;
 
+  if (normalized === "work") return true;
+
   return (
     /\b(bday|birthday)\b/.test(normalized) ||
+    /\bbday\s+is\b/.test(normalized) ||
     /\b(is|was|are|on)\b/.test(normalized) ||
-    /\b(get paid|every other)\b/.test(normalized) ||
+    /\b(get paid|every other|don't work|dont work)\b/.test(normalized) ||
     /\b(showered|shower)\b/.test(normalized) ||
-    (normalized.split(/\s+/).length >= 4 &&
+    /\b(girlfrienda|moms?)\b/.test(normalized) ||
+    (normalized.split(/\s+/).length >= 3 &&
       /\b(my|the|on|is|december|april|january|february|march|may|june|july|august|september|october|november)\b/.test(
         normalized,
       ))
@@ -148,7 +152,7 @@ export function cleanMemoryTitle(input: MemoryTitleInput): string {
   }
 
   if (/\brent\b/i.test(text) && /\b(due|pay)\b/i.test(text)) {
-    return "Rent";
+    return "Rent Due";
   }
 
   if (/\bshower(?:ed|ing)?\b/i.test(text)) {
@@ -164,7 +168,6 @@ export function cleanMemoryTitle(input: MemoryTitleInput): string {
   }
 
   if (input.category === "workout" || /\b(gym|workout|exercise)\b/i.test(text)) {
-    if (/\btoday\b/i.test(text)) return "Workout Logged";
     return "Workout";
   }
 
@@ -172,7 +175,10 @@ export function cleanMemoryTitle(input: MemoryTitleInput): string {
     return "Medication";
   }
 
-  if (input.category === "workday" || /\b(overtime|worked)\b/i.test(text)) {
+  if (
+    (input.category === "workday" || /\b(overtime|worked)\b/i.test(text)) &&
+    !isWorkDayOffLanguage(prompt)
+  ) {
     if (/\bovertime\b/i.test(text)) return "Overtime";
     if (/\bworked\b/i.test(text)) return "Work Logged";
     return "Work";
@@ -185,10 +191,22 @@ export function cleanMemoryTitle(input: MemoryTitleInput): string {
     }
   }
 
-  if (looksLikeRawCaptureTitle(input.title)) {
+  if (looksLikeRawCaptureTitle(input.title) || looksLikeRawCaptureTitle(prompt)) {
+    if (
+      input.parsedInput?.workAvailability === "off" ||
+      input.workAvailability === "off" ||
+      isWorkDayOffLanguage(prompt)
+    ) {
+      if (/\btomorrow\b/i.test(text)) return "Day Off Tomorrow";
+      if (/\btoday\b/i.test(text)) return "Day Off Today";
+      return "Day Off";
+    }
     if (/\banniversary\b/i.test(prompt)) return "Anniversary";
     if (isPayday(input, text)) return "Payday";
-    const relation = extractBirthdayRelation(prompt);
+    if (/\brent\b/i.test(text) && /\b(due|pay)\b/i.test(text)) return "Rent Due";
+    if (/\bshower(?:ed|ing)?\b/i.test(text)) return "Shower Logged";
+    if (/\b(gym|workout)\b/i.test(text)) return "Workout";
+    const relation = extractBirthdayRelation(prompt) ?? extractBirthdayRelation(input.title);
     if (relation) return `${relation}'s Birthday`;
   }
 
@@ -206,6 +224,10 @@ export function displayMemoryTitle(item: CapturedSyncItem): string {
     prompt: item.originalPrompt ?? item.prompt,
     category: item.category,
     timeLabel: item.timeLabel,
+    parsedInput: item.parsedInput ?? {
+      moneyType: item.moneyType,
+      workAvailability: item.workAvailability,
+    },
     moneyType: item.moneyType,
     workAvailability: item.workAvailability,
   });

@@ -1006,15 +1006,31 @@ html:has(.mobile-prototype-root) body {
 }
 
 .sync-memory-detail-facts {
-  margin: 40px 0 0;
+  margin: 28px 0 0;
   padding: 0;
+}
+
+.sync-memory-detail-original {
+  margin-top: 36px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(248, 241, 228, 0.06);
+}
+
+.sync-memory-detail-original-value {
+  margin: 10px 0 0;
+  padding: 0;
+  font-size: 17px;
+  line-height: 1.72;
+  letter-spacing: -0.014em;
+  color: var(--mp-fg-muted);
+  font-style: normal;
 }
 
 .sync-memory-detail-row {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 16px;
-  align-items: start;
+  grid-template-columns: minmax(130px, 42%) minmax(0, 1fr);
+  gap: 8px 20px;
+  align-items: baseline;
   padding: 14px 0;
   border-bottom: 1px solid rgba(248, 241, 228, 0.06);
 }
@@ -1039,7 +1055,9 @@ html:has(.mobile-prototype-root) body {
   line-height: 1.5;
   text-align: right;
   color: var(--mp-fg);
-  max-width: 58%;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: normal;
 }
 
 .sync-memory-detail-related {
@@ -1063,6 +1081,74 @@ html:has(.mobile-prototype-root) body {
 .sync-memory-detail-actions {
   margin-top: 28px;
   padding-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.sync-memory-detail-edit {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--mp-fg-muted);
+  font: inherit;
+  font-size: 0.92rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.sync-memory-detail-edit:hover,
+.sync-memory-detail-edit:focus-visible {
+  color: var(--mp-fg);
+}
+
+.sync-memory-detail-edit-input {
+  width: 100%;
+  margin-top: 10px;
+  padding: 14px 16px;
+  border: 1px solid rgba(248, 241, 228, 0.12);
+  border-radius: 8px;
+  background: rgba(248, 241, 228, 0.03);
+  color: var(--mp-fg);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.sync-memory-detail-edit-actions {
+  display: flex;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.sync-memory-detail-edit-save,
+.sync-memory-detail-edit-cancel {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--mp-fg-muted);
+  font: inherit;
+  font-size: 0.92rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.sync-memory-detail-edit-save:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.sync-memory-detail-edit-notice {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--mp-fg-muted);
 }
 
 .sync-memory-detail-remove {

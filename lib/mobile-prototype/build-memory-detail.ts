@@ -18,6 +18,11 @@ import {
 } from "@/lib/timeline/next-occurrence";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
 
+export type RelatedMemoryView = {
+  id: string;
+  title: string;
+};
+
 export type MemoryDetailView = {
   id: string;
   title: string;
@@ -31,7 +36,7 @@ export type MemoryDetailView = {
   mentionedInBrief: boolean;
   calendarImpact: boolean;
   briefEligible: boolean;
-  relatedMemories: string[];
+  relatedMemories: RelatedMemoryView[];
   prompt: string;
 };
 
@@ -94,9 +99,9 @@ export function whySyncRemembers(
 
   if (/\bbirthday\b|\bbday\b/i.test(prompt)) {
     if (item.destinations.includes("Relationships")) {
-      return `Sync remembers this because it affects your relationship and should surface${nearDate}.`;
+      return `Sync remembers this because it matters to your relationship and should surface${nearDate}.`;
     }
-    return `Sync remembers this because it affects your family and should surface${nearDate}.`;
+    return `Sync remembers this because it matters to your family and should surface${nearDate}.`;
   }
 
   if (
@@ -104,12 +109,19 @@ export function whySyncRemembers(
     item.moneyType === "income" ||
     /\b(payday|get paid|every other)\b/i.test(prompt)
   ) {
-    return "Sync remembers this because it affects your upcoming paydays.";
+    return "Sync remembers this because it affects your upcoming income.";
   }
 
   if (/\brent\b/i.test(prompt) && /\b(due|pay)\b/i.test(prompt)) {
-    const before = nextLabel ? ` before ${nextLabel}` : " before it's due";
-    return `Sync remembers this because rent is due and should surface${before}.`;
+    return "Sync remembers this because it affects an upcoming bill.";
+  }
+
+  if (/\bshower(?:ed|ing)?\b/i.test(prompt)) {
+    return "Sync logged this as a personal care memory.";
+  }
+
+  if (item.category === "workout" || /\b(gym|workout|exercise)\b/i.test(prompt)) {
+    return "Sync logged this as part of your health rhythm.";
   }
 
   if (item.timeline?.timelineRole === "deadline") {
@@ -214,17 +226,18 @@ export function findRelatedMemories(
   items: CapturedSyncItem[],
   reference = new Date(),
   limit = 3,
-): string[] {
+): RelatedMemoryView[] {
   return items
     .filter((other) => other.id !== item.id && activeItem(other))
     .map((other) => ({
-      title: other.title,
+      id: other.id,
+      title: displayMemoryTitle(other),
       score: relatedMemoryScore(item, other, reference),
     }))
     .filter((entry) => entry.score >= 0.35)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
-    .map((entry) => entry.title);
+    .map(({ id, title }) => ({ id, title }));
 }
 
 export function buildMemoryDetail(

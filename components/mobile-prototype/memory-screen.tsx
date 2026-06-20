@@ -11,12 +11,17 @@ import {
   memoryFilterCategory,
   type MemoryFilterCategory,
 } from "@/lib/mobile-prototype/memory-category";
+import { applyMemoryEdit } from "@/lib/sync-capture/apply-memory-edit";
 import { loadActiveWorkSchedule } from "@/lib/user-timeline-context";
 
 export function MemoryScreen() {
-  const { activeItems, softDeleteCapturedItem } = useCapturedItems();
+  const { activeItems, softDeleteCapturedItem, updateCapturedItem } =
+    useCapturedItems();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [activeFilter, setActiveFilter] = useState<MemoryFilterCategory>("All");
+  const [editing, setEditing] = useState(false);
+  const [editText, setEditText] = useState("");
+  const [editNotice, setEditNotice] = useState<string | null>(null);
 
   const entries = useMemo(() => buildMemoryEntries(activeItems), [activeItems]);
 
@@ -47,14 +52,61 @@ export function MemoryScreen() {
     });
   }, [selectedItem, activeItems]);
 
+  const handleEditSave = () => {
+    if (!selectedId || !editText.trim()) return;
+
+    const result = applyMemoryEdit(
+      selectedId,
+      editText,
+      {
+        items: activeItems,
+        workSchedule: loadActiveWorkSchedule() ?? null,
+      },
+      { updateCapturedItem },
+    );
+
+    if (result.status === "saved") {
+      setEditing(false);
+      setEditNotice(null);
+      return;
+    }
+
+    if (result.status === "needs_clarification" || result.status === "too_vague") {
+      setEditNotice(result.message);
+      return;
+    }
+  };
+
   if (detail) {
     return (
       <MemoryDetailScreen
         detail={detail}
-        onBack={() => setSelectedId(null)}
+        onBack={() => {
+          setSelectedId(null);
+          setEditing(false);
+          setEditNotice(null);
+        }}
         onRemove={() => {
           softDeleteCapturedItem(detail.id);
           setSelectedId(null);
+          setEditing(false);
+        }}
+        editing={editing}
+        editText={editText}
+        editNotice={editNotice}
+        onEdit={() => {
+          setEditText(detail.originalInput);
+          setEditNotice(null);
+          setEditing(true);
+        }}
+        onEditTextChange={(value) => {
+          setEditText(value);
+          if (editNotice) setEditNotice(null);
+        }}
+        onEditSave={handleEditSave}
+        onEditCancel={() => {
+          setEditing(false);
+          setEditNotice(null);
         }}
       />
     );
@@ -101,8 +153,8 @@ export function MemoryScreen() {
         </p>
       ) : (
         <ul className="sync-memory-list">
-          {filteredEntries.map((entry) => (
-            <li key={entry.id}>
+          {filteredEntries.map((entry, index) => (
+            <li key={entry.id || `${entry.prompt}-${entry.rememberedAt}-${index}`}>
               <button
                 type="button"
                 className="sync-memory-item"

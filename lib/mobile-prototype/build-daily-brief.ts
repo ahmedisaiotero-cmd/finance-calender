@@ -255,8 +255,22 @@ export function describeItemTiming(item: CapturedSyncItem, reference: Date) {
   return friendlyDeadline(item, reference);
 }
 
-function friendlyDeadline(item: CapturedSyncItem, reference: Date) {
+function deadlineBriefSubject(item: CapturedSyncItem) {
+  const prompt = (item.originalPrompt ?? item.prompt).toLowerCase();
+  if (/\brent\b/.test(prompt) && /\b(due|pay)\b/.test(prompt)) {
+    return "Rent";
+  }
+
   const title = displayItemTitle(item);
+  if (/\bdue$/i.test(title)) {
+    return title.replace(/\s+due$/i, "").trim() || title;
+  }
+
+  return title;
+}
+
+function friendlyDeadline(item: CapturedSyncItem, reference: Date) {
+  const title = deadlineBriefSubject(item);
   const key =
     item.timeline?.deadlineDate ??
     item.timeline?.startDate ??

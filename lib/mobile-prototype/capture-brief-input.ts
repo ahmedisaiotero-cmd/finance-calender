@@ -27,6 +27,7 @@ export type BriefCaptureAttempt =
       suggestions: string[];
     }
   | { status: "too_vague"; message: string }
+  | { status: "duplicate"; message: string; title: string }
   | { status: "empty" };
 
 function toBriefAttempt(
@@ -34,6 +35,7 @@ function toBriefAttempt(
 ): BriefCaptureAttempt | null {
   if (result.status === "empty") return { status: "empty" };
   if (result.status === "too_vague") return result;
+  if (result.status === "duplicate") return result;
 
   if (result.status === "needs_clarification") {
     return {

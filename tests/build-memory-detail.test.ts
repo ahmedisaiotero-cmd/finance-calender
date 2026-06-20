@@ -108,7 +108,7 @@ assert.equal(itemMentionedInBrief(momsBirthday, brief, reference), false);
 const detail = buildMemoryDetail(momsBirthday, items, { reference, brief });
 
 assert.equal(detail.title, "Mom's Birthday");
-assert.match(detail.whyRemembered, /family and should surface near June 22/i);
+assert.match(detail.whyRemembered, /matters to your family and should surface near June 22/i);
 assert.equal(detail.category, "Family");
 assert.equal(detail.mentionedInBrief, false);
 assert.equal(detail.calendarImpact, true);
@@ -119,8 +119,12 @@ assert.ok(detail.originalInput);
 assert.ok(detail.relatedMemories.length >= 1);
 assert.ok(
   detail.relatedMemories.some((memory) =>
-    /gift|dinner/i.test(memory),
+    /gift|dinner/i.test(memory.title),
   ),
+);
+assert.ok(
+  detail.relatedMemories.every((memory) => memory.id.length > 0),
+  "related memories should include stable ids",
 );
 
 console.log("build-memory-detail tests passed");

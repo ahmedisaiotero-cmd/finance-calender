@@ -64,6 +64,7 @@ export type ApplyCaptureResult =
       suggestions: string[];
     }
   | { status: "too_vague"; message: string }
+  | { status: "duplicate"; title: string; message: string }
   | { status: "empty" };
 
 const VAGUE_CAPTURE_MESSAGE =
@@ -292,6 +293,14 @@ export function applyCaptureInput(
 
   const prepared = prepareCaptureFromText(trimmed, pipelineContext(context));
   if (prepared && isSilentCaptureReady(prepared)) {
+    if (prepared.duplicate.isDuplicate) {
+      return {
+        status: "duplicate",
+        title: prepared.title,
+        message: "Sync already remembers that.",
+      };
+    }
+
     saveCapture(prepared, handlers.addCapturedItem, { skipDuplicateCheck: false });
     return {
       status: "saved",

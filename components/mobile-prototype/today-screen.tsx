@@ -20,8 +20,8 @@ function BriefPassage({ section }: { section: BriefSection }) {
   return (
     <div className="sync-brief-passage">
       {section.label && <p className="sync-brief-whisper">{section.label}</p>}
-      {section.paragraphs.map((paragraph) => (
-        <p key={paragraph} className="sync-brief-paragraph">
+      {section.paragraphs.map((paragraph, index) => (
+        <p key={`${section.id}-${index}`} className="sync-brief-paragraph">
           {paragraph}
         </p>
       ))}
@@ -117,6 +117,14 @@ export function TodayScreen() {
       return;
     }
 
+    if (attempt.status === "duplicate") {
+      setCaptureNotice(attempt.message);
+      setInput("");
+      setDraftText(null);
+      setFollowUp(null);
+      return;
+    }
+
     if (attempt.status === "saved") {
       setConfirmation(
         formatCaptureAcknowledgment(attempt.result, attempt.kind),
@@ -205,9 +213,9 @@ export function TodayScreen() {
             </p>
             {draftText && <p className="sync-capture-draft">&ldquo;{draftText}&rdquo;</p>}
             <div className="sync-capture-suggestions">
-              {followUp.suggestions.map((suggestion) => (
+              {followUp.suggestions.map((suggestion, index) => (
                 <button
-                  key={suggestion}
+                  key={`${suggestion}-${index}`}
                   type="button"
                   className="sync-capture-chip"
                   onClick={() => applySuggestion(suggestion)}
