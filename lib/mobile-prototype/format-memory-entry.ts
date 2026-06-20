@@ -1,5 +1,6 @@
 import type { CapturedSyncItem } from "@/lib/captured-items";
 import { describeItemTiming } from "@/lib/mobile-prototype/build-daily-brief";
+import { dedupeMemoryItems } from "@/lib/sync-capture/memory-dedup";
 import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
 
 export type MemoryEntryView = {
@@ -37,8 +38,7 @@ export function buildMemoryEntries(
   items: CapturedSyncItem[],
   reference = new Date(),
 ): MemoryEntryView[] {
-  return items
-    .filter((item) => item.status !== "cancelled" && !item.deletedAt)
+  return dedupeMemoryItems(items, reference)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .map((item) => ({
       id: item.id,

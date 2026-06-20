@@ -18,6 +18,18 @@ import {
   toggleProfileChip,
   type LifeProfile,
 } from "@/lib/mobile-prototype/life-profile";
+import {
+  ONBOARDING_BEGIN,
+  ONBOARDING_BUILDING_COPY,
+  ONBOARDING_BUILDING_TITLE,
+  ONBOARDING_CONTINUE,
+  ONBOARDING_LEDE,
+  ONBOARDING_SEE_BRIEFING,
+  ONBOARDING_TAGLINE,
+  LIFE_COMING_UP_PLACEHOLDER,
+  LIFE_NAME_PLACEHOLDER,
+  LIFE_WEEK_PLACEHOLDER,
+} from "@/lib/mobile-prototype/sync-voice";
 
 type OnboardingStep =
   | "intro"
@@ -84,15 +96,13 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         <div className="sync-onboarding-intro-scroll mobile-prototype-pad-x">
           <SyncBrandMark size="lg" />
           <h1 className="sync-onboarding-tagline mobile-prototype-display">
-            Stay in Sync.
+            {ONBOARDING_TAGLINE}
           </h1>
-          <p className="sync-onboarding-lede">
-            Tell Sync what matters. Sync remembers.
-          </p>
+          <p className="sync-onboarding-lede">{ONBOARDING_LEDE}</p>
         </div>
         <footer className="sync-onboarding-footer mobile-prototype-pad-x">
           <SyncPrimaryButton onClick={() => setStep("name")}>
-            Begin
+            {ONBOARDING_BEGIN}
           </SyncPrimaryButton>
         </footer>
       </div>
@@ -104,11 +114,9 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       <div className="sync-onboarding-building mobile-prototype-pad-x">
         <SyncBrandMark size="sm" />
         <p className="sync-onboarding-building-title mobile-prototype-display">
-          Preparing your first briefing...
+          {ONBOARDING_BUILDING_TITLE}
         </p>
-        <p className="sync-onboarding-building-copy">
-          Sync is learning the shape of your life.
-        </p>
+        <p className="sync-onboarding-building-copy">{ONBOARDING_BUILDING_COPY}</p>
       </div>
     );
   }
@@ -126,14 +134,14 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             disabled={!profile.name.trim()}
             onClick={() => setStep("week")}
           >
-            Continue
+            {ONBOARDING_CONTINUE}
           </SyncPrimaryButton>
         }
       >
         <SyncTextField
           value={profile.name}
           onChange={(value) => update({ name: value })}
-          placeholder="Your first name"
+          placeholder={LIFE_NAME_PLACEHOLDER}
         />
       </OnboardingShell>
     );
@@ -150,7 +158,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             disabled={!profile.typicalWeek.trim()}
             onClick={() => setStep("priorities")}
           >
-            Continue
+            {ONBOARDING_CONTINUE}
           </SyncPrimaryButton>
         }
       >
@@ -158,7 +166,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           multiline
           value={profile.typicalWeek}
           onChange={(value) => update({ typicalWeek: value })}
-          placeholder="I work Sunday through Wednesday from 11 AM to 9 PM."
+          placeholder={LIFE_WEEK_PLACEHOLDER}
         />
       </OnboardingShell>
     );
@@ -175,7 +183,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             disabled={profile.priorities.length === 0}
             onClick={() => setStep("awareness")}
           >
-            Continue
+            {ONBOARDING_CONTINUE}
           </SyncPrimaryButton>
         }
       >
@@ -196,14 +204,14 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     return (
       <OnboardingShell
         eyebrow="Your life"
-        question="What should I help you stay aware of?"
+        question="What should I keep on my radar?"
         step={meta}
         footer={
           <SyncPrimaryButton
             disabled={profile.awareness.length === 0}
             onClick={() => setStep("coming-up")}
           >
-            Continue
+            {ONBOARDING_CONTINUE}
           </SyncPrimaryButton>
         }
       >
@@ -228,7 +236,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         step={meta}
         footer={
           <SyncPrimaryButton onClick={() => setStep("building")}>
-            See my briefing
+            {ONBOARDING_SEE_BRIEFING}
           </SyncPrimaryButton>
         }
       >
@@ -236,7 +244,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           multiline
           value={profile.comingUp}
           onChange={(value) => update({ comingUp: value })}
-          placeholder={"Mom's birthday June 22.\nPayday Friday.\nTrip next month."}
+          placeholder={LIFE_COMING_UP_PLACEHOLDER}
         />
       </OnboardingShell>
     );

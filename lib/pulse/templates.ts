@@ -67,6 +67,12 @@ function relationshipTitle(prompt: string, fallback: string): string {
 }
 
 export function familyEventTitle(prompt: string): string | null {
+  const takeChild = prompt.match(/\btake\s+(?:my\s+)?(daughter|son)\s+to\s+school\b/i);
+  if (takeChild?.[1]) {
+    const child = titleCaseKeep(takeChild[1]);
+    return `Take ${child} to School`;
+  }
+
   const daughter = /\b(?:my\s+)?daughter\b/i.test(prompt);
   const son = /\b(?:my\s+)?son\b/i.test(prompt);
   const school = /\b(school|class|recital|ceremony|graduation)\b/i.test(prompt);

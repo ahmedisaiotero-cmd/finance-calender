@@ -50,6 +50,7 @@ function paydayItem(id: string, createdAt: string): CapturedSyncItem {
 
   const entries = buildMemoryEntries(items, reference);
   const entryKeys = entries.map((entry) => entry.id);
+  assert.equal(entries.length, 1, "duplicate payday memories should collapse to one entry");
   assert.equal(new Set(entryKeys).size, entryKeys.length, "memory list keys must be unique");
 
   const related = findRelatedMemories(items[0], items, reference);
@@ -59,7 +60,7 @@ function paydayItem(id: string, createdAt: string): CapturedSyncItem {
     relatedKeys.length,
     "related memory keys must be unique",
   );
-  assert.equal(related[0]?.title, "Payday");
+  assert.equal(related.length, 0, "duplicate memories should not appear as related");
 }
 
 {
@@ -71,7 +72,7 @@ function paydayItem(id: string, createdAt: string): CapturedSyncItem {
   );
   assert.equal(duplicate.status, "duplicate");
   if (duplicate.status === "duplicate") {
-    assert.match(duplicate.message, /already remembers/i);
+    assert.match(duplicate.message, /already have that one/i);
   }
   assert.equal(store.items.length, 1, "duplicate capture should not add another item");
 }

@@ -14,11 +14,20 @@ import {
   type BriefSection,
 } from "@/lib/mobile-prototype/build-daily-brief";
 import { loadLifeProfile } from "@/lib/mobile-prototype/life-profile";
+import {
+  BRIEF_LOADING,
+  CAPTURE_FOLLOWUP_PLACEHOLDER,
+  CAPTURE_PLACEHOLDER,
+  CAPTURE_PROMPT,
+  CAPTURE_REMEMBER,
+} from "@/lib/mobile-prototype/sync-voice";
 import { loadActiveWorkSchedule } from "@/lib/user-timeline-context";
 
 function BriefPassage({ section }: { section: BriefSection }) {
   return (
-    <div className="sync-brief-passage">
+    <div
+      className={`sync-brief-passage${section.id === "noticing" ? " sync-brief-passage--soon" : ""}`}
+    >
       {section.label && <p className="sync-brief-whisper">{section.label}</p>}
       {section.paragraphs.map((paragraph, index) => (
         <p key={`${section.id}-${index}`} className="sync-brief-paragraph">
@@ -61,7 +70,7 @@ export function TodayScreen() {
     if (!mounted) {
       return {
         userName: null,
-        lede: "Preparing your briefing...",
+        lede: BRIEF_LOADING,
         sections: [],
         isEmpty: true,
       };
@@ -129,6 +138,9 @@ export function TodayScreen() {
       setConfirmation(
         formatCaptureAcknowledgment(attempt.result, attempt.kind),
       );
+      if (attempt.overlapNotice) {
+        setCaptureNotice(attempt.overlapNotice);
+      }
       setInput("");
       setDraftText(null);
       setFollowUp(null);
@@ -188,23 +200,25 @@ export function TodayScreen() {
         </div>
       )}
 
-      <section className="sync-brief-capture" aria-label="Tell Sync something">
-        <p className="sync-brief-capture-prompt">
-          Tell Sync what happened, or what&apos;s coming up.
-        </p>
+      <section className="sync-brief-capture" aria-label={CAPTURE_PROMPT}>
+        <p className="sync-brief-capture-prompt">{CAPTURE_PROMPT}</p>
 
-        <textarea
-          id="sync-brief-capture-input"
-          aria-label="Tell Sync what happened, or what's coming up"
-          value={input}
-          onChange={(event) => {
-            setInput(event.target.value);
-            if (captureNotice) setCaptureNotice(null);
-          }}
-          placeholder={followUp ? "Friday, June 22, tomorrow..." : ""}
-          rows={followUp ? 2 : 2}
-          className="sync-brief-capture-input"
-        />
+        <div className="sync-brief-capture-field">
+          <textarea
+            id="sync-brief-capture-input"
+            aria-label={CAPTURE_PROMPT}
+            value={input}
+            onChange={(event) => {
+              setInput(event.target.value);
+              if (captureNotice) setCaptureNotice(null);
+            }}
+            placeholder={
+              followUp ? CAPTURE_FOLLOWUP_PLACEHOLDER : CAPTURE_PLACEHOLDER
+            }
+            rows={3}
+            className="sync-brief-capture-input"
+          />
+        </div>
 
         {followUp && (
           <div className="sync-brief-capture-followup">
@@ -239,14 +253,16 @@ export function TodayScreen() {
           </p>
         )}
 
-        <button
-          type="button"
-          className="sync-brief-capture-submit"
-          disabled={!input.trim() && !(followUp && draftText)}
-          onClick={handleSubmit}
-        >
-          Remember
-        </button>
+        <div className="sync-brief-capture-actions">
+          <button
+            type="button"
+            className="sync-brief-capture-submit"
+            disabled={!input.trim() && !(followUp && draftText)}
+            onClick={handleSubmit}
+          >
+            {CAPTURE_REMEMBER}
+          </button>
+        </div>
       </section>
     </article>
   );

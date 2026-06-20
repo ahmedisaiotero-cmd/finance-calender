@@ -1,6 +1,30 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import type { MemoryDetailView } from "@/lib/mobile-prototype/build-memory-detail";
+import {
+  MEMORY_BACK,
+  MEMORY_DETAILS_HEADING,
+  MEMORY_EDIT_ACTION,
+  MEMORY_EDIT_CANCEL,
+  MEMORY_EDIT_HEADING,
+  MEMORY_EDIT_SAVE,
+  MEMORY_LABEL_AREA,
+  MEMORY_LABEL_BRIEF,
+  MEMORY_LABEL_NEXT,
+  MEMORY_LABEL_PERSON,
+  MEMORY_LABEL_REPEATS,
+  MEMORY_LABEL_SURFACE,
+  MEMORY_LABEL_TIME,
+  MEMORY_LABEL_WEIGHT,
+  MEMORY_LABEL_WHEN,
+  MEMORY_RELATED_HEADING,
+  MEMORY_REMOVE_ACTION,
+  MEMORY_SAID_HEADING,
+  MEMORY_UNDERSTOOD_HEADING,
+  MEMORY_WHY_HEADING,
+} from "@/lib/mobile-prototype/sync-voice";
 
 type MemoryDetailScreenProps = {
   detail: MemoryDetailView;
@@ -36,11 +60,20 @@ export function MemoryDetailScreen({
   onEditSave,
   onEditCancel,
 }: MemoryDetailScreenProps) {
+  const scrollRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: 0, left: 0 });
+  }, [detail.id]);
+
   return (
-    <article className="sync-screen-scroll sync-memory-detail-screen mobile-prototype-pad-x">
+    <article
+      ref={scrollRef}
+      className="sync-screen-scroll sync-memory-detail-screen mobile-prototype-pad-x"
+    >
       <header className="sync-memory-detail-header">
         <button type="button" onClick={onBack} className="sync-memory-detail-back">
-          ← Memory
+          {MEMORY_BACK}
         </button>
         <h1 className="sync-memory-detail-title mobile-prototype-display">
           {detail.title}
@@ -48,19 +81,19 @@ export function MemoryDetailScreen({
       </header>
 
       <section className="sync-memory-detail-section sync-memory-detail-interpretation">
-        <h2 className="sync-memory-detail-whisper">Why Sync remembers this</h2>
+        <h2 className="sync-memory-detail-whisper">{MEMORY_WHY_HEADING}</h2>
         <p className="sync-memory-detail-copy">{detail.whyRemembered}</p>
       </section>
 
       {editing ? (
         <section className="sync-memory-detail-section sync-memory-detail-edit">
-          <h2 className="sync-memory-detail-whisper">Edit memory</h2>
+          <h2 className="sync-memory-detail-whisper">{MEMORY_EDIT_HEADING}</h2>
           <textarea
             className="sync-memory-detail-edit-input"
             value={editText}
             onChange={(event) => onEditTextChange?.(event.target.value)}
             rows={4}
-            aria-label="Edit memory"
+            aria-label={MEMORY_EDIT_HEADING}
           />
           {editNotice && (
             <p className="sync-memory-detail-edit-notice" role="status">
@@ -74,54 +107,57 @@ export function MemoryDetailScreen({
               disabled={!editText.trim()}
               onClick={onEditSave}
             >
-              Save
+              {MEMORY_EDIT_SAVE}
             </button>
             <button
               type="button"
               className="sync-memory-detail-edit-cancel"
               onClick={onEditCancel}
             >
-              Cancel
+              {MEMORY_EDIT_CANCEL}
             </button>
           </div>
         </section>
       ) : (
         <>
           <section className="sync-memory-detail-original">
-            <h2 className="sync-memory-detail-whisper">Original input</h2>
+            <h2 className="sync-memory-detail-whisper">{MEMORY_SAID_HEADING}</h2>
             <blockquote className="sync-memory-detail-original-value">
               &ldquo;{detail.originalInput}&rdquo;
             </blockquote>
           </section>
 
-          <dl className="sync-memory-detail-facts">
-            <DetailRow label="Category" value={detail.category} />
-            <DetailRow label="Resolved date" value={detail.resolvedDate} />
-            {detail.recurrence && (
-              <DetailRow label="Recurrence" value={detail.recurrence} />
-            )}
-            {detail.nextOccurrence && (
-              <DetailRow label="Next occurrence" value={detail.nextOccurrence} />
-            )}
-            <DetailRow
-              label="Mentioned in brief"
-              value={detail.mentionedInBrief ? "Yes" : "No"}
-            />
-            <DetailRow
-              label="Brief eligible"
-              value={detail.briefEligible ? "Yes" : "No"}
-            />
-            <DetailRow
-              label="Calendar impact"
-              value={detail.calendarImpact ? "Yes" : "No"}
-            />
-          </dl>
+          <section className="sync-memory-detail-section">
+            <h2 className="sync-memory-detail-whisper">{MEMORY_UNDERSTOOD_HEADING}</h2>
+            <p className="sync-memory-detail-copy">{detail.cleanedSummary}</p>
+          </section>
+
+          <section className="sync-memory-detail-section">
+            <h2 className="sync-memory-detail-whisper">{MEMORY_DETAILS_HEADING}</h2>
+            <dl className="sync-memory-detail-facts">
+              <DetailRow label={MEMORY_LABEL_WEIGHT} value={detail.importance} />
+              <DetailRow label={MEMORY_LABEL_AREA} value={detail.category} />
+              {detail.relatedPerson && (
+                <DetailRow label={MEMORY_LABEL_PERSON} value={detail.relatedPerson} />
+              )}
+              <DetailRow label={MEMORY_LABEL_WHEN} value={detail.resolvedDate} />
+              {detail.recurrence && (
+                <DetailRow label={MEMORY_LABEL_REPEATS} value={detail.recurrence} />
+              )}
+              {detail.nextOccurrence && (
+                <DetailRow label={MEMORY_LABEL_NEXT} value={detail.nextOccurrence} />
+              )}
+              <DetailRow label={MEMORY_LABEL_BRIEF} value={detail.briefPresence} />
+              <DetailRow label={MEMORY_LABEL_SURFACE} value={detail.surfaceEligibility} />
+              <DetailRow label={MEMORY_LABEL_TIME} value={detail.timeImpact} />
+            </dl>
+          </section>
         </>
       )}
 
       {!editing && detail.relatedMemories.length > 0 && (
         <section className="sync-memory-detail-section">
-          <h2 className="sync-memory-detail-whisper">Related memories</h2>
+          <h2 className="sync-memory-detail-whisper">{MEMORY_RELATED_HEADING}</h2>
           <ul className="sync-memory-detail-related">
             {detail.relatedMemories.map((memory) => (
               <li key={memory.id}>{memory.title}</li>
@@ -138,7 +174,7 @@ export function MemoryDetailScreen({
               className="sync-memory-detail-edit"
               onClick={onEdit}
             >
-              Edit memory
+              {MEMORY_EDIT_ACTION}
             </button>
           )}
           {onRemove && (
@@ -147,7 +183,7 @@ export function MemoryDetailScreen({
               className="sync-memory-detail-remove"
               onClick={onRemove}
             >
-              Remove from memory
+              {MEMORY_REMOVE_ACTION}
             </button>
           )}
         </footer>

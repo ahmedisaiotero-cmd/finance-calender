@@ -10,6 +10,7 @@ import { sanitizeSyncDestinations } from "@/lib/pulse/resolve-sync-destinations"
 import type { PulsePlan } from "@/lib/pulse/types";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
 import { describeItemTiming } from "@/lib/mobile-prototype/build-daily-brief";
+import { formatCaptureAcknowledgment as voiceAcknowledgment } from "@/lib/mobile-prototype/sync-voice";
 
 export type BriefCaptureResult = {
   plan: PulsePlan & { status: "saved" };
@@ -19,7 +20,7 @@ export type BriefCaptureResult = {
 };
 
 export type BriefCaptureAttempt =
-  | { status: "saved"; result: BriefCaptureResult; kind: "create" | "edit" | "delete" }
+  | { status: "saved"; result: BriefCaptureResult; kind: "create" | "edit" | "delete"; overlapNotice?: string }
   | {
       status: "needs_clarification";
       draftText: string;
@@ -50,6 +51,7 @@ function toBriefAttempt(
     return {
       status: "saved",
       kind: "create",
+      overlapNotice: result.overlapNotice,
       result: {
         plan: { ...result.prepared.plan, status: "saved" },
         destinations: result.prepared.destinations,
@@ -70,10 +72,10 @@ function toBriefAttempt(
         plan: { ...plan, id: result.itemId, status: "saved", title: result.title },
         destinations: sanitizeSyncDestinations(["Calendar"]),
         title: result.title,
-        meaning: {
+        meaning: result.meaning ?? {
           importance: "medium",
-          meaningLabel: "Updated memory",
-          summary: `Sync updated ${result.title}.`,
+          meaningLabel: "Updated",
+          summary: `Updated — ${result.title}.`,
           protection: {
             eligible: false,
             recommended: false,
@@ -94,10 +96,10 @@ function toBriefAttempt(
         plan: { ...plan, id: result.itemId, status: "saved", title: result.title },
         destinations: [],
         title: result.title,
-        meaning: {
+        meaning: result.meaning ?? {
           importance: "low",
-          meaningLabel: "Removed",
-          summary: `Sync removed ${result.title}.`,
+          meaningLabel: "Released",
+          summary: `Let go — ${result.title}.`,
           protection: {
             eligible: false,
             recommended: false,
@@ -163,14 +165,6 @@ export function formatCaptureAcknowledgment(
   kind: "create" | "edit" | "delete" = "create",
   reference = new Date(),
 ) {
-  if (kind === "delete") {
-    return `Removed — ${captured.title}.`;
-  }
-
-  if (kind === "edit") {
-    return `Updated — ${captured.title}.`;
-  }
-
   const stub: CapturedSyncItem = {
     id: captured.plan.id,
     title: captured.title,
@@ -186,10 +180,8 @@ export function formatCaptureAcknowledgment(
     updatedAt: new Date().toISOString(),
   };
 
-  const timing = describeItemTiming(stub, reference);
-  if (timing) {
-    return `Remembered — ${timing}.`;
-  }
+  const timing =
+    kind === "create" ? describeItemTiming(stub, reference) : null;
 
-  return `Remembered — ${captured.title}.`;
+  return voiceAcknowledgment(kind, captured.title, timing);
 }

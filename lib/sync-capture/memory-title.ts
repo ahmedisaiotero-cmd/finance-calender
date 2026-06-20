@@ -30,6 +30,8 @@ const RELATION_LABELS: Record<string, string> = {
   grandfather: "Grandfather",
   sister: "Sister",
   brother: "Brother",
+  friend: "Friend",
+  friends: "Friend",
 };
 
 export type MemoryTitleInput = {
@@ -66,8 +68,8 @@ function isPayday(input: MemoryTitleInput, text: string) {
 
 function extractBirthdayRelation(prompt: string): string | null {
   const patterns = [
-    /\b(?:my\s+)?(moms?|mother|dads?|father|girlfrienda?|boyfriend|wife|husband|partner|daughter|son|grandma|grandpa|grandmother|grandfather)\s+(?:b(?:irth)?d(?:ay)?|bday)\b/i,
-    /\b(?:my\s+)?(moms?|mother|dads?|father|girlfrienda?|boyfriend|wife|husband|partner|daughter|son|grandma|grandpa)'s\s+(?:b(?:irth)?d(?:ay)?|bday)\b/i,
+    /\b(?:my\s+)?(moms?|mother|dads?|father|girlfrienda?|boyfriend|wife|husband|partner|daughter|son|grandma|grandpa|grandmother|grandfather|friend|friends)\s+(?:b(?:irth)?d(?:ay)?|bday)\b/i,
+    /\b(?:my\s+)?(moms?|mother|dads?|father|girlfrienda?|boyfriend|wife|husband|partner|daughter|son|grandma|grandpa|friend|friends)'s\s+(?:b(?:irth)?d(?:ay)?|bday)\b/i,
     /\b(?:my\s+)?([a-z]{3,})(?:'s)?\s+(?:b(?:irth)?d(?:ay)?|bday)\b/i,
   ];
 
@@ -153,6 +155,11 @@ export function cleanMemoryTitle(input: MemoryTitleInput): string {
 
   if (/\brent\b/i.test(text) && /\b(due|pay)\b/i.test(text)) {
     return "Rent Due";
+  }
+
+  const takeChild = prompt.match(/\btake\s+(?:my\s+)?(daughter|son)\s+to\s+school\b/i);
+  if (takeChild?.[1]) {
+    return `Take ${relationLabel(takeChild[1])} to School`;
   }
 
   if (/\bshower(?:ed|ing)?\b/i.test(text)) {

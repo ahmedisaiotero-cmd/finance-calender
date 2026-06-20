@@ -53,6 +53,10 @@ html:has(.mobile-prototype-root) body {
   --mp-border: rgba(248, 241, 228, 0.1);
   --mp-border-strong: rgba(196, 146, 69, 0.28);
   --mp-input-bg: rgba(248, 241, 228, 0.04);
+  --mp-capture-surface: rgba(14, 11, 8, 0.92);
+  --mp-capture-border: rgba(196, 146, 69, 0.22);
+  --mp-capture-border-focus: rgba(196, 146, 69, 0.42);
+  --mp-capture-placeholder: rgba(248, 241, 228, 0.36);
   --mp-chip-bg: rgba(248, 241, 228, 0.05);
   --mp-chip-active-bg: rgba(196, 146, 69, 0.18);
   --mp-chip-active-border: rgba(196, 146, 69, 0.44);
@@ -94,6 +98,10 @@ html:has(.mobile-prototype-root) body {
   --mp-border: rgba(18, 17, 14, 0.1);
   --mp-border-strong: rgba(15, 59, 44, 0.22);
   --mp-input-bg: rgba(18, 17, 14, 0.04);
+  --mp-capture-surface: rgba(255, 252, 246, 0.72);
+  --mp-capture-border: rgba(15, 59, 44, 0.18);
+  --mp-capture-border-focus: rgba(15, 59, 44, 0.34);
+  --mp-capture-placeholder: rgba(18, 17, 14, 0.34);
   --mp-chip-bg: rgba(18, 17, 14, 0.04);
   --mp-chip-active-bg: rgba(15, 59, 44, 0.1);
   --mp-chip-active-border: rgba(15, 59, 44, 0.34);
@@ -558,7 +566,7 @@ html:has(.mobile-prototype-root) body {
 /* Today / Daily Brief */
 .sync-brief-screen {
   padding-top: 8px;
-  padding-bottom: 48px;
+  padding-bottom: 12px;
 }
 
 .sync-brief-head {
@@ -579,7 +587,7 @@ html:has(.mobile-prototype-root) body {
 }
 
 .sync-brief-greeting {
-  margin-top: 22px;
+  margin-top: 18px;
   font-size: 28px;
   font-weight: 500;
   line-height: 1.12;
@@ -588,7 +596,7 @@ html:has(.mobile-prototype-root) body {
 }
 
 .sync-brief-lede {
-  margin-top: 26px;
+  margin-top: 22px;
   max-width: none;
   font-size: 26px;
   font-weight: 500;
@@ -614,11 +622,11 @@ html:has(.mobile-prototype-root) body {
 }
 
 .sync-brief-passage {
-  margin-top: 40px;
+  margin-top: 24px;
 }
 
 .sync-brief-passage:first-child {
-  margin-top: 28px;
+  margin-top: 20px;
 }
 
 .sync-brief-whisper {
@@ -639,36 +647,71 @@ html:has(.mobile-prototype-root) body {
 }
 
 .sync-brief-paragraph + .sync-brief-paragraph {
-  margin-top: 14px;
+  margin-top: 10px;
+}
+
+.sync-brief-passage--soon .sync-brief-paragraph {
+  font-size: 16px;
+  line-height: 1.58;
+}
+
+.sync-brief-passage--soon .sync-brief-paragraph + .sync-brief-paragraph {
+  margin-top: 8px;
 }
 
 /* Integrated capture on Today */
 .sync-brief-capture {
-  margin-top: 40px;
-  padding-bottom: 4px;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: 24px;
+  padding-top: 18px;
+  padding-bottom: 10px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    var(--mp-bg) 20px,
+    var(--mp-bg) 100%
+  );
 }
 
 .sync-brief-capture-prompt {
   font-size: 15px;
-  line-height: 1.6;
+  line-height: 1.55;
   letter-spacing: -0.01em;
   color: var(--mp-fg-muted);
 }
 
+.sync-brief-capture-field {
+  margin-top: 10px;
+  border: 1px solid var(--mp-capture-border);
+  border-radius: 14px;
+  background: var(--mp-capture-surface);
+  padding: 12px 14px 10px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sync-brief-capture-field:focus-within {
+  border-color: var(--mp-capture-border-focus);
+  box-shadow: 0 0 0 1px rgba(196, 146, 69, 0.08);
+}
+
 .sync-brief-capture-input {
+  display: block;
   width: 100%;
   resize: none;
-  margin-top: 8px;
+  margin: 0;
   border: none;
   background: transparent;
   padding: 0;
   font-family: inherit;
   font-size: 16px;
-  line-height: 1.65;
+  line-height: 1.6;
   letter-spacing: -0.012em;
   color: var(--mp-fg);
   outline: none;
-  max-height: 5.5rem;
+  min-height: 4.5rem;
+  max-height: 6.5rem;
   overflow-y: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
@@ -679,11 +722,17 @@ html:has(.mobile-prototype-root) body {
 }
 
 .sync-brief-capture-input::placeholder {
-  color: rgba(248, 241, 228, 0.28);
+  color: var(--mp-capture-placeholder);
+}
+
+.sync-brief-capture-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 12px;
 }
 
 .sync-brief-capture-followup {
-  margin-top: 20px;
+  margin-top: 16px;
 }
 
 .sync-brief-capture-followup .sync-capture-draft {
@@ -716,30 +765,68 @@ html:has(.mobile-prototype-root) body {
 }
 
 .sync-brief-capture-submit {
-  margin-top: 14px;
-  border: none;
-  background: transparent;
-  padding: 0;
+  border: 1px solid rgba(196, 146, 69, 0.38);
+  border-radius: 999px;
+  background: rgba(196, 146, 69, 0.14);
+  padding: 9px 20px;
   font-family: inherit;
-  font-size: 14px;
-  font-weight: 400;
-  letter-spacing: 0.06em;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: rgba(196, 146, 69, 0.72);
-  transition: color 0.2s ease, opacity 0.2s ease;
+  color: var(--mp-accent);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    opacity 0.2s ease;
 }
 
 .sync-brief-capture-submit:disabled {
-  opacity: 0.28;
+  border-color: rgba(248, 241, 228, 0.1);
+  background: rgba(248, 241, 228, 0.04);
+  color: var(--mp-fg-subtle);
+  opacity: 1;
+  cursor: default;
+}
+
+.sync-brief-capture-submit:not(:disabled) {
+  cursor: pointer;
 }
 
 .sync-brief-capture-submit:not(:disabled):hover,
 .sync-brief-capture-submit:not(:disabled):focus-visible {
-  color: var(--mp-accent);
+  background: rgba(196, 146, 69, 0.24);
+  border-color: rgba(196, 146, 69, 0.52);
+  color: #d4a35a;
+  outline: none;
 }
 
 .sync-brief-capture-submit:not(:disabled):active {
-  opacity: 0.8;
+  background: rgba(196, 146, 69, 0.18);
+  opacity: 0.92;
+}
+
+.mobile-prototype[data-theme="light"] .sync-brief-capture-field:focus-within {
+  box-shadow: 0 0 0 1px rgba(15, 59, 44, 0.08);
+}
+
+.mobile-prototype[data-theme="light"] .sync-brief-capture-submit {
+  border-color: rgba(15, 59, 44, 0.28);
+  background: rgba(15, 59, 44, 0.08);
+  color: var(--mp-accent);
+}
+
+.mobile-prototype[data-theme="light"] .sync-brief-capture-submit:not(:disabled):hover,
+.mobile-prototype[data-theme="light"] .sync-brief-capture-submit:not(:disabled):focus-visible {
+  background: rgba(15, 59, 44, 0.14);
+  border-color: rgba(15, 59, 44, 0.42);
+  color: var(--mp-accent-deep);
+}
+
+.mobile-prototype[data-theme="light"] .sync-brief-capture-submit:disabled {
+  border-color: rgba(18, 17, 14, 0.08);
+  background: rgba(18, 17, 14, 0.03);
 }
 
 /* Capture (standalone screen) */

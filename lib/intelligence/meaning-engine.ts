@@ -1,8 +1,12 @@
 import type { CapturedSyncItem } from "@/lib/captured-items";
+import {
+  scoreImportance,
+  type SyncImportance,
+} from "@/lib/intelligence/importance-scoring";
 import type { SyncTimeBlock, SyncTimeBlockOverlap } from "@/lib/sync-time-blocks";
 import type { TimelineResolution } from "@/lib/timeline/resolve-timeline";
 
-export type MeaningImportance = "low" | "medium" | "high";
+export type MeaningImportance = SyncImportance;
 
 export type MeaningActionType =
   | "protect_time"
@@ -79,33 +83,23 @@ const LOW_IMPORTANCE_PATTERNS = [
   /\bbuy\b/i,
 ];
 
-function detectImportance(text: string, destinations: string[]): MeaningImportance {
-  const normalized = text.toLowerCase();
-
-  if (LOW_IMPORTANCE_PATTERNS.some((pattern) => pattern.test(normalized))) {
-    if (HIGH_IMPORTANCE_PATTERNS.some((pattern) => pattern.test(normalized))) {
-      return "medium";
-    }
-    return "low";
-  }
-
-  if (HIGH_IMPORTANCE_PATTERNS.some((pattern) => pattern.test(normalized))) {
-    return "high";
-  }
-
-  if (MEDIUM_IMPORTANCE_PATTERNS.some((pattern) => pattern.test(normalized))) {
-    return "medium";
-  }
-
-  if (
-    destinations.includes("Family") ||
-    destinations.includes("Health") ||
-    destinations.includes("Relationships")
-  ) {
-    return "medium";
-  }
-
-  return "medium";
+function detectImportance(
+  text: string,
+  destinations: string[],
+  timeline?: TimelineResolution,
+  reference = new Date(),
+): MeaningImportance {
+  return scoreImportance({
+    text,
+    destinations,
+    timeline,
+    reference,
+    baseImportance: LOW_IMPORTANCE_PATTERNS.some((pattern) => pattern.test(text.toLowerCase()))
+      ? "low"
+      : HIGH_IMPORTANCE_PATTERNS.some((pattern) => pattern.test(text.toLowerCase()))
+        ? "high"
+        : "medium",
+  });
 }
 
 function buildMeaningLabel(
@@ -113,6 +107,13 @@ function buildMeaningLabel(
   text: string,
   destinations: string[],
 ): string {
+  if (importance === "critical") {
+    if (/\b(flight|airport|travel)\b/i.test(text)) return "Early travel";
+    if (/\b(daughter|son|school)\b/i.test(text)) return "Family morning commitment";
+    if (/\brent\b/i.test(text)) return "Urgent bill";
+    return "Needs attention soon";
+  }
+
   if (importance === "high") {
     if (/\b(daughter|son|child|kids|family|mom|dad|parents)\b/i.test(text)) {
       return "Family commitment";
@@ -141,6 +142,19 @@ function buildMeaningSummary(
   text: string,
   destinations: string[],
 ): string {
+  if (importance === "critical") {
+    if (/\b(flight|airport|travel)\b/i.test(text)) {
+      return "Sync remembers this because early travel tomorrow may need prep tonight.";
+    }
+    if (/\b(daughter|son|school)\b/i.test(text)) {
+      return "Sync remembers this because it affects your morning availability tomorrow.";
+    }
+    if (/\brent\b/i.test(text)) {
+      return "Sync remembers this because rent is due soon.";
+    }
+    return "Sync remembers this because it needs attention soon.";
+  }
+
   if (importance === "high") {
     if (/\b(daughter|son|child|kids|family|mom|dad|parents|school)\b/i.test(text)) {
       return "This looks like an important family commitment.";
@@ -343,7 +357,33 @@ function buildSuggestedActions(
 }
 
 export function analyzeMeaning(input: AnalyzeMeaningInput): MeaningAnalysis {
-  const importance = detectImportance(input.normalizedText, input.destinations);
+  if (input.category === "work-schedule") {
+    return {
+      importance: "medium",
+      meaningLabel: "Work rhythm",
+      summary:
+        "This helps Sync understand when you usually work — it repeats weekly until you change it.",
+      protection: {
+        eligible: false,
+        recommended: false,
+        protected: false,
+      },
+      suggestedActions: [
+        {
+          id: "none",
+          label: "Save as-is",
+          actionType: "none",
+          requiresConfirmation: false,
+        },
+      ],
+    };
+  }
+
+  const importance = detectImportance(
+    input.normalizedText,
+    input.destinations,
+    input.timeline,
+  );
   const meaningLabel = buildMeaningLabel(
     importance,
     input.normalizedText,

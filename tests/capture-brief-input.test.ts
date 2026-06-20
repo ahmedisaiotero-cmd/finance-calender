@@ -64,7 +64,7 @@ for (const text of examples) {
     workSchedule: null,
   });
 
-  assert.match(brief.lede, /Payday is in 5 days|Nothing urgent today/i);
+  assert.match(brief.lede, /Payday is in 5 days|Quiet for now/i);
   const comingSoon = brief.sections.find((section) => section.id === "noticing");
   if (!/Payday is in 5 days/i.test(brief.lede)) {
     assert.match(comingSoon?.paragraphs[0] ?? "", /Payday lands Friday/i);
@@ -90,7 +90,7 @@ for (const text of examples) {
   const vague = attemptBriefCapture("what's up", { items: [], reference }, store.handlers);
   assert.equal(vague.status, "too_vague");
   if (vague.status === "too_vague") {
-    assert.match(vague.message, /Tell Sync something that happened, or something coming up/i);
+    assert.match(vague.message, /Say what happened, or what's coming/i);
   }
 }
 

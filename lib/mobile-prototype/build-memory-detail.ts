@@ -6,9 +6,26 @@ import {
   describeItemTiming,
   type DailyBriefSnapshot,
 } from "@/lib/mobile-prototype/build-daily-brief";
-import { loadUserProfile } from "@/lib/sync-profile/user-profile";
+import {
+  analyzeMeaning,
+  buildWhySummaryFromMeaning,
+} from "@/lib/intelligence/meaning-engine";
+import {
+  describeBriefPresence,
+  describeImportance,
+  describeSurfaceEligibility,
+  describeTimeImpact,
+  whyRememberedFallback,
+} from "@/lib/mobile-prototype/sync-voice";
+import {
+  extractPersonFromMemory,
+  formatRelatedPersonLabel,
+} from "@/lib/intelligence/person-entities";
+import { scoreMemoryImportance } from "@/lib/intelligence/importance-scoring";
+import { areNoisyRelatedMemories, isBirthdayMemory } from "@/lib/sync-capture/memory-dedup";
 import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
 import { isWorkDayOffItem } from "@/lib/sync-capture/work-availability";
+import { loadUserProfile } from "@/lib/sync-profile/user-profile";
 import { memoryDisplayCategory } from "@/lib/mobile-prototype/memory-category";
 import {
   daysUntilDateKey,
@@ -27,12 +44,18 @@ export type MemoryDetailView = {
   id: string;
   title: string;
   originalInput: string;
+  cleanedSummary: string;
   whyRemembered: string;
+  importance: string;
   category: string;
+  relatedPerson: string | null;
   resolvedDate: string;
   recurrence: string | null;
   nextOccurrence: string | null;
   appears: string;
+  briefPresence: string;
+  surfaceEligibility: string;
+  timeImpact: string;
   mentionedInBrief: boolean;
   calendarImpact: boolean;
   briefEligible: boolean;
@@ -85,66 +108,53 @@ export function whySyncRemembers(
 
   if (isWorkDayOffItem(item)) {
     if (/\btomorrow\b/i.test(prompt)) {
-      return "Sync remembers this because it changes your work availability tomorrow.";
+      return "This changes your availability tomorrow.";
     }
     if (nextLabel) {
-      return `Sync remembers this because you're off on ${nextLabel}.`;
+      return `You're off on ${nextLabel} — I'll factor that into your days.`;
     }
-    return "Sync remembers this because it changes when you're available for work.";
+    return "This changes when you're available for work.";
   }
 
   if (item.workAvailability === "overtime") {
-    return "Sync remembers this because it changes your work schedule.";
+    return "This shifts your work schedule.";
   }
 
   if (/\bbirthday\b|\bbday\b/i.test(prompt)) {
     if (item.destinations.includes("Relationships")) {
-      return `Sync remembers this because it matters to your relationship and should surface${nearDate}.`;
+      return `This matters to your relationship — I'll surface it${nearDate}.`;
     }
-    return `Sync remembers this because it matters to your family and should surface${nearDate}.`;
+    return `This matters to your family — I'll surface it${nearDate}.`;
   }
 
-  if (
-    item.parsedInput?.moneyType === "income" ||
-    item.moneyType === "income" ||
-    /\b(payday|get paid|every other)\b/i.test(prompt)
-  ) {
-    return "Sync remembers this because it affects your upcoming income.";
+  if (item.meaning) {
+    const fromMeaning = buildWhySummaryFromMeaning(item.meaning);
+    if (fromMeaning.trim() && !vagueMeaningCopy(fromMeaning)) {
+      return fromMeaning;
+    }
+    if (item.meaning.summary?.trim() && !vagueMeaningCopy(item.meaning.summary)) {
+      return item.meaning.summary;
+    }
   }
 
-  if (/\brent\b/i.test(prompt) && /\b(due|pay)\b/i.test(prompt)) {
-    return "Sync remembers this because it affects an upcoming bill.";
+  const analyzed = analyzeMeaning({
+    title: item.title,
+    normalizedText: prompt,
+    category: item.category,
+    destinations: item.destinations,
+    timeline: item.timeline,
+    items: [item],
+  });
+
+  if (analyzed.summary.trim() && !vagueMeaningCopy(analyzed.summary)) {
+    return analyzed.summary;
   }
 
-  if (/\bshower(?:ed|ing)?\b/i.test(prompt)) {
-    return "Sync logged this as a personal care memory.";
+  if (analyzed.meaningLabel.trim() && !vagueMeaningCopy(analyzed.meaningLabel)) {
+    return analyzed.meaningLabel;
   }
 
-  if (item.category === "workout" || /\b(gym|workout|exercise)\b/i.test(prompt)) {
-    return "Sync logged this as part of your health rhythm.";
-  }
-
-  if (item.timeline?.timelineRole === "deadline") {
-    const before = nextLabel ? ` before ${nextLabel}` : "";
-    return `Sync remembers this because it's a deadline Sync should surface${before}.`;
-  }
-
-  if (item.timeline?.timelineRole === "log") {
-    return "Sync logged this as part of your health rhythm.";
-  }
-
-  if (item.meaning?.summary?.trim() && !vagueMeaningCopy(item.meaning.summary)) {
-    return item.meaning.summary;
-  }
-
-  if (
-    item.meaning?.meaningLabel?.trim() &&
-    !vagueMeaningCopy(item.meaning.meaningLabel)
-  ) {
-    return item.meaning.meaningLabel;
-  }
-
-  return "Sync remembers this because you asked it to hold something that may matter later.";
+  return whyRememberedFallback();
 }
 
 export function memoryHasCalendarImpact(item: CapturedSyncItem): boolean {
@@ -196,25 +206,52 @@ function relatedMemoryScore(
   other: CapturedSyncItem,
   reference: Date,
 ) {
+  if (areNoisyRelatedMemories(item, other, reference)) return 0;
+
   let score = 0;
-
-  if (memoryPrimaryCategory(item) === memoryPrimaryCategory(other)) {
-    score += 0.35;
-  }
-
   const itemDate = resolveCaptureDateKey(item, reference);
   const otherDate = resolveCaptureDateKey(other, reference);
+
   if (itemDate && otherDate && itemDate === otherDate) {
-    score += 0.35;
+    const itemBirthday = isBirthdayMemory(item);
+    const otherBirthday = isBirthdayMemory(other);
+    if (itemBirthday !== otherBirthday) {
+      score += 0.55;
+    }
   }
 
-  score += titleSimilarity(item.title, other.title) * 0.45;
+  if (memoryPrimaryCategory(item) === memoryPrimaryCategory(other)) {
+    score += 0.2;
+  }
 
-  const sharedWords = item.title
+  const itemPrompt = (item.originalPrompt ?? item.prompt).toLowerCase();
+  const otherPrompt = (other.originalPrompt ?? other.prompt).toLowerCase();
+  if (isBirthdayMemory(item)) {
+    const person = displayMemoryTitle(item)
+      .replace(/'s birthday$/i, "")
+      .toLowerCase();
+    if (person && otherPrompt.includes(person)) {
+      score += 0.35;
+    }
+  }
+
+  const titleSim = titleSimilarity(
+    displayMemoryTitle(item),
+    displayMemoryTitle(other),
+  );
+  if (titleSim >= 0.35 && titleSim < 0.65) {
+    score += 0.25;
+  }
+
+  const sharedWords = displayMemoryTitle(item)
     .toLowerCase()
     .split(/\s+/)
-    .filter((word) => word.length > 3 && other.title.toLowerCase().includes(word));
-  if (sharedWords.length > 0) {
+    .filter(
+      (word) =>
+        word.length > 3 &&
+        displayMemoryTitle(other).toLowerCase().includes(word),
+    );
+  if (sharedWords.length > 0 && !isBirthdayMemory(item) && !isBirthdayMemory(other)) {
     score += 0.15;
   }
 
@@ -234,7 +271,7 @@ export function findRelatedMemories(
       title: displayMemoryTitle(other),
       score: relatedMemoryScore(item, other, reference),
     }))
-    .filter((entry) => entry.score >= 0.35)
+    .filter((entry) => entry.score >= 0.5)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map(({ id, title }) => ({ id, title }));
@@ -263,19 +300,40 @@ export function buildMemoryDetail(
     ? resolveNextOccurrenceDateKey(item.timeline, reference)
     : resolveCaptureDateKey(item, reference);
 
+  const meaning =
+    item.meaning ??
+    analyzeMeaning({
+      title: item.title,
+      normalizedText: item.originalPrompt ?? item.prompt,
+      category: item.category,
+      destinations: item.destinations,
+      timeline: item.timeline,
+      items: [item],
+    });
+  const person = extractPersonFromMemory(item);
+  const mentionedInBrief = itemMentionedInBrief(item, brief, reference);
+  const briefEligible = isBriefEligibleMemory(item, reference, nextKey);
+  const calendarImpact = memoryHasCalendarImpact(item);
+
   return {
     id: item.id,
     title: displayMemoryTitle(item),
     originalInput: item.originalPrompt ?? item.prompt,
+    cleanedSummary: meaning.summary?.trim() || displayMemoryTitle(item),
     whyRemembered: whySyncRemembers(item, reference),
+    importance: describeImportance(scoreMemoryImportance(item, reference)),
     category: memoryPrimaryCategory(item),
+    relatedPerson: person ? formatRelatedPersonLabel(person) : null,
     resolvedDate: formatMemoryAppears(item, reference),
     recurrence: formatRecurrenceLabel(item.timeline),
     nextOccurrence: nextKey ? formatDateKeyLabel(nextKey) : null,
     appears: formatMemoryAppears(item, reference),
-    mentionedInBrief: itemMentionedInBrief(item, brief, reference),
-    calendarImpact: memoryHasCalendarImpact(item),
-    briefEligible: isBriefEligibleMemory(item, reference, nextKey),
+    briefPresence: describeBriefPresence(mentionedInBrief),
+    surfaceEligibility: describeSurfaceEligibility(briefEligible),
+    timeImpact: describeTimeImpact(calendarImpact),
+    mentionedInBrief,
+    calendarImpact,
+    briefEligible,
     relatedMemories: findRelatedMemories(item, items, reference),
     prompt: item.originalPrompt ?? item.prompt,
   };

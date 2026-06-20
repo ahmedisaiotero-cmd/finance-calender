@@ -54,7 +54,7 @@ function createPlan(input: string) {
   assert.deepEqual(resolveSyncDestinations(plan), ["Work", "Calendar"]);
   assert.match(
     preview.why.summary ?? "",
-    /repeat weekly until you change it/i,
+    /repeats weekly until you change it/i,
   );
   assert.equal(preview.confidence.needsConfirmation, true);
 }

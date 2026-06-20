@@ -1,6 +1,10 @@
 import { buildUpdatedCaptureFromPlan } from "@/lib/capture-action-resolver";
 import { sanitizeSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";
-import type { ApplyCaptureContext, ApplyCaptureHandlers } from "@/lib/sync-capture/apply-capture-input";
+import { CAPTURE_EDIT_MEMORY } from "@/lib/mobile-prototype/sync-voice";
+import type {
+  ApplyCaptureContext,
+  ApplyCaptureHandlers,
+} from "@/lib/sync-capture/apply-capture-input";
 import {
   compactCaptureTitle,
   enrichCapturePlan,
@@ -51,7 +55,7 @@ export function applyMemoryEdit(
   if (!prepared || !isSilentCaptureReady(prepared)) {
     return {
       status: "needs_clarification",
-      message: "Tell Sync a bit more so it can update this memory.",
+      message: CAPTURE_EDIT_MEMORY,
     };
   }
 
@@ -62,8 +66,9 @@ export function applyMemoryEdit(
       ? prepared.destinations
       : sanitizeSyncDestinations(existing.destinations);
 
+  const base = buildUpdatedCaptureFromPlan(existing, enriched, destinations, title);
   const updated = {
-    ...buildUpdatedCaptureFromPlan(existing, enriched, destinations, title),
+    ...base,
     meaning: prepared.meaning,
     originalPrompt: trimmed,
   };

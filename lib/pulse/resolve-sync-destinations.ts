@@ -61,13 +61,13 @@ function hasTimelineDestination(plan: PulsePlan) {
 }
 
 function isFinanceLanguage(plan: PulsePlan) {
-  return /\b(rent|bill|budget|payment|pay|paid|payday|income|subscription|spent|cost)\b/i.test(
+  return /\b(rent|bill|budget|payment|pay|paid|payday|income|subscription|spent|cost|money|cash|send)\b/i.test(
     plan.prompt,
   );
 }
 
 function isFamilyLanguage(plan: PulsePlan) {
-  return /\b(daughter|son|child|children|kids|sister|brother|moms?|dads?|mom|dad|mother|father|parents|family\s+event|family)\b/i.test(
+  return /\b(daughter|son|child|children|kids|sister|brother|moms?|dads?|mom|dad|mother|father|mama|parents|family\s+event|family)\b/i.test(
     plan.prompt,
   );
 }
@@ -114,6 +114,7 @@ function inferCategoryDestinations(plan: PulsePlan): SyncDestination[] {
   if (isFamilyLanguage(plan)) {
     const destinations: SyncDestination[] = ["Family", "Calendar"];
     if (isSchoolLanguage(plan)) destinations.push("School");
+    if (isFinanceLanguage(plan)) destinations.push("Finance");
     return unique(destinations);
   }
 

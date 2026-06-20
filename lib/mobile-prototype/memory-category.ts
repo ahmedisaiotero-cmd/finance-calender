@@ -1,3 +1,4 @@
+import { captureLifeCategory } from "@/lib/captured-to-timeline";
 import type { CapturedSyncItem } from "@/lib/captured-items";
 
 export type MemoryFilterCategory =
@@ -18,13 +19,28 @@ export const MEMORY_FILTER_CATEGORIES: Exclude<MemoryFilterCategory, "All">[] = 
   "Personal",
 ];
 
+const LIFE_CATEGORY_TO_FILTER: Record<
+  ReturnType<typeof captureLifeCategory>,
+  Exclude<MemoryFilterCategory, "All">
+> = {
+  relationships: "Relationships",
+  health: "Health",
+  money: "Money",
+  work: "Work",
+  goals: "Personal",
+  personal: "Personal",
+};
+
 export function memoryFilterCategory(
   item: CapturedSyncItem,
 ): Exclude<MemoryFilterCategory, "All"> {
-  const text = `${item.title} ${item.originalPrompt ?? item.prompt}`.toLowerCase();
-
   if (item.destinations.includes("Family")) return "Family";
-  if (item.destinations.includes("Relationships")) return "Relationships";
+
+  const lifeCategory = captureLifeCategory(item);
+  const mapped = LIFE_CATEGORY_TO_FILTER[lifeCategory];
+  if (mapped && mapped !== "Personal") return mapped;
+
+  const text = `${item.title} ${item.originalPrompt ?? item.prompt}`.toLowerCase();
   if (
     item.destinations.includes("Finance") ||
     item.parsedInput?.moneyType === "income" ||
@@ -33,22 +49,8 @@ export function memoryFilterCategory(
   ) {
     return "Money";
   }
-  if (
-    item.destinations.includes("Health") ||
-    item.category === "workout" ||
-    /\b(gym|workout|shower|sleep|medication|doctor)\b/.test(text)
-  ) {
-    return "Health";
-  }
-  if (
-    item.destinations.includes("Work") ||
-    item.category === "workday" ||
-    item.category === "work-schedule"
-  ) {
-    return "Work";
-  }
 
-  return "Personal";
+  return mapped ?? "Personal";
 }
 
 export function memoryDisplayCategory(item: CapturedSyncItem): string {

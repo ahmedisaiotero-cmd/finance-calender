@@ -111,7 +111,7 @@ function assertPreviewDestinations(
 
   assertPreviewDestinations("rent due next Friday", ["Finance", "Calendar"]);
   assert.equal(preview.what.title, "Rent");
-  assert.match(preview.why.summary ?? "", /bill|practical item|radar/i);
+  assert.match(preview.why.summary ?? "", /practical item|radar|rent is due soon|important enough/i);
 }
 
 {

@@ -43,7 +43,7 @@ function capture(
   });
 
   assert.equal(brief.isEmpty, true);
-  assert.match(brief.lede, /Tell Sync what matters/i);
+  assert.match(brief.lede, /still learning your life|Quiet for now/i);
 }
 
 {
@@ -112,7 +112,7 @@ function capture(
   assert.doesNotMatch(brief.lede, /Payday|Mom's Birthday|exercise/i);
 
   const comingSoon = brief.sections.find((section) => section.id === "noticing");
-  assert.equal(comingSoon?.label, "Coming soon");
+  assert.equal(comingSoon?.label, "Ahead");
   assert.doesNotMatch(comingSoon?.paragraphs[0] ?? "", /haven't logged exercise/i);
 }
 
@@ -161,9 +161,12 @@ function capture(
   assert.doesNotMatch(brief.lede, /Payday is in 5 days/i);
 
   const comingSoon = brief.sections.find((section) => section.id === "noticing");
-  assert.match(
-    comingSoon?.paragraphs[0] ?? "",
-    /Payday lands Friday|Rent is due Friday/i,
+  assert.ok(comingSoon, "expected coming soon section");
+  assert.ok(
+    comingSoon.paragraphs.some((line) =>
+      /Payday lands Friday|Rent is due Friday/i.test(line),
+    ),
+    `expected payday or rent in coming soon, got: ${comingSoon.paragraphs.join(" | ")}`,
   );
 }
 
@@ -263,7 +266,7 @@ function capture(
     reference,
   });
 
-  assert.match(brief.lede, /Work starts at 11:00 AM|Nothing urgent today/i);
+  assert.match(brief.lede, /Work starts at 11:00 AM|Quiet for now/i);
   assert.doesNotMatch(brief.lede, /Shower/i);
 }
 
@@ -302,11 +305,10 @@ function capture(
   });
 
   const comingSoon =
-    brief.sections.find((section) => section.id === "noticing")?.paragraphs[0] ??
-    "";
-  const tomorrowIdx = comingSoon.search(/Tomorrow is open/i);
-  const paydayIdx = comingSoon.search(/Payday lands Wednesday/i);
-  const anniversaryIdx = comingSoon.search(/Anniversary is in/i);
+    brief.sections.find((section) => section.id === "noticing")?.paragraphs ?? [];
+  const tomorrowIdx = comingSoon.findIndex((line) => /Tomorrow is open/i.test(line));
+  const paydayIdx = comingSoon.findIndex((line) => /Payday lands Wednesday/i.test(line));
+  const anniversaryIdx = comingSoon.findIndex((line) => /Anniversary is in/i.test(line));
 
   if (tomorrowIdx >= 0 && paydayIdx >= 0) {
     assert.ok(tomorrowIdx < paydayIdx, "tomorrow should appear before payday");

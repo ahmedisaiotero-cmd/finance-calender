@@ -1,6 +1,10 @@
 import type { CapturedSyncItem } from "@/lib/captured-items";
 import type { PulsePlan } from "@/lib/pulse/types";
 import { resolveCaptureDateKey } from "@/lib/captured-to-timeline";
+import {
+  areMemoryDuplicates,
+} from "@/lib/sync-capture/memory-dedup";
+import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
 
 export type DuplicateMatch = {
   item: CapturedSyncItem;
@@ -71,10 +75,32 @@ export function detectDuplicateCapture(
     const reasons: string[] = [];
     let score = 0;
 
-    const similarity = titleSimilarity(title, item.title);
+    const cleanTitle = displayMemoryTitle({
+      title,
+      prompt: plan.prompt,
+      category: plan.category,
+      parsedInput: plan.parsedInput,
+      workAvailability: plan.parsedInput?.workAvailability,
+    });
+
+    const similarity = Math.max(
+      titleSimilarity(title, item.title),
+      titleSimilarity(cleanTitle, displayMemoryTitle(item)),
+    );
     if (similarity >= 0.6) {
       score += similarity * 0.55;
       reasons.push("similar title");
+    }
+
+    const planPrompt = plan.originalPrompt ?? plan.prompt;
+    const itemPrompt = item.originalPrompt ?? item.prompt;
+    const promptMatch = titleSimilarity(
+      planPrompt.toLowerCase().replace(/[^a-z0-9 ]/g, " "),
+      itemPrompt.toLowerCase().replace(/[^a-z0-9 ]/g, " "),
+    );
+    if (promptMatch >= 0.72) {
+      score += promptMatch * 0.35;
+      reasons.push("similar input");
     }
 
     const itemDate = resolveCaptureDateKey(item, reference);
@@ -91,6 +117,32 @@ export function detectDuplicateCapture(
     if (sameTimelineRole(plan, item)) {
       score += 0.08;
       reasons.push("same timeline role");
+    }
+
+    const probe: CapturedSyncItem = {
+      id: plan.id,
+      title: cleanTitle,
+      category: plan.category,
+      prompt: planPrompt,
+      originalPrompt: plan.originalPrompt,
+      destinations: [],
+      dateLabel: plan.dateLabel,
+      timeLabel: plan.timeLabel,
+      moneyType: plan.parsedInput?.moneyType,
+      workAvailability: plan.parsedInput?.workAvailability,
+      timeline: plan.timeline,
+      status: "active",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (areMemoryDuplicates(probe, item, reference)) {
+      matches.push({
+        item,
+        score: Math.max(score, DUPLICATE_THRESHOLD),
+        reasons: [...reasons, "duplicate memory"],
+      });
+      continue;
     }
 
     if (score >= DUPLICATE_THRESHOLD) {

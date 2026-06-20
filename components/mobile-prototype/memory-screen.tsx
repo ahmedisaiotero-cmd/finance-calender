@@ -12,6 +12,12 @@ import {
   type MemoryFilterCategory,
 } from "@/lib/mobile-prototype/memory-category";
 import { applyMemoryEdit } from "@/lib/sync-capture/apply-memory-edit";
+import {
+  MEMORY_EMPTY,
+  MEMORY_EMPTY_FILTER,
+  MEMORY_SUBTITLE,
+  MEMORY_TITLE,
+} from "@/lib/mobile-prototype/sync-voice";
 import { loadActiveWorkSchedule } from "@/lib/user-timeline-context";
 
 export function MemoryScreen() {
@@ -80,6 +86,7 @@ export function MemoryScreen() {
   if (detail) {
     return (
       <MemoryDetailScreen
+        key={detail.id}
         detail={detail}
         onBack={() => {
           setSelectedId(null);
@@ -115,17 +122,15 @@ export function MemoryScreen() {
   return (
     <article className="sync-screen-scroll mobile-prototype-pad-x">
       <header className="sync-screen-header">
-        <h1 className="sync-screen-title mobile-prototype-display">Memory</h1>
-        <p className="sync-screen-subtitle">
-          What I&apos;m holding for you.
-        </p>
+        <h1 className="sync-screen-title mobile-prototype-display">{MEMORY_TITLE}</h1>
+        <p className="sync-screen-subtitle">{MEMORY_SUBTITLE}</p>
       </header>
 
       {filters.length > 1 && (
         <div
           className="sync-memory-filters"
           role="tablist"
-          aria-label="Filter memories"
+          aria-label="Filter by area"
         >
           {filters.map((filter) => (
             <button
@@ -144,13 +149,9 @@ export function MemoryScreen() {
       )}
 
       {entries.length === 0 ? (
-        <p className="sync-memory-empty">
-          Nothing here yet. Tell Sync something on Today and I&apos;ll remember it.
-        </p>
+        <p className="sync-memory-empty">{MEMORY_EMPTY}</p>
       ) : filteredEntries.length === 0 ? (
-        <p className="sync-memory-empty">
-          No memories in this category yet.
-        </p>
+        <p className="sync-memory-empty">{MEMORY_EMPTY_FILTER}</p>
       ) : (
         <ul className="sync-memory-list">
           {filteredEntries.map((entry, index) => (

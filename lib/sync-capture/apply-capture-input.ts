@@ -16,6 +16,20 @@ import {
   type CapturePipelineContext,
   type PreparedCapture,
 } from "@/lib/sync-capture/save-capture";
+import { detectCaptureClarification } from "@/lib/sync-capture/capture-clarification";
+import type { MeaningAnalysis } from "@/lib/intelligence/meaning-engine";
+import {
+  CAPTURE_CLARIFY_MORE,
+  CAPTURE_CLARIFY_PLACE,
+  CAPTURE_CLARIFY_REMEMBER_WHAT,
+  CAPTURE_CLARIFY_WHEN,
+  CAPTURE_CLARIFY_WHO,
+  CAPTURE_DELETE_NOT_FOUND,
+  CAPTURE_DUPLICATE,
+  CAPTURE_EDIT_AMBIGUOUS,
+  CAPTURE_EDIT_NOT_FOUND,
+  CAPTURE_VAGUE,
+} from "@/lib/mobile-prototype/sync-voice";
 import { detectAmbiguity } from "@/lib/trust/ambiguity-detection";
 import { resolveCaptureReference } from "@/lib/trust/reference-resolution";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
@@ -44,18 +58,21 @@ export type ApplyCaptureResult =
       kind: "create";
       prepared: PreparedCapture;
       title: string;
+      overlapNotice?: string;
     }
   | {
       status: "saved";
       kind: "edit";
       title: string;
       itemId: string;
+      meaning?: MeaningAnalysis;
     }
   | {
       status: "saved";
       kind: "delete";
       title: string;
       itemId: string;
+      meaning?: MeaningAnalysis;
     }
   | {
       status: "needs_clarification";
@@ -67,8 +84,7 @@ export type ApplyCaptureResult =
   | { status: "duplicate"; title: string; message: string }
   | { status: "empty" };
 
-const VAGUE_CAPTURE_MESSAGE =
-  "Tell Sync something that happened, or something coming up.";
+const VAGUE_CAPTURE_MESSAGE = CAPTURE_VAGUE;
 
 function isVagueCaptureInput(text: string) {
   const normalized = text
@@ -117,10 +133,10 @@ function isVagueCaptureInput(text: string) {
 function ambiguousReferenceMessage(text: string): string | null {
   const normalized = text.trim().toLowerCase();
   if (/^(call|text|message)\s+(her|him|them)\b/.test(normalized)) {
-    return "Who should I connect this to?";
+    return CAPTURE_CLARIFY_WHO;
   }
   if (/\bremember this\b/.test(normalized)) {
-    return "I can remember that. What should it be tied to?";
+    return CAPTURE_CLARIFY_REMEMBER_WHAT;
   }
   return null;
 }
@@ -134,20 +150,20 @@ function clarificationForCapture(
 
   if (destinations.length === 0) {
     return {
-      message: "I need a bit more to place this.",
+      message: CAPTURE_CLARIFY_PLACE,
       suggestions: ["today", "tomorrow", "Friday"],
     };
   }
 
   if (!hasDate) {
     return {
-      message: "When is this?",
+      message: CAPTURE_CLARIFY_WHEN,
       suggestions: ["today", "tomorrow", "Friday", "next Friday"],
     };
   }
 
   return {
-    message: "Tell me a bit more so I can place this.",
+    message: CAPTURE_CLARIFY_MORE,
     suggestions: ["today", "tomorrow", "next week"],
   };
 }
@@ -199,12 +215,14 @@ export function applyCaptureInput(
   });
 
   if (action.intent === "delete" && action.primaryTarget) {
+    const meaning = action.primaryTarget.meaning;
     handlers.softDeleteCapturedItem(action.primaryTarget.id);
     return {
       status: "saved",
       kind: "delete",
       title: action.primaryTarget.title,
       itemId: action.primaryTarget.id,
+      meaning,
     };
   }
 
@@ -219,8 +237,7 @@ export function applyCaptureInput(
       status: "needs_clarification",
       draftText: trimmed,
       message:
-        ambiguity.reason ??
-        "Sync couldn't find what to remove. Name it a bit more specifically.",
+        ambiguity.reason ?? CAPTURE_DELETE_NOT_FOUND,
       suggestions: ["rent reminder", "gym workout", "payday"],
     };
   }
@@ -237,8 +254,7 @@ export function applyCaptureInput(
         status: "needs_clarification",
         draftText: trimmed,
         message:
-          ambiguity.reason ??
-          "Sync needs a bit more detail to make that change.",
+          ambiguity.reason ?? CAPTURE_EDIT_AMBIGUOUS,
         suggestions: ["tomorrow", "Friday", "next week"],
       };
     }
@@ -271,6 +287,7 @@ export function applyCaptureInput(
       kind: "edit",
       title,
       itemId: action.primaryTarget.id,
+      meaning: updated.meaning ?? prepared?.meaning ?? action.primaryTarget.meaning,
     };
   }
 
@@ -285,28 +302,49 @@ export function applyCaptureInput(
       status: "needs_clarification",
       draftText: trimmed,
       message:
-        ambiguity.reason ??
-        "Sync heard a change, but couldn't find a clear match.",
+        ambiguity.reason ?? CAPTURE_EDIT_NOT_FOUND,
       suggestions: ["tomorrow", "Friday", "next Friday"],
     };
   }
 
   const prepared = prepareCaptureFromText(trimmed, pipelineContext(context));
   if (prepared && isSilentCaptureReady(prepared)) {
+    const captureClarification = detectCaptureClarification(
+      trimmed,
+      prepared,
+      reference,
+    );
+    if (captureClarification) {
+      return {
+        status: "needs_clarification",
+        draftText: trimmed,
+        message: captureClarification.message,
+        suggestions: captureClarification.suggestions,
+      };
+    }
+
     if (prepared.duplicate.isDuplicate) {
       return {
         status: "duplicate",
         title: prepared.title,
-        message: "Sync already remembers that.",
+        message: CAPTURE_DUPLICATE,
       };
     }
 
-    saveCapture(prepared, handlers.addCapturedItem, { skipDuplicateCheck: false });
+    saveCapture(prepared, handlers.addCapturedItem, {
+      skipDuplicateCheck: false,
+      protectTime: prepared.meaning.protection.recommended,
+    });
+    const overlap = prepared.preview.when.overlap;
+    const overlapNotice = overlap
+      ? [overlap.headline, overlap.conflictMeaning].filter(Boolean).join(" ")
+      : undefined;
     return {
       status: "saved",
       kind: "create",
       prepared,
       title: prepared.title,
+      overlapNotice,
     };
   }
 

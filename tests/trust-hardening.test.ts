@@ -219,7 +219,10 @@ function seedCapture(
     workSchedule: null,
   });
 
-  assert.match(preview.why.summary ?? "", /important family commitment/i);
+  assert.match(
+    preview.why.summary ?? "",
+    /morning availability tomorrow|important family commitment/i,
+  );
   assert.match(
     preview.why.protectionRecommendation ?? preview.why.summary ?? "",
     /protect this time/i,

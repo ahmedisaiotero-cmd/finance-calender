@@ -24,6 +24,7 @@ export type ConflictPriorityComparison = {
 };
 
 const IMPORTANCE_SCORE: Record<MeaningImportance, number> = {
+  critical: 500,
   high: 300,
   medium: 100,
   low: 10,
