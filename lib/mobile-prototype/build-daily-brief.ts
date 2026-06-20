@@ -12,7 +12,10 @@ import { dayMatchesScheduleDay } from "@/lib/user-timeline-context";
 import { loadUserProfile, saveUserProfile } from "@/lib/sync-profile/user-profile";
 import type { SyncUserProfile } from "@/lib/sync-profile/user-profile";
 import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
-import { isWorkDayOffItem } from "@/lib/sync-capture/work-availability";
+import {
+  collectWorkDayOffDateKeys,
+  isWorkDayOffItem,
+} from "@/lib/sync-capture/work-availability";
 
 export type BriefSectionId = "today" | "noticing" | "possibility";
 
@@ -320,12 +323,15 @@ function describeUpcomingWorkStretch(
   workSchedule: PersistedWorkSchedule | null | undefined,
   reference: Date,
   horizonDays: number,
+  dayOffDates?: Set<string>,
 ) {
   if (!workSchedule?.days?.length) return null;
 
   let count = 0;
   for (let offset = 1; offset <= horizonDays; offset += 1) {
     const date = addDays(reference, offset);
+    const dateKey = toDateKey(date);
+    if (dayOffDates?.has(dateKey)) continue;
     if (dayMatchesScheduleDay(date.getDay(), workSchedule.days)) {
       count += 1;
     }
@@ -339,9 +345,12 @@ function describeTomorrowOpenAfterWork(
   blocks: SyncTimeBlock[],
   workSchedule: PersistedWorkSchedule | null | undefined,
   reference: Date,
+  dayOffDates?: Set<string>,
 ) {
   const tomorrowKey = toDateKey(addDays(reference, 1));
   const tomorrow = addDays(reference, 1);
+
+  if (dayOffDates?.has(tomorrowKey)) return null;
 
   if (
     workSchedule &&
@@ -383,6 +392,7 @@ function buildForesightParagraphs(
   };
 
   const entries: ForesightEntry[] = [];
+  const dayOffDates = collectWorkDayOffDateKeys(items, reference);
 
   const itemEntries = items
     .filter((item) => activeItem(item) && !isMinorLog(item))
@@ -410,6 +420,7 @@ function buildForesightParagraphs(
     blocks,
     workSchedule,
     reference,
+    dayOffDates,
   );
   if (tomorrowOpen) {
     entries.push({
@@ -419,7 +430,12 @@ function buildForesightParagraphs(
     });
   }
 
-  const workStretch = describeUpcomingWorkStretch(workSchedule, reference, 3);
+  const workStretch = describeUpcomingWorkStretch(
+    workSchedule,
+    reference,
+    3,
+    dayOffDates,
+  );
   if (workStretch) {
     entries.push({
       sortDays: 2,

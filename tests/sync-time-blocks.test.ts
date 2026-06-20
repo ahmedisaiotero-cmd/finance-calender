@@ -6,12 +6,14 @@ import type { CapturedSyncItem } from "@/lib/captured-items";
 import {
   buildCalendarMonthView,
   buildSyncTimeBlocksForMonth,
+  buildSyncTimeBlocksForRange,
   detectSyncTimeBlockOverlaps,
   filterSyncTimeBlocksByArea,
   formatSyncTimeBlockCellLabel,
   formatWorkScheduleDaysLabel,
   proposedSyncTimeBlocksFromPlan,
 } from "@/lib/sync-time-blocks";
+import { buildDailyBrief } from "@/lib/mobile-prototype/build-daily-brief";
 import { generateAmbientInsightFromBlocks } from "@/lib/time-block-insights";
 import { summarizeWorkLensSchedule } from "@/lib/time-block-insights";
 
@@ -159,6 +161,167 @@ function makeCapture(
     /busy|open|overlap|after/i.test(insight),
     `expected ambient insight, got: ${insight}`,
   );
+}
+
+{
+  const sundayReference = new Date("2026-06-14T12:00:00");
+  const mondayKey = "2026-06-15";
+  const tuesdayKey = "2026-06-16";
+
+  const normalBlocks = buildSyncTimeBlocksForMonth({
+    items: [],
+    year: 2026,
+    month: 5,
+    reference: sundayReference,
+    workSchedule,
+  });
+
+  assert.ok(
+    normalBlocks.some(
+      (block) =>
+        block.date === mondayKey &&
+        block.blockType === "schedule" &&
+        block.title === "Work",
+    ),
+    "expected recurring work block on Monday",
+  );
+
+  const dayOffItem = makeCapture({
+    id: "day-off-monday",
+    title: "Day Off Tomorrow",
+    category: "workday",
+    destinations: ["Work", "Calendar"],
+    prompt: "I don't work tomorrow",
+    workAvailability: "off",
+    timeline: {
+      timelineRole: "event",
+      startDate: mondayKey,
+      label: "Tomorrow",
+      tense: "future",
+    },
+  });
+
+  const suppressedBlocks = buildSyncTimeBlocksForMonth({
+    items: [dayOffItem],
+    year: 2026,
+    month: 5,
+    reference: sundayReference,
+    workSchedule,
+  });
+
+  assert.equal(
+    suppressedBlocks.some(
+      (block) => block.date === mondayKey && block.blockType === "schedule",
+    ),
+    false,
+    "work schedule block should be suppressed on day-off date",
+  );
+
+  assert.ok(
+    suppressedBlocks.some(
+      (block) =>
+        block.date === tuesdayKey &&
+        block.blockType === "schedule" &&
+        block.title === "Work",
+    ),
+    "work schedule should remain on other scheduled days",
+  );
+}
+
+{
+  const sundayReference = new Date("2026-06-14T12:00:00");
+  const mondayKey = "2026-06-15";
+
+  const overtimeItem = makeCapture({
+    id: "overtime-monday",
+    title: "Overtime Tomorrow",
+    category: "workday",
+    destinations: ["Work", "Calendar"],
+    prompt: "I have overtime tomorrow",
+    workAvailability: "overtime",
+    timeline: {
+      timelineRole: "event",
+      startDate: mondayKey,
+      label: "Tomorrow",
+      tense: "future",
+      isTimed: true,
+      startTime: "18:00",
+      endTime: "22:00",
+    },
+  });
+
+  const blocks = buildSyncTimeBlocksForMonth({
+    items: [overtimeItem],
+    year: 2026,
+    month: 5,
+    reference: sundayReference,
+    workSchedule,
+  });
+
+  assert.ok(
+    blocks.some(
+      (block) => block.date === mondayKey && block.blockType === "schedule",
+    ),
+    "recurring work schedule should remain when overtime is captured",
+  );
+
+  assert.ok(
+    blocks.some(
+      (block) =>
+        block.date === mondayKey &&
+        block.sourceItemId === overtimeItem.id &&
+        block.title === "Overtime Tomorrow",
+    ),
+    "explicit overtime capture should still appear",
+  );
+}
+
+{
+  const sundayReference = new Date("2026-06-14T12:00:00");
+  const mondayKey = "2026-06-15";
+
+  const dayOffItem = makeCapture({
+    id: "day-off-range",
+    title: "Day Off Tomorrow",
+    category: "workday",
+    destinations: ["Work", "Calendar"],
+    prompt: "I don't work tomorrow",
+    workAvailability: "off",
+    timeline: {
+      timelineRole: "event",
+      startDate: mondayKey,
+      label: "Tomorrow",
+      tense: "future",
+    },
+  });
+
+  const rangeBlocks = buildSyncTimeBlocksForRange({
+    items: [dayOffItem],
+    startDate: sundayReference,
+    endDate: new Date("2026-06-17T12:00:00"),
+    reference: sundayReference,
+    workSchedule,
+  });
+
+  assert.equal(
+    rangeBlocks.some(
+      (block) => block.date === mondayKey && block.blockType === "schedule",
+    ),
+    false,
+  );
+
+  const brief = buildDailyBrief({
+    items: [dayOffItem],
+    workSchedule,
+    reference: sundayReference,
+  });
+
+  assert.match(brief.lede, /You're off tomorrow/i);
+  const comingSoon =
+    brief.sections.find((section) => section.id === "noticing")?.paragraphs[0] ??
+    "";
+  assert.doesNotMatch(comingSoon, /Tomorrow is open after/i);
+  assert.doesNotMatch(comingSoon, /You work the next three days/i);
 }
 
 console.log("sync-time-blocks tests passed");

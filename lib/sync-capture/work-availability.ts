@@ -1,3 +1,6 @@
+import { resolveCaptureDateKey } from "@/lib/captured-to-timeline";
+import type { CapturedSyncItem } from "@/lib/captured-items";
+
 export type WorkAvailability = "off" | "overtime";
 
 export function isWorkDayOffLanguage(text: string): boolean {
@@ -40,4 +43,60 @@ export function isWorkDayOffItem(item: {
   if (item.workAvailability === "off") return true;
   const text = `${item.title} ${item.originalPrompt ?? item.prompt}`;
   return isWorkDayOffLanguage(text);
+}
+
+export function isWorkOvertimeItem(item: {
+  workAvailability?: WorkAvailability;
+  title: string;
+  prompt: string;
+  originalPrompt?: string;
+}) {
+  if (item.workAvailability === "overtime") return true;
+  const text = `${item.title} ${item.originalPrompt ?? item.prompt}`;
+  return isWorkOvertimeLanguage(text);
+}
+
+function activeCapture(item: CapturedSyncItem) {
+  return item.status !== "cancelled" && !item.deletedAt;
+}
+
+/**
+ * Dates where recurring work schedule blocks should be suppressed.
+ * Overtime on the same date overrides a day-off memory.
+ */
+export function collectWorkDayOffDateKeys(
+  items: CapturedSyncItem[],
+  reference = new Date(),
+): Set<string> {
+  const offDates = new Set<string>();
+  const overtimeDates = new Set<string>();
+
+  for (const item of items) {
+    if (!activeCapture(item)) continue;
+
+    const dateKey = resolveCaptureDateKey(item, reference);
+    if (!dateKey) continue;
+
+    if (isWorkOvertimeItem(item)) {
+      overtimeDates.add(dateKey);
+      continue;
+    }
+
+    if (isWorkDayOffItem(item)) {
+      offDates.add(dateKey);
+    }
+  }
+
+  for (const date of overtimeDates) {
+    offDates.delete(date);
+  }
+
+  return offDates;
+}
+
+export function shouldSuppressWorkScheduleOnDate(
+  dateKey: string,
+  dayOffDates: Set<string>,
+) {
+  return dayOffDates.has(dateKey);
 }

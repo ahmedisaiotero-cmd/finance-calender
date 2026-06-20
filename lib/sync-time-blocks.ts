@@ -6,6 +6,7 @@ import type { TimelineResolution } from "@/lib/timeline/resolve-timeline";
 import type { TimelineEvent } from "@/lib/timeline-events";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
 import { dayCodeToName, normalizeScheduleDays } from "@/lib/user-timeline-context";
+import { collectWorkDayOffDateKeys } from "@/lib/sync-capture/work-availability";
 
 export type SyncTimeBlockArea =
   | "calendar"
@@ -209,6 +210,7 @@ export function workScheduleToSyncTimeBlocksForMonth(
   schedule: PersistedWorkSchedule,
   year: number,
   month: number,
+  options?: { suppressDates?: Set<string> },
 ): SyncTimeBlock[] {
   if (schedule.status !== "active") return [];
 
@@ -218,17 +220,21 @@ export function workScheduleToSyncTimeBlocksForMonth(
   const blocks: SyncTimeBlock[] = [];
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const sourceItemId = schedule.sourceItemId ?? "work-schedule";
+  const suppressDates = options?.suppressDates;
 
   for (let day = 1; day <= daysInMonth; day += 1) {
     const date = new Date(year, month, day);
     if (!dayIndexes.has(date.getDay())) continue;
 
+    const dateKey = monthDateKey(year, month, day);
+    if (suppressDates?.has(dateKey)) continue;
+
     blocks.push({
-      id: `block-schedule-${monthDateKey(year, month, day)}`,
+      id: `block-schedule-${dateKey}`,
       sourceItemId,
       title: "Work",
       area: "work",
-      date: monthDateKey(year, month, day),
+      date: dateKey,
       startTime: schedule.startTime,
       endTime: schedule.endTime,
       isTimed: true,
@@ -249,8 +255,12 @@ export function buildSyncTimeBlocksForMonth(options: {
   excludeCaptureId?: string;
 }): SyncTimeBlock[] {
   const reference = options.reference ?? new Date();
-  const captureBlocks = options.items
-    .filter((item) => item.id !== options.excludeCaptureId)
+  const activeItems = options.items.filter(
+    (item) => item.id !== options.excludeCaptureId,
+  );
+  const dayOffDates = collectWorkDayOffDateKeys(activeItems, reference);
+
+  const captureBlocks = activeItems
     .map((item) => captureItemToSyncTimeBlock(item, reference))
     .filter((block): block is SyncTimeBlock => block !== null)
     .filter((block) => dateKeyInMonth(block.date, options.year, options.month));
@@ -260,6 +270,7 @@ export function buildSyncTimeBlocksForMonth(options: {
         options.workSchedule,
         options.year,
         options.month,
+        { suppressDates: dayOffDates },
       )
     : [];
 
