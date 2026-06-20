@@ -11,6 +11,7 @@ import {
   resolveTimeline,
   type ResolveTimelineOptions,
 } from "@/lib/timeline/resolve-timeline";
+import type { CaptureCategoryHint } from "@/lib/sync-capture/capture-hint";
 import type { PulsePlan } from "@/lib/pulse/types";
 
 export { detectPulseCategory } from "@/lib/pulse/detect-pulse-category";
@@ -25,6 +26,7 @@ function createPlanId(): string {
 
 type CreatePulsePlanOptions = {
   timeline?: ResolveTimelineOptions;
+  categoryHint?: CaptureCategoryHint;
 };
 
 function hasResolvedTimelineLabel(timelineLabel: string) {
@@ -38,23 +40,26 @@ export function createPulsePlan(
   const trimmed = prompt.trim();
   const normalizedInput = normalizeCaptureInput(trimmed);
   const parserText = normalizedInput.normalized;
-  const category = detectPulseCategory(parserText);
+  const category = detectPulseCategory(parserText, options.categoryHint);
   const parsed = parsePulsePrompt(parserText, category);
   const rawTimeline = resolveTimeline(parserText, options.timeline);
-  const destinations = resolveSyncDestinations({
-    id: "draft",
-    title: "",
-    category,
-    status: "draft",
-    prompt: parserText,
-    summary: "",
-    dateLabel: parsed.dateLabel ?? "Upcoming",
-    timeLabel: parsed.timeLabel ?? "Flexible",
-    durationMinutes: 0,
-    sections: [],
-    timeline: rawTimeline,
-    createdAt: new Date().toISOString(),
-  });
+  const destinations = resolveSyncDestinations(
+    {
+      id: "draft",
+      title: "",
+      category,
+      status: "draft",
+      prompt: parserText,
+      summary: "",
+      dateLabel: parsed.dateLabel ?? "Upcoming",
+      timeLabel: parsed.timeLabel ?? "Flexible",
+      durationMinutes: 0,
+      sections: [],
+      timeline: rawTimeline,
+      createdAt: new Date().toISOString(),
+    },
+    options.categoryHint,
+  );
   const timeline = applyNormalizationConfidencePenalty(
     rawTimeline,
     normalizedInput.correctionEntries,

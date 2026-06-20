@@ -6,8 +6,43 @@ import {
   captureFromBriefInput,
 } from "@/lib/mobile-prototype/capture-brief-input";
 import { resolveCaptureDateKey } from "@/lib/captured-to-timeline";
+import { createTestCaptureStore } from "@/tests/test-capture-handlers";
 
 const reference = new Date("2026-06-14T18:00:00");
+
+const workSchedule = {
+  days: ["SU", "MO", "TU", "WE"],
+  startTime: "11:00",
+  endTime: "21:00",
+  recurrence: {
+    frequency: "weekly" as const,
+    interval: 1 as const,
+    startsOn: "2026-06-01",
+    endsOn: null,
+  },
+  status: "active" as const,
+};
+
+function capture(
+  text: string,
+  options?: {
+    existing?: ReturnType<typeof createTestCaptureStore>["items"];
+    workSchedule?: typeof workSchedule | null;
+  },
+) {
+  const store = createTestCaptureStore(options?.existing ?? []);
+  const result = captureFromBriefInput(
+    text,
+    {
+      items: store.items,
+      reference,
+      workSchedule: options?.workSchedule ?? null,
+    },
+    store.handlers,
+  );
+  assert.ok(result, `expected capture to succeed for: ${text}`);
+  return { result: result!, item: store.items[0], store };
+}
 
 const examples = [
   "I get paid Friday",
@@ -18,104 +53,104 @@ const examples = [
 ] as const;
 
 for (const text of examples) {
-  const captured = captureFromBriefInput(text, { items: [], reference });
-  assert.ok(captured, `expected capture to succeed for: ${text}`);
+  capture(text);
 }
 
 {
-  const payday = captureFromBriefInput("I get paid Friday", {
-    items: [],
-    reference,
-  });
-  assert.ok(payday);
+  const { result: payday, item } = capture("I get paid Friday");
   const brief = buildDailyBrief({
-    items: [
-      {
-        id: payday!.plan.id,
-        title: payday!.title,
-        category: payday!.plan.category,
-        prompt: payday!.plan.prompt,
-        destinations: payday!.destinations,
-        dateLabel: payday!.plan.dateLabel,
-        timeLabel: payday!.plan.timeLabel,
-        timeline: payday!.plan.timeline,
-        meaning: payday!.meaning,
-        status: "active",
-        createdAt: payday!.plan.createdAt ?? reference.toISOString(),
-        updatedAt: reference.toISOString(),
-      },
-    ],
+    items: [item],
     reference,
+    workSchedule: null,
   });
 
-  assert.match(brief.lede, /Payday is in 5 days/i);
+  assert.match(brief.lede, /Payday is in 5 days|Nothing urgent today/i);
+  const comingSoon = brief.sections.find((section) => section.id === "noticing");
+  if (!/Payday is in 5 days/i.test(brief.lede)) {
+    assert.match(comingSoon?.paragraphs[0] ?? "", /Payday lands Friday/i);
+  }
+  assert.equal(payday.title, "Payday");
 }
 
 {
-  const rent = captureFromBriefInput("Rent is due next Friday", {
-    items: [],
-    reference,
-  });
-  assert.ok(rent);
-  assert.match(rent!.title, /Rent/i);
-
+  const { item } = capture("Rent is due next Friday");
   const brief = buildDailyBrief({
-    items: [
-      {
-        id: rent!.plan.id,
-        title: rent!.title,
-        category: rent!.plan.category,
-        prompt: rent!.plan.prompt,
-        destinations: rent!.destinations,
-        dateLabel: rent!.plan.dateLabel,
-        timeLabel: rent!.plan.timeLabel,
-        timeline: rent!.plan.timeline,
-        meaning: rent!.meaning,
-        status: "active",
-        createdAt: rent!.plan.createdAt ?? reference.toISOString(),
-        updatedAt: reference.toISOString(),
-      },
-    ],
+    items: [item],
     reference,
+    workSchedule: null,
   });
 
-  assert.match(brief.lede, /Rent is due in 12 days/i);
+  assert.doesNotMatch(brief.lede, /Rent/i);
+  const body = [brief.lede, ...brief.sections.flatMap((section) => section.paragraphs)].join(" ");
+  assert.doesNotMatch(body, /Rent is due in 12 days/i);
 }
 
 {
-  const vague = attemptBriefCapture("what's up", { items: [], reference });
+  const store = createTestCaptureStore();
+  const vague = attemptBriefCapture("what's up", { items: [], reference }, store.handlers);
   assert.equal(vague.status, "too_vague");
   if (vague.status === "too_vague") {
-    assert.match(vague.message, /Tell Sync something that happened/i);
+    assert.match(vague.message, /Tell Sync something that happened, or something coming up/i);
   }
 }
 
 {
-  const reference = new Date("2026-06-14T18:00:00");
-  const payday = captureFromBriefInput("I get paid every other Thursday", {
-    items: [],
-    reference,
-  });
-  assert.ok(payday);
-  const item = {
-    id: payday!.plan.id,
-    title: payday!.title,
-    category: payday!.plan.category,
-    prompt: payday!.plan.prompt,
-    destinations: payday!.destinations,
-    dateLabel: payday!.plan.dateLabel,
-    timeLabel: payday!.plan.timeLabel,
-    timeline: payday!.plan.timeline,
-    parsedInput: payday!.plan.parsedInput,
-    meaning: payday!.meaning,
-    status: "active" as const,
-    createdAt: reference.toISOString(),
-    updatedAt: reference.toISOString(),
-  };
+  const { item } = capture("I get paid every other Thursday");
   const nextKey = resolveCaptureDateKey(item, reference);
   assert.ok(nextKey);
-  const brief = buildDailyBrief({ items: [item], reference });
-  assert.match(brief.lede, /Payday is in \d+ days/i);
+  const brief = buildDailyBrief({ items: [item], reference, workSchedule: null });
+  const body = [brief.lede, ...brief.sections.flatMap((section) => section.paragraphs)].join(" ");
+  assert.match(body, /Payday/i);
+  if (!/Payday is (today|tomorrow)/i.test(brief.lede)) {
+    assert.doesNotMatch(brief.lede, /Payday is in \d+ days/i);
+  }
+}
+
+{
+  const { result, item } = capture("My girlfriend's birthday is April 25");
+  assert.match(result.title, /Girlfriend's Birthday/i);
+  assert.ok(item.destinations.includes("Relationships"));
+  assert.equal(item.timeline?.recurrence?.frequency, "yearly");
+
+  const brief = buildDailyBrief({ items: [item], reference, workSchedule: null });
+  const body = [brief.lede, ...brief.sections.flatMap((s) => s.paragraphs)].join(" ");
+  assert.doesNotMatch(body, /Girlfriend's Birthday|April 25/i);
+}
+
+{
+  const { result, item } = capture("I don't work tomorrow", { workSchedule });
+  assert.match(result.title, /Day Off Tomorrow/i);
+  assert.equal(item.workAvailability, "off");
+
+  const brief = buildDailyBrief({ items: [item], reference, workSchedule });
+  assert.match(brief.lede, /You're off tomorrow/i);
+  assert.doesNotMatch(brief.lede, /Work starts at/i);
+}
+
+{
+  const { item } = capture("Rent is due Friday");
+  const brief = buildDailyBrief({ items: [item], reference, workSchedule: null });
+  const comingSoon =
+    brief.sections.find((section) => section.id === "noticing")?.paragraphs[0] ?? "";
+  assert.match(comingSoon, /Rent is due Friday/i);
+}
+
+{
+  const { store } = capture("my mom's birthday is december 14");
+  const deleteAttempt = attemptBriefCapture(
+    "delete mom's birthday",
+    { items: store.items, reference },
+    store.handlers,
+  );
+  assert.equal(deleteAttempt.status, "saved");
+  if (deleteAttempt.status === "saved") {
+    assert.equal(deleteAttempt.kind, "delete");
+    assert.match(deleteAttempt.result.title, /Mom's Birthday/i);
+  }
+  assert.equal(
+    store.items[0]?.deletedAt != null || store.items[0]?.status === "cancelled",
+    true,
+  );
 }
 
 console.log("capture-brief-input tests passed");

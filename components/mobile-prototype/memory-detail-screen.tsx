@@ -5,6 +5,7 @@ import type { MemoryDetailView } from "@/lib/mobile-prototype/build-memory-detai
 type MemoryDetailScreenProps = {
   detail: MemoryDetailView;
   onBack: () => void;
+  onRemove?: () => void;
 };
 
 function DetailRow({ label, value }: { label: string; value: string }) {
@@ -16,19 +17,23 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function MemoryDetailScreen({ detail, onBack }: MemoryDetailScreenProps) {
+export function MemoryDetailScreen({
+  detail,
+  onBack,
+  onRemove,
+}: MemoryDetailScreenProps) {
   return (
     <article className="sync-screen-scroll sync-memory-detail-screen mobile-prototype-pad-x">
       <header className="sync-memory-detail-header">
         <button type="button" onClick={onBack} className="sync-memory-detail-back">
-          Memory
+          ← Memory
         </button>
         <h1 className="sync-memory-detail-title mobile-prototype-display">
           {detail.title}
         </h1>
       </header>
 
-      <section className="sync-memory-detail-section">
+      <section className="sync-memory-detail-section sync-memory-detail-interpretation">
         <h2 className="sync-memory-detail-whisper">Why Sync remembers this</h2>
         <p className="sync-memory-detail-copy">{detail.whyRemembered}</p>
       </section>
@@ -66,6 +71,18 @@ export function MemoryDetailScreen({ detail, onBack }: MemoryDetailScreenProps) 
             ))}
           </ul>
         </section>
+      )}
+
+      {onRemove && (
+        <footer className="sync-memory-detail-actions">
+          <button
+            type="button"
+            className="sync-memory-detail-remove"
+            onClick={onRemove}
+          >
+            Remove from memory
+          </button>
+        </footer>
       )}
     </article>
   );

@@ -1,5 +1,6 @@
 import type { CapturedSyncItem } from "@/lib/captured-items";
 import { describeItemTiming } from "@/lib/mobile-prototype/build-daily-brief";
+import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
 
 export type MemoryEntryView = {
   id: string;
@@ -41,7 +42,7 @@ export function buildMemoryEntries(
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .map((item) => ({
       id: item.id,
-      title: item.title,
+      title: displayMemoryTitle(item),
       timing: describeItemTiming(item, reference),
       whenLabel: item.timeline?.label ?? item.dateLabel,
       prompt: item.originalPrompt ?? item.prompt,

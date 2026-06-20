@@ -36,7 +36,12 @@ type ClientClock = {
 };
 
 export function TodayScreen() {
-  const { activeItems, addCapturedItem } = useCapturedItems();
+  const {
+    activeItems,
+    addCapturedItem,
+    updateCapturedItem,
+    softDeleteCapturedItem,
+  } = useCapturedItems();
   const [mounted, setMounted] = useState(false);
   const [clientClock, setClientClock] = useState<ClientClock | null>(null);
   const [input, setInput] = useState("");
@@ -92,10 +97,18 @@ export function TodayScreen() {
 
     setCaptureNotice(null);
 
-    const attempt = attemptBriefCapture(trimmed, {
-      items: activeItems,
-      workSchedule: loadActiveWorkSchedule() ?? null,
-    });
+    const attempt = attemptBriefCapture(
+      trimmed,
+      {
+        items: activeItems,
+        workSchedule: loadActiveWorkSchedule() ?? null,
+      },
+      {
+        addCapturedItem,
+        updateCapturedItem,
+        softDeleteCapturedItem,
+      },
+    );
 
     if (attempt.status === "empty") return;
 
@@ -105,13 +118,9 @@ export function TodayScreen() {
     }
 
     if (attempt.status === "saved") {
-      addCapturedItem(
-        attempt.result.plan,
-        attempt.result.destinations,
-        attempt.result.title,
-        { meaning: attempt.result.meaning },
+      setConfirmation(
+        formatCaptureAcknowledgment(attempt.result, attempt.kind),
       );
-      setConfirmation(formatCaptureAcknowledgment(attempt.result));
       setInput("");
       setDraftText(null);
       setFollowUp(null);
@@ -172,27 +181,28 @@ export function TodayScreen() {
       )}
 
       <section className="sync-brief-capture" aria-label="Tell Sync something">
-        <p className="sync-brief-capture-prompt">Tell Sync something.</p>
+        <p className="sync-brief-capture-prompt">
+          Tell Sync what happened, or what&apos;s coming up.
+        </p>
 
         <textarea
           id="sync-brief-capture-input"
-          aria-label="Tell Sync something"
+          aria-label="Tell Sync what happened, or what's coming up"
           value={input}
           onChange={(event) => {
             setInput(event.target.value);
             if (captureNotice) setCaptureNotice(null);
           }}
-          placeholder={
-            followUp
-              ? "Friday, June 22, tomorrow..."
-              : "I get paid Friday. Mom's birthday is June 22."
-          }
+          placeholder={followUp ? "Friday, June 22, tomorrow..." : ""}
           rows={followUp ? 2 : 2}
           className="sync-brief-capture-input"
         />
 
         {followUp && (
           <div className="sync-brief-capture-followup">
+            <p className="sync-brief-capture-notice" role="status">
+              {followUp.message}
+            </p>
             {draftText && <p className="sync-capture-draft">&ldquo;{draftText}&rdquo;</p>}
             <div className="sync-capture-suggestions">
               {followUp.suggestions.map((suggestion) => (

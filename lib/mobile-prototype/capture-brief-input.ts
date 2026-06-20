@@ -1,10 +1,10 @@
 import type { CapturedSyncItem } from "@/lib/captured-items";
+import type { CaptureCategoryHint } from "@/lib/sync-capture/capture-hint";
 import {
-  enrichCapturePlan,
-  isSilentCaptureReady,
-  prepareCaptureFromText,
-  type PreparedCapture,
-} from "@/lib/sync-capture/save-capture";
+  applyCaptureInput,
+  type ApplyCaptureResult,
+} from "@/lib/sync-capture/apply-capture-input";
+import type { PreparedCapture } from "@/lib/sync-capture/save-capture";
 import { createPulsePlan } from "@/lib/pulse/create-pulse-plan";
 import { sanitizeSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";
 import type { PulsePlan } from "@/lib/pulse/types";
@@ -19,7 +19,7 @@ export type BriefCaptureResult = {
 };
 
 export type BriefCaptureAttempt =
-  | { status: "saved"; result: BriefCaptureResult }
+  | { status: "saved"; result: BriefCaptureResult; kind: "create" | "edit" | "delete" }
   | {
       status: "needs_clarification";
       draftText: string;
@@ -29,84 +29,85 @@ export type BriefCaptureAttempt =
   | { status: "too_vague"; message: string }
   | { status: "empty" };
 
-const VAGUE_CAPTURE_MESSAGE =
-  "Tell Sync something that happened or something coming up.";
+function toBriefAttempt(
+  result: ApplyCaptureResult,
+): BriefCaptureAttempt | null {
+  if (result.status === "empty") return { status: "empty" };
+  if (result.status === "too_vague") return result;
 
-function isVagueCaptureInput(text: string) {
-  const normalized = text
-    .trim()
-    .toLowerCase()
-    .replace(/[^\w\s']/g, "")
-    .replace(/\s+/g, " ");
-
-  if (!normalized) return true;
-
-  const vagueExact = new Set([
-    "whats up",
-    "what's up",
-    "hey",
-    "hi",
-    "hello",
-    "sup",
-    "yo",
-    "how are you",
-    "hows it going",
-    "how's it going",
-    "good morning",
-    "good afternoon",
-    "good evening",
-    "thanks",
-    "thank you",
-    "ok",
-    "okay",
-    "yes",
-    "no",
-    "sure",
-    "maybe",
-    "idk",
-    "nvm",
-    "help",
-    "test",
-    "testing",
-  ]);
-
-  if (vagueExact.has(normalized)) return true;
-
-  const words = normalized.split(" ").filter(Boolean);
-  const hasSignal =
-    /\d/.test(normalized) ||
-    /\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|today|tonight|next|paid|payday|due|birthday|rent|gym|work|mom|dad|trip|meeting|appointment|overtime)\b/.test(
-      normalized,
-    );
-
-  return words.length <= 2 && !hasSignal;
-}
-
-function clarificationForCapture(
-  plan: PulsePlan,
-  destinations: string[],
-): { message: string; suggestions: string[] } {
-  const timeline = plan.timeline;
-  const hasDate = Boolean(timeline?.startDate || timeline?.deadlineDate);
-
-  if (destinations.length === 0) {
+  if (result.status === "needs_clarification") {
     return {
-      message: "I need a bit more to place this.",
-      suggestions: ["today", "tomorrow", "Friday"],
+      status: "needs_clarification",
+      draftText: result.draftText,
+      message: result.message,
+      suggestions: result.suggestions,
     };
   }
 
-  if (!hasDate) {
+  if (result.status === "saved" && result.kind === "create") {
     return {
-      message: "When is this?",
-      suggestions: ["today", "tomorrow", "Friday", "next Friday"],
+      status: "saved",
+      kind: "create",
+      result: {
+        plan: { ...result.prepared.plan, status: "saved" },
+        destinations: result.prepared.destinations,
+        title: result.prepared.title,
+        meaning: result.prepared.meaning,
+      },
     };
   }
 
-  return {
-    message: "Tell me a bit more so I can place this.",
-    suggestions: ["today", "tomorrow", "next week"],
-  };
+  if (result.status === "saved" && result.kind === "edit") {
+    const plan = createPulsePlan(result.title, {
+      timeline: { now: new Date() },
+    });
+    return {
+      status: "saved",
+      kind: "edit",
+      result: {
+        plan: { ...plan, id: result.itemId, status: "saved", title: result.title },
+        destinations: sanitizeSyncDestinations(["Calendar"]),
+        title: result.title,
+        meaning: {
+          importance: "medium",
+          meaningLabel: "Updated memory",
+          summary: `Sync updated ${result.title}.`,
+          protection: {
+            eligible: false,
+            recommended: false,
+            protected: false,
+          },
+          suggestedActions: [],
+        },
+      },
+    };
+  }
+
+  if (result.status === "saved" && result.kind === "delete") {
+    const plan = createPulsePlan(result.title, { timeline: { now: new Date() } });
+    return {
+      status: "saved",
+      kind: "delete",
+      result: {
+        plan: { ...plan, id: result.itemId, status: "saved", title: result.title },
+        destinations: [],
+        title: result.title,
+        meaning: {
+          importance: "low",
+          meaningLabel: "Removed",
+          summary: `Sync removed ${result.title}.`,
+          protection: {
+            eligible: false,
+            recommended: false,
+            protected: false,
+          },
+          suggestedActions: [],
+        },
+      },
+    };
+  }
+
+  return null;
 }
 
 export function attemptBriefCapture(
@@ -115,33 +116,27 @@ export function attemptBriefCapture(
     items: CapturedSyncItem[];
     workSchedule?: PersistedWorkSchedule | null;
     reference?: Date;
+    categoryHint?: CaptureCategoryHint;
+  },
+  handlers: {
+    addCapturedItem: (
+      plan: PulsePlan & { status: "saved" },
+      destinations: CapturedSyncItem["destinations"],
+      title?: string,
+      extras?: { meaning?: PreparedCapture["meaning"] },
+    ) => CapturedSyncItem;
+    updateCapturedItem: (
+      id: string,
+      updates: Partial<CapturedSyncItem>,
+    ) => CapturedSyncItem | null;
+    softDeleteCapturedItem: (id: string) => void;
   },
 ): BriefCaptureAttempt {
-  const trimmed = text.trim();
-  if (!trimmed) return { status: "empty" };
-
-  if (isVagueCaptureInput(trimmed)) {
-    return { status: "too_vague", message: VAGUE_CAPTURE_MESSAGE };
-  }
-
-  const result = captureFromBriefInput(trimmed, context);
-  if (result) {
-    return { status: "saved", result };
-  }
-
-  const reference = context.reference ?? new Date();
-  const rawPlan = createPulsePlan(trimmed, { timeline: { now: reference } });
-  const plan = enrichCapturePlan(rawPlan, reference);
-  const prepared = prepareCaptureFromText(trimmed, context);
-  const destinations = prepared?.destinations ?? [];
-  const clarification = clarificationForCapture(plan, destinations);
-
-  return {
-    status: "needs_clarification",
-    draftText: trimmed,
-    message: clarification.message,
-    suggestions: clarification.suggestions,
-  };
+  return (
+    toBriefAttempt(
+      applyCaptureInput(text, context, handlers),
+    ) ?? { status: "empty" }
+  );
 }
 
 export function captureFromBriefInput(
@@ -150,25 +145,30 @@ export function captureFromBriefInput(
     items: CapturedSyncItem[];
     workSchedule?: PersistedWorkSchedule | null;
     reference?: Date;
+    categoryHint?: CaptureCategoryHint;
   },
+  handlers: Parameters<typeof attemptBriefCapture>[2],
 ): BriefCaptureResult | null {
-  const prepared = prepareCaptureFromText(text, context);
-  if (!prepared || !isSilentCaptureReady(prepared)) {
-    return null;
+  const attempt = attemptBriefCapture(text, context, handlers);
+  if (attempt.status === "saved" && attempt.kind === "create") {
+    return attempt.result;
   }
-
-  return {
-    plan: { ...prepared.plan, status: "saved" },
-    destinations: prepared.destinations,
-    title: prepared.title,
-    meaning: prepared.meaning,
-  };
+  return null;
 }
 
 export function formatCaptureAcknowledgment(
   captured: BriefCaptureResult,
+  kind: "create" | "edit" | "delete" = "create",
   reference = new Date(),
 ) {
+  if (kind === "delete") {
+    return `Removed — ${captured.title}.`;
+  }
+
+  if (kind === "edit") {
+    return `Updated — ${captured.title}.`;
+  }
+
   const stub: CapturedSyncItem = {
     id: captured.plan.id,
     title: captured.title,
@@ -178,6 +178,7 @@ export function formatCaptureAcknowledgment(
     dateLabel: captured.plan.dateLabel,
     timeLabel: captured.plan.timeLabel,
     timeline: captured.plan.timeline,
+    workAvailability: captured.plan.parsedInput?.workAvailability,
     status: "active",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

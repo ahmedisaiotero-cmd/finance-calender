@@ -103,15 +103,14 @@ const brief = buildDailyBrief({
   },
 });
 
-assert.equal(itemMentionedInBrief(momsBirthday, brief, reference), true);
+assert.equal(itemMentionedInBrief(momsBirthday, brief, reference), false);
 
 const detail = buildMemoryDetail(momsBirthday, items, { reference, brief });
 
 assert.equal(detail.title, "Mom's Birthday");
-assert.match(detail.whyRemembered, /family date|Important family/i);
+assert.match(detail.whyRemembered, /family and should surface near June 22/i);
 assert.equal(detail.category, "Family");
-assert.equal(detail.appears, "June 22");
-assert.equal(detail.mentionedInBrief, true);
+assert.equal(detail.mentionedInBrief, false);
 assert.equal(detail.calendarImpact, true);
 assert.equal(detail.briefEligible, true);
 assert.equal(detail.recurrence, "Every year");

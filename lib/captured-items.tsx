@@ -61,6 +61,7 @@ export type CapturedSyncItem = {
   amount?: string | null;
   frequency?: PulsePlanFrequency;
   moneyType?: PulseMoneyType;
+  workAvailability?: "off" | "overtime";
   timeline?: TimelineResolution;
   meaning?: MeaningAnalysis;
   protectedTime?: ProtectedTimeState;
@@ -223,6 +224,7 @@ export function CapturedItemsProvider({
         amount: plan.parsedInput?.amount ?? null,
         frequency: plan.parsedInput?.frequency,
         moneyType: plan.parsedInput?.moneyType,
+        workAvailability: plan.parsedInput?.workAvailability,
         timeline: plan.timeline,
         meaning: extras?.meaning,
         protectedTime: extras?.protectedTime,

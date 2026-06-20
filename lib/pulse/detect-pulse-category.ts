@@ -1,5 +1,10 @@
 import type { PulsePlanCategory } from "@/lib/pulse/types";
 import { isStandingWorkScheduleLanguage } from "@/lib/timeline/resolve-timeline";
+import {
+  applyCategoryHintToDetection,
+  type CaptureCategoryHint,
+} from "@/lib/sync-capture/capture-hint";
+import { isWorkDayOffLanguage } from "@/lib/sync-capture/work-availability";
 
 /**
  * Maps a casual prompt to a Pulse category using keyword detection.
@@ -9,8 +14,13 @@ import { isStandingWorkScheduleLanguage } from "@/lib/timeline/resolve-timeline"
  * rather than a date-night, and "cancel my trial" reads as a reminder rather
  * than a subscription.
  */
-export function detectPulseCategory(prompt: string): PulsePlanCategory {
+export function detectPulseCategory(
+  prompt: string,
+  hint?: CaptureCategoryHint,
+): PulsePlanCategory {
   const text = prompt.trim().toLowerCase();
+
+  if (isWorkDayOffLanguage(text)) return "workday";
 
   if (
     /\b(get paid|getting paid|paid in|paycheck|payday|direct deposit|income|deposit|paid on|salary|wage)\b/.test(
@@ -19,6 +29,8 @@ export function detectPulseCategory(prompt: string): PulsePlanCategory {
   ) {
     return "expense";
   }
+
+  if (/\b(showered|shower)\b/.test(text)) return "general";
 
   if (/\b(school|class|homework|assignment|exam|study)\b/.test(text)) {
     return "task";
@@ -52,15 +64,15 @@ export function detectPulseCategory(prompt: string): PulsePlanCategory {
     return "workday";
   }
 
-  if (/\b(date night|anniversary|birthday|grandma|grandpa|dinner with friends|call mom|call dad|call my)\b/.test(text)) {
+  if (/\b(date night|anniversary|birthday|bday|grandma|grandpa|dinner with friends|call mom|call dad|call my|sister|brother)\b/.test(text)) {
     return "date-night";
   }
 
-  if (/\b(date night|date|girlfriend|food|mini golf)\b/.test(text)) {
+  if (/\b(date night|date|girlfriend|girlfrienda|food|mini golf)\b/.test(text)) {
     return "date-night";
   }
 
   if (/\b(finish|todo|task|need to|work on)\b/.test(text)) return "task";
 
-  return "general";
+  return applyCategoryHintToDetection(prompt, "general", hint);
 }

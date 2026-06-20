@@ -123,6 +123,8 @@ export function buildUpdatedCaptureFromPlan(
     amount: plan.parsedInput?.amount ?? existing.amount ?? null,
     frequency: plan.parsedInput?.frequency ?? existing.frequency,
     moneyType: plan.parsedInput?.moneyType ?? existing.moneyType,
+    workAvailability:
+      plan.parsedInput?.workAvailability ?? existing.workAvailability,
     timeline: plan.timeline,
     meaning: existing.meaning,
     protectedTime: existing.protectedTime,

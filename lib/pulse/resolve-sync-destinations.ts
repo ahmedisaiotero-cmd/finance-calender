@@ -3,6 +3,10 @@ import {
   type SyncDestination,
 } from "@/lib/captured-items";
 import type { PulsePlan, PulsePlanCategory } from "@/lib/pulse/types";
+import {
+  hintDestinations,
+  type CaptureCategoryHint,
+} from "@/lib/sync-capture/capture-hint";
 
 const CATEGORY_DESTINATIONS: Record<PulsePlanCategory, SyncDestination[]> = {
   workout: ["Health", "Calendar"],
@@ -63,19 +67,19 @@ function isFinanceLanguage(plan: PulsePlan) {
 }
 
 function isFamilyLanguage(plan: PulsePlan) {
-  return /\b(daughter|son|child|children|kids|mom|dad|mother|father|parents|family\s+event|family)\b/i.test(
+  return /\b(daughter|son|child|children|kids|sister|brother|moms?|dads?|mom|dad|mother|father|parents|family\s+event|family)\b/i.test(
     plan.prompt,
   );
 }
 
 function isRelationshipLanguage(plan: PulsePlan) {
-  return /\b(grandma|grandpa|grandmother|grandfather|friend|friends|partner|wife|husband|girlfriend|boyfriend|anniversary|birthday|dinner with|date night|date with|date\b)\b/i.test(
+  return /\b(grandma|grandpa|grandmother|grandfather|friend|friends|partner|wife|husband|girlfrienda?|boyfriend|anniversary|birthday|bday|dinner with|date night|date with|date\b)\b/i.test(
     plan.prompt,
   );
 }
 
 function isHealthLanguage(plan: PulsePlan) {
-  return /\b(doctor|dentist|therapy|appointment|checkup|medical|hospital)\b/i.test(
+  return /\b(doctor|dentist|therapy|appointment|checkup|medical|hospital|gym|workout|shower|sleep|medication|medicine)\b/i.test(
     plan.prompt,
   );
 }
@@ -132,8 +136,17 @@ function inferCategoryDestinations(plan: PulsePlan): SyncDestination[] {
   return unique(CATEGORY_DESTINATIONS[plan.category] ?? ["Calendar"]);
 }
 
-export function resolveSyncDestinations(plan: PulsePlan): SyncDestination[] {
-  return sanitizeSyncDestinations(inferCategoryDestinations(plan));
+export function resolveSyncDestinations(
+  plan: PulsePlan,
+  hint?: CaptureCategoryHint,
+): SyncDestination[] {
+  const inferred = inferCategoryDestinations(plan);
+  if (!hint) {
+    return sanitizeSyncDestinations(inferred);
+  }
+
+  const boosted = unique([...hintDestinations(hint), ...inferred]);
+  return sanitizeSyncDestinations(boosted);
 }
 
 export type DestinationSourceCheck = {

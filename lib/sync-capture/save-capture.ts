@@ -3,7 +3,6 @@ import { detectDuplicateCapture } from "@/lib/capture-duplicate-detection";
 import type { CapturedSyncItem, SyncDestination } from "@/lib/captured-items";
 import type { MeaningAnalysis } from "@/lib/intelligence/meaning-engine";
 import { createPulsePlan } from "@/lib/pulse/create-pulse-plan";
-import { titleCaseKeep } from "@/lib/pulse/parse-pulse-prompt";
 import { sanitizeSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";
 import {
   buildSyncPreviewViewModel,
@@ -18,6 +17,8 @@ import {
   profileToSyncUserContext,
   loadUserProfile,
 } from "@/lib/sync-profile/user-profile";
+import type { CaptureCategoryHint } from "@/lib/sync-capture/capture-hint";
+import { cleanMemoryTitle } from "@/lib/sync-capture/memory-title";
 import {
   detectSyncTimeBlockOverlaps,
   proposedSyncTimeBlocksFromPlan,
@@ -32,6 +33,7 @@ export type CapturePipelineContext = {
   excludeCaptureId?: string;
   targetTitle?: string;
   previewMode?: SyncPreviewViewModel["mode"];
+  categoryHint?: CaptureCategoryHint;
 };
 
 export type PreparedCapture = {
@@ -62,40 +64,38 @@ type CompactTitleInput = {
 };
 
 export function compactCaptureTitle(plan: CompactTitleInput): string {
-  if (plan.parsedInput?.moneyType === "income" || plan.moneyType === "income") {
-    return "Payday";
-  }
-
-  const birthday = plan.prompt.match(
-    /\b(?:my\s+)?((?:girlfriend|boyfriend|wife|husband|partner|mom|mother|dad|father|daughter|son|grandma|grandpa|[a-z]+)'s)\s+birthday\b/i,
-  );
-  if (birthday) {
-    return `${titleCaseKeep(birthday[1])} Birthday`;
-  }
-
-  if (plan.category === "workout" && plan.timeLabel !== "Flexible") {
-    return `${plan.timeLabel} Workout`;
-  }
-
-  if (plan.category === "reminder") {
-    return plan.title.replace(/\s+Reminder$/i, "");
-  }
-
-  if (plan.category === "savings-goal") {
-    return plan.title.replace(/\s+Savings Goal$/i, " Goal");
-  }
-
-  if (plan.category === "workday") {
-    if (/\bovertime\b/i.test(plan.prompt)) return "Overtime";
-    return "Work";
-  }
-
-  return plan.title;
+  return cleanMemoryTitle(plan);
 }
 
 export function enrichCapturePlan(plan: PulsePlan, reference: Date): PulsePlan {
   const timeline = plan.timeline;
   if (!timeline) return plan;
+
+  if (plan.parsedInput?.workAvailability === "off") {
+    const dateKey =
+      timeline.startDate ??
+      timeline.deadlineDate ??
+      (/\btomorrow\b/i.test(plan.prompt)
+        ? toDateKey(new Date(reference.getFullYear(), reference.getMonth(), reference.getDate() + 1))
+        : /\btoday\b/i.test(plan.prompt)
+          ? toDateKey(reference)
+          : timeline.startDate);
+
+    return {
+      ...plan,
+      originalPrompt: plan.originalPrompt ?? plan.prompt,
+      dateLabel: timeline.label ?? plan.dateLabel,
+      timeline: {
+        ...timeline,
+        kind: timeline.kind ?? "single_date",
+        startDate: dateKey ?? timeline.startDate,
+        timelineRole: "event",
+        tense: "future",
+        confidence: Math.max(timeline.confidence ?? 0, 0.88),
+        needsConfirmation: false,
+      },
+    };
+  }
 
   const needsToday =
     !timeline.startDate &&
@@ -179,7 +179,10 @@ export function prepareCaptureFromText(
   if (!trimmed) return null;
 
   const reference = context.reference ?? new Date();
-  const rawPlan = createPulsePlan(trimmed, { timeline: { now: reference } });
+  const rawPlan = createPulsePlan(trimmed, {
+    timeline: { now: reference },
+    categoryHint: context.categoryHint,
+  });
   const plan = enrichCapturePlan(rawPlan, reference);
   return prepareCaptureFromPlan(plan, context);
 }
@@ -227,6 +230,10 @@ export function isSilentCaptureReady(
     timeline.recurrence &&
     confidence >= 0.7
   ) {
+    return true;
+  }
+
+  if (plan.parsedInput?.workAvailability === "off" && timeline.startDate) {
     return true;
   }
 

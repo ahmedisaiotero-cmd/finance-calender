@@ -4,6 +4,7 @@ import type {
   PulsePlanCategory,
   PulsePlanFrequency,
 } from "@/lib/pulse/types";
+import { detectWorkAvailability } from "@/lib/sync-capture/work-availability";
 
 const WEEKDAYS = [
   "Monday",
@@ -237,5 +238,6 @@ export function parsePulsePrompt(
     timeLabel: parseTimeLabel(text),
     frequency,
     moneyType: detectMoneyType(text, category),
+    workAvailability: detectWorkAvailability(text),
   };
 }

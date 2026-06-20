@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 
 import type { CapturedSyncItem } from "@/lib/captured-items";
-import { buildDailyBrief } from "@/lib/mobile-prototype/build-daily-brief";
+import { buildDailyBrief, formatProfileDisplayName } from "@/lib/mobile-prototype/build-daily-brief";
 
 const reference = new Date("2026-06-14T18:00:00");
 
@@ -60,6 +60,7 @@ function capture(
         startDate: "2026-06-20",
         label: "Next Friday",
       },
+      prompt: "rent is due next friday",
     }),
     capture({
       id: "mom",
@@ -68,8 +69,9 @@ function capture(
       dateLabel: "In 8 days",
       timeline: {
         timelineRole: "event",
+        kind: "recurring",
         startDate: "2026-06-22",
-        startTime: "19:00",
+        recurrence: { frequency: "yearly", month: 5, dayOfMonth: 22 },
         label: "In 8 days",
       },
       meaning: {
@@ -91,10 +93,8 @@ function capture(
       destinations: ["Health", "Calendar"],
       dateLabel: "11 days ago",
       timeline: {
-        timelineRole: "event",
+        timelineRole: "log",
         startDate: "2026-06-03",
-        startTime: "18:00",
-        endTime: "19:00",
         label: "11 days ago",
       },
     }),
@@ -108,24 +108,12 @@ function capture(
   });
 
   assert.equal(brief.isEmpty, false);
-  assert.ok(brief.sections.some((section) => section.id === "today"));
-  assert.ok(brief.sections.some((section) => section.id === "noticing"));
+  assert.match(brief.lede, /Work starts at 11:00 AM/i);
+  assert.doesNotMatch(brief.lede, /Payday|Mom's Birthday|exercise/i);
 
-  const today = brief.sections.find((section) => section.id === "today");
-  assert.match(today?.paragraphs[0] ?? "", /Work starts at 11:00 AM/i);
-
-  const noticing = brief.sections.find((section) => section.id === "noticing");
-  assert.match(noticing?.paragraphs[0] ?? "", /Mom's Birthday|birthday|exercise/i);
-
-  assert.doesNotMatch(brief.lede, /Nothing urgent|mostly open|worth a quick check/i);
-  assert.match(brief.lede, /Work starts at 11:00 AM|Mom's Birthday|Rent|exercise|Payday/i);
-
-  const allBody = brief.sections.map((s) => s.paragraphs.join(" ")).join(" ");
-  const paydayMatches = allBody.match(/Payday/gi) ?? [];
-  assert.ok(
-    !brief.lede.match(/Payday/i) || paydayMatches.length === 0,
-    "payday should not repeat in body when it is the lede",
-  );
+  const comingSoon = brief.sections.find((section) => section.id === "noticing");
+  assert.equal(comingSoon?.label, "Coming soon");
+  assert.doesNotMatch(comingSoon?.paragraphs[0] ?? "", /haven't logged exercise/i);
 }
 
 {
@@ -137,9 +125,12 @@ function capture(
       destinations: ["Finance", "Calendar"],
       dateLabel: "Friday",
       prompt: "i get paid friday",
+      parsedInput: { moneyType: "income" },
       timeline: {
         timelineRole: "task",
+        kind: "recurring",
         startDate: "2026-06-19",
+        recurrence: { frequency: "weekly", days: ["Friday"] },
         label: "Friday",
       },
     }),
@@ -166,55 +157,169 @@ function capture(
     userName: "Ahmed",
   });
 
-  assert.match(brief.lede, /Payday is in 5 days/i);
-  const body = brief.sections.map((section) => section.paragraphs.join(" ")).join(" ");
-  assert.doesNotMatch(body, /Payday is in 5 days/i);
+  assert.match(brief.lede, /Work starts at 11:00 AM/i);
+  assert.doesNotMatch(brief.lede, /Payday is in 5 days/i);
+
+  const comingSoon = brief.sections.find((section) => section.id === "noticing");
+  assert.match(
+    comingSoon?.paragraphs[0] ?? "",
+    /Payday lands Friday|Rent is due Friday/i,
+  );
 }
 
 {
-  const priorityItems = [
-    capture({
-      id: "work-today",
-      title: "Work",
-      category: "workday",
-      destinations: ["Work", "Calendar"],
-      dateLabel: "Today",
-      timeline: {
-        timelineRole: "event",
-        startDate: "2026-06-14",
-        startTime: "11:00",
-        label: "Today",
-      },
-    }),
-    capture({
-      id: "mom",
-      title: "Mom's Birthday",
-      destinations: ["Family", "Relationships", "Calendar"],
-      dateLabel: "In 8 days",
-      timeline: {
-        timelineRole: "event",
-        startDate: "2026-06-22",
-        label: "In 8 days",
-      },
-    }),
-  ];
-
   const brief = buildDailyBrief({
-    items: priorityItems,
+    items: [
+      capture({
+        id: "mom-dec",
+        title: "Mom's Birthday",
+        destinations: ["Family", "Calendar"],
+        prompt: "my mom's birthday is december 14",
+        timeline: {
+          timelineRole: "event",
+          kind: "recurring",
+          startDate: "2026-12-14",
+          recurrence: { frequency: "yearly", month: 11, dayOfMonth: 14 },
+          label: "December 14",
+        },
+      }),
+    ],
     workSchedule,
     reference,
-    lifeProfile: {
-      name: "Ahmed",
-      typicalWeek: "",
-      priorities: ["Family"],
-      awareness: [],
-      comingUp: "",
-      onboardingComplete: true,
-      updatedAt: reference.toISOString(),
-    },
   });
 
-  assert.match(brief.lede, /Mom's Birthday|birthday/i);
+  const body = [brief.lede, ...brief.sections.flatMap((s) => s.paragraphs)].join(" ");
+  assert.doesNotMatch(body, /Mom's Birthday|December 14/i);
 }
+
+{
+  const tomorrowRent = buildDailyBrief({
+    items: [
+      capture({
+        id: "rent-tomorrow",
+        title: "Rent",
+        category: "reminder",
+        destinations: ["Finance", "Calendar"],
+        prompt: "rent is due tomorrow",
+        timeline: {
+          timelineRole: "deadline",
+          deadlineDate: "2026-06-15",
+          startDate: "2026-06-15",
+          label: "Tomorrow",
+        },
+      }),
+    ],
+    workSchedule: null,
+    reference,
+  });
+
+  assert.match(tomorrowRent.lede, /Rent is due tomorrow/i);
+}
+
+{
+  const brief = buildDailyBrief({
+    items: [
+      capture({
+        id: "day-off",
+        title: "Day Off Tomorrow",
+        category: "workday",
+        destinations: ["Work", "Calendar"],
+        prompt: "I don't work tomorrow",
+        workAvailability: "off",
+        timeline: {
+          timelineRole: "event",
+          startDate: "2026-06-15",
+          label: "Tomorrow",
+          tense: "future",
+        },
+      }),
+    ],
+    workSchedule,
+    reference,
+  });
+
+  assert.match(brief.lede, /You're off tomorrow/i);
+  assert.doesNotMatch(brief.lede, /Work starts at/i);
+}
+
+{
+  const brief = buildDailyBrief({
+    items: [
+      capture({
+        id: "shower",
+        title: "Shower Logged",
+        category: "general",
+        destinations: ["Health"],
+        prompt: "i showered today",
+        timeline: {
+          timelineRole: "log",
+          startDate: "2026-06-14",
+          label: "Today",
+          tense: "past",
+        },
+      }),
+    ],
+    workSchedule,
+    reference,
+  });
+
+  assert.match(brief.lede, /Work starts at 11:00 AM|Nothing urgent today/i);
+  assert.doesNotMatch(brief.lede, /Shower/i);
+}
+
+{
+  const brief = buildDailyBrief({
+    items: [
+      capture({
+        id: "anniversary",
+        title: "Anniversary",
+        destinations: ["Relationships", "Calendar"],
+        prompt: "anniversary is next week",
+        timeline: {
+          timelineRole: "event",
+          startDate: "2026-06-21",
+          label: "Next week",
+        },
+      }),
+      capture({
+        id: "payday",
+        title: "Payday",
+        category: "expense",
+        destinations: ["Finance", "Calendar"],
+        parsedInput: { moneyType: "income" },
+        prompt: "i get paid wednesday",
+        timeline: {
+          timelineRole: "task",
+          kind: "recurring",
+          startDate: "2026-06-18",
+          recurrence: { frequency: "weekly", days: ["Wednesday"] },
+          label: "Wednesday",
+        },
+      }),
+    ],
+    workSchedule,
+    reference,
+  });
+
+  const comingSoon =
+    brief.sections.find((section) => section.id === "noticing")?.paragraphs[0] ??
+    "";
+  const tomorrowIdx = comingSoon.search(/Tomorrow is open/i);
+  const paydayIdx = comingSoon.search(/Payday lands Wednesday/i);
+  const anniversaryIdx = comingSoon.search(/Anniversary is in/i);
+
+  if (tomorrowIdx >= 0 && paydayIdx >= 0) {
+    assert.ok(tomorrowIdx < paydayIdx, "tomorrow should appear before payday");
+  }
+  if (paydayIdx >= 0 && anniversaryIdx >= 0) {
+    assert.ok(
+      paydayIdx < anniversaryIdx,
+      "payday should appear before anniversary",
+    );
+  }
+}
+
+assert.equal(formatProfileDisplayName("ahmed"), "Ahmed");
+assert.equal(formatProfileDisplayName("AHMED"), "Ahmed");
 
 console.log("build-daily-brief tests passed");

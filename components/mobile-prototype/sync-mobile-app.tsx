@@ -11,6 +11,7 @@ import { MemoryScreen } from "@/components/mobile-prototype/memory-screen";
 import { OnboardingFlow } from "@/components/mobile-prototype/onboarding-flow";
 import { SyncBrandMark } from "@/components/mobile-prototype/sync-ui";
 import { TodayScreen } from "@/components/mobile-prototype/today-screen";
+import { loadProfileDisplayName } from "@/lib/mobile-prototype/build-daily-brief";
 import { isOnboardingComplete } from "@/lib/mobile-prototype/life-profile";
 
 type AppView = "onboarding" | "app" | "life";
@@ -23,11 +24,19 @@ export function SyncMobileApp({ initialTab = "today" }: SyncMobileAppProps) {
   const [activeTab, setActiveTab] = useState<MobileTab>(initialTab);
   const [view, setView] = useState<AppView>("app");
   const [mounted, setMounted] = useState(false);
+  const [lifeLinkLabel, setLifeLinkLabel] = useState("My Life");
 
   useEffect(() => {
     setMounted(true);
     setView(isOnboardingComplete() ? "app" : "onboarding");
   }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    if (view === "app" || view === "life") {
+      setLifeLinkLabel(loadProfileDisplayName() ?? "My Life");
+    }
+  }, [mounted, view]);
 
   if (!mounted) {
     return (
@@ -74,9 +83,9 @@ export function SyncMobileApp({ initialTab = "today" }: SyncMobileAppProps) {
           <button
             type="button"
             onClick={() => setView("life")}
-            className="sync-life-link"
+            className={`sync-life-link${lifeLinkLabel !== "My Life" ? " sync-life-link--name" : ""}`}
           >
-            My Life
+            {lifeLinkLabel}
           </button>
         </header>
 

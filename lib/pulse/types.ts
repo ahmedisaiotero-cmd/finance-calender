@@ -48,6 +48,7 @@ export type PulseParsedInput = {
   timeLabel?: string;
   frequency?: PulsePlanFrequency;
   moneyType?: PulseMoneyType;
+  workAvailability?: "off" | "overtime";
 };
 
 export type PulseCalendarSuggestion = {

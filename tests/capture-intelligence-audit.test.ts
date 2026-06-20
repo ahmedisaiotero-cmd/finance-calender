@@ -6,6 +6,7 @@ import {
   isSilentCaptureReady,
   prepareCaptureFromText,
 } from "@/lib/sync-capture/save-capture";
+import { cleanMemoryTitle } from "@/lib/sync-capture/memory-title";
 
 const reference = new Date("2026-06-14T18:00:00");
 
@@ -48,6 +49,37 @@ function audit(text: string) {
   assert.equal(plan.timeline?.recurrence?.frequency, "biweekly");
   assert.ok(plan.timeline?.startDate);
   assert.equal(plan.parsedInput?.moneyType, "income");
+}
+
+{
+  const { plan, prepared } = audit("my girlfrienda bday is april 25");
+  assert.ok(prepared);
+  assert.ok(isSilentCaptureReady(prepared!));
+  assert.match(cleanMemoryTitle({ title: prepared!.title, prompt: plan.prompt }), /Girlfriend's Birthday/i);
+  assert.ok(prepared!.destinations.includes("Relationships"));
+}
+
+{
+  const { plan, prepared } = audit("I don't work tomorrow");
+  assert.ok(prepared);
+  assert.ok(isSilentCaptureReady(prepared!));
+  assert.equal(plan.parsedInput?.workAvailability, "off");
+  assert.match(prepared!.title, /Day Off Tomorrow/i);
+  assert.doesNotMatch(prepared!.title, /Work is tomorrow/i);
+}
+
+{
+  const { prepared } = audit("I went to the gym yesterday");
+  assert.ok(prepared);
+  assert.ok(isSilentCaptureReady(prepared!));
+  assert.match(prepared!.title, /Gym|Workout/i);
+}
+
+{
+  const { prepared } = audit("I showered today");
+  assert.ok(prepared);
+  assert.ok(isSilentCaptureReady(prepared!));
+  assert.match(prepared!.title, /Shower Logged/i);
 }
 
 console.log("capture-intelligence-audit tests passed");

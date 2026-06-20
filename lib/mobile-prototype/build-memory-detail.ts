@@ -7,6 +7,9 @@ import {
   type DailyBriefSnapshot,
 } from "@/lib/mobile-prototype/build-daily-brief";
 import { loadUserProfile } from "@/lib/sync-profile/user-profile";
+import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
+import { isWorkDayOffItem } from "@/lib/sync-capture/work-availability";
+import { memoryDisplayCategory } from "@/lib/mobile-prototype/memory-category";
 import {
   daysUntilDateKey,
   formatRecurrenceLabel,
@@ -32,27 +35,12 @@ export type MemoryDetailView = {
   prompt: string;
 };
 
-const CATEGORY_ORDER = [
-  "Family",
-  "Finance",
-  "Health",
-  "Work",
-  "Goals",
-  "Relationships",
-  "School",
-] as const;
-
 function activeItem(item: CapturedSyncItem) {
   return item.status !== "cancelled" && !item.deletedAt;
 }
 
 export function memoryPrimaryCategory(item: CapturedSyncItem): string {
-  for (const destination of CATEGORY_ORDER) {
-    if (item.destinations.includes(destination)) {
-      return destination;
-    }
-  }
-  return "Personal";
+  return memoryDisplayCategory(item);
 }
 
 function formatDateKeyLabel(dateKey: string) {
@@ -75,41 +63,76 @@ export function formatMemoryAppears(
   return formatDateKeyLabel(key);
 }
 
-export function whySyncRemembers(item: CapturedSyncItem): string {
-  if (item.meaning?.summary?.trim()) {
-    return item.meaning.summary;
-  }
+function vagueMeaningCopy(text: string) {
+  return /worth a spot|when you are ready|timeline when/i.test(text);
+}
 
-  if (item.meaning?.meaningLabel?.trim()) {
-    return item.meaning.meaningLabel;
-  }
-
+export function whySyncRemembers(
+  item: CapturedSyncItem,
+  reference = new Date(),
+): string {
   const prompt = item.originalPrompt ?? item.prompt;
+  const nextKey = item.timeline
+    ? resolveNextOccurrenceDateKey(item.timeline, reference)
+    : resolveCaptureDateKey(item, reference);
+  const nextLabel = nextKey ? formatDateKeyLabel(nextKey) : null;
+  const nearDate = nextLabel ? ` near ${nextLabel}` : " near the date";
 
-  if (/\bbirthday\b/i.test(prompt)) {
-    if (item.destinations.includes("Relationships")) {
-      return "A relationship milestone you asked Sync to keep in view.";
+  if (isWorkDayOffItem(item)) {
+    if (/\btomorrow\b/i.test(prompt)) {
+      return "Sync remembers this because it changes your work availability tomorrow.";
     }
-    return "A family date you asked Sync to keep in view.";
+    if (nextLabel) {
+      return `Sync remembers this because you're off on ${nextLabel}.`;
+    }
+    return "Sync remembers this because it changes when you're available for work.";
   }
 
-  if (item.timeline?.timelineRole === "deadline") {
-    return "A deadline you asked Sync to track.";
+  if (item.workAvailability === "overtime") {
+    return "Sync remembers this because it changes your work schedule.";
   }
 
-  if (item.category === "workout" || item.destinations.includes("Health")) {
-    return "Part of the health rhythm Sync is watching.";
+  if (/\bbirthday\b|\bbday\b/i.test(prompt)) {
+    if (item.destinations.includes("Relationships")) {
+      return `Sync remembers this because it affects your relationship and should surface${nearDate}.`;
+    }
+    return `Sync remembers this because it affects your family and should surface${nearDate}.`;
   }
 
   if (
     item.parsedInput?.moneyType === "income" ||
     item.moneyType === "income" ||
-    /\b(payday|get paid)\b/i.test(prompt)
+    /\b(payday|get paid|every other)\b/i.test(prompt)
   ) {
-    return "Income timing Sync uses for your brief.";
+    return "Sync remembers this because it affects your upcoming paydays.";
   }
 
-  return "Something you told Sync to hold.";
+  if (/\brent\b/i.test(prompt) && /\b(due|pay)\b/i.test(prompt)) {
+    const before = nextLabel ? ` before ${nextLabel}` : " before it's due";
+    return `Sync remembers this because rent is due and should surface${before}.`;
+  }
+
+  if (item.timeline?.timelineRole === "deadline") {
+    const before = nextLabel ? ` before ${nextLabel}` : "";
+    return `Sync remembers this because it's a deadline Sync should surface${before}.`;
+  }
+
+  if (item.timeline?.timelineRole === "log") {
+    return "Sync logged this as part of your health rhythm.";
+  }
+
+  if (item.meaning?.summary?.trim() && !vagueMeaningCopy(item.meaning.summary)) {
+    return item.meaning.summary;
+  }
+
+  if (
+    item.meaning?.meaningLabel?.trim() &&
+    !vagueMeaningCopy(item.meaning.meaningLabel)
+  ) {
+    return item.meaning.meaningLabel;
+  }
+
+  return "Sync remembers this because you asked it to hold something that may matter later.";
 }
 
 export function memoryHasCalendarImpact(item: CapturedSyncItem): boolean {
@@ -229,9 +252,9 @@ export function buildMemoryDetail(
 
   return {
     id: item.id,
-    title: item.title,
+    title: displayMemoryTitle(item),
     originalInput: item.originalPrompt ?? item.prompt,
-    whyRemembered: whySyncRemembers(item),
+    whyRemembered: whySyncRemembers(item, reference),
     category: memoryPrimaryCategory(item),
     resolvedDate: formatMemoryAppears(item, reference),
     recurrence: formatRecurrenceLabel(item.timeline),
