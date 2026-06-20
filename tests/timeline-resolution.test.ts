@@ -326,7 +326,7 @@ function assertLifeAreaDestinationsOnly(
 }
 
 {
-  const result = resolveWithoutContext("meeting at 3");
+  const result = resolveWithoutContext("meeting at 3pm");
   assert.equal(result.kind, "unknown");
   assert.equal(result.startTime, "15:00");
   assert.equal(result.endTime, "16:00");

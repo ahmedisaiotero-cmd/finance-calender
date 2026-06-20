@@ -34,11 +34,22 @@ export function MemoryDetailScreen({ detail, onBack }: MemoryDetailScreenProps) 
       </section>
 
       <dl className="sync-memory-detail-facts">
+        <DetailRow label="Original input" value={detail.originalInput} />
         <DetailRow label="Category" value={detail.category} />
-        <DetailRow label="Appears" value={detail.appears} />
+        <DetailRow label="Resolved date" value={detail.resolvedDate} />
+        {detail.recurrence && (
+          <DetailRow label="Recurrence" value={detail.recurrence} />
+        )}
+        {detail.nextOccurrence && (
+          <DetailRow label="Next occurrence" value={detail.nextOccurrence} />
+        )}
         <DetailRow
           label="Mentioned in brief"
           value={detail.mentionedInBrief ? "Yes" : "No"}
+        />
+        <DetailRow
+          label="Brief eligible"
+          value={detail.briefEligible ? "Yes" : "No"}
         />
         <DetailRow
           label="Calendar impact"

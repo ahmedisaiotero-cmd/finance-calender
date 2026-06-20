@@ -1,4 +1,7 @@
 import { toDateKey } from "@/lib/calendar-utils";
+import {
+  resolveNextOccurrenceDateKey,
+} from "@/lib/timeline/next-occurrence";
 import type { CapturedSyncItem } from "@/lib/captured-items";
 import type { PulsePlanCategory } from "@/lib/pulse/types";
 import type { TimelineEvent } from "@/lib/timeline-events";
@@ -61,11 +64,22 @@ export function resolveCaptureDateKey(
   const timeline = item.timeline;
   if (!timeline) return null;
 
+  if (timeline.recurrence) {
+    const next = resolveNextOccurrenceDateKey(timeline, reference);
+    if (next) return next;
+  }
+
   if (timeline.timelineRole === "deadline") {
     return timeline.deadlineDate ?? timeline.startDate ?? null;
   }
 
-  if (timeline.startDate) return timeline.startDate;
+  if (timeline.startDate) {
+    if (timeline.recurrence?.frequency === "yearly" || /\bbirthday\b/i.test(item.prompt)) {
+      const next = resolveNextOccurrenceDateKey(timeline, reference);
+      if (next) return next;
+    }
+    return timeline.startDate;
+  }
 
   const label = (timeline.label ?? item.dateLabel).toLowerCase();
   if (label === "today") return toDateKey(reference);

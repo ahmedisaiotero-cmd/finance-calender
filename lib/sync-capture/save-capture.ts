@@ -66,7 +66,9 @@ export function compactCaptureTitle(plan: CompactTitleInput): string {
     return "Payday";
   }
 
-  const birthday = plan.prompt.match(/\b([a-z]+(?:'s)?)\s+birthday\b/i);
+  const birthday = plan.prompt.match(
+    /\b(?:my\s+)?((?:girlfriend|boyfriend|wife|husband|partner|mom|mother|dad|father|daughter|son|grandma|grandpa|[a-z]+)'s)\s+birthday\b/i,
+  );
   if (birthday) {
     return `${titleCaseKeep(birthday[1])} Birthday`;
   }
@@ -208,6 +210,10 @@ export function prepareCaptureFromPlan(
 export function isSilentCaptureReady(
   prepared: PreparedCapture,
 ): boolean {
+  if (prepared.preview.readyToSave) {
+    return true;
+  }
+
   const { plan, destinations } = prepared;
   if (destinations.length === 0) return false;
 
@@ -215,6 +221,15 @@ export function isSilentCaptureReady(
   if (!timeline) return false;
 
   const confidence = timeline.confidence ?? 0;
+
+  if (
+    timeline.kind === "recurring" &&
+    timeline.recurrence &&
+    confidence >= 0.7
+  ) {
+    return true;
+  }
+
   const hasDate = Boolean(timeline.startDate || timeline.deadlineDate);
 
   if (timeline.timelineRole === "deadline" && hasDate && confidence >= 0.7) {

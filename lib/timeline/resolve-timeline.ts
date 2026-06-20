@@ -14,9 +14,10 @@ export type TimelineResolution = {
   deadlineTime?: string;
   timelineRole: "event" | "task" | "deadline" | "log" | "schedule";
   recurrence?: {
-    frequency: "weekly" | "biweekly" | "monthly";
+    frequency: "weekly" | "biweekly" | "monthly" | "yearly";
     days?: string[];
     dayOfMonth?: number;
+    month?: number;
   };
   confidence: number;
   confidenceLabel: "high" | "medium" | "low";
@@ -491,6 +492,7 @@ function resolveRecurring(
   input: string,
   text: string,
   time: ResolvedTime,
+  now: Date,
 ): TimelineResolution | null {
   const standingSchedule = resolveStandingWorkSchedule(input, text, time);
   if (standingSchedule) return standingSchedule;
@@ -511,9 +513,12 @@ function resolveRecurring(
   if (everyOther) {
     const day = normalizeDay(everyOther[1]);
     if (!day) return null;
+    const nextOccurrence = resolveWeekdayDate(day, now, "future");
     return buildResolution(input, {
       kind: "recurring",
       recurrence: { frequency: "biweekly", days: [day] },
+      startDate: nextOccurrence ? toDateKey(nextOccurrence) : undefined,
+      timelineRole: "task",
       confidence: 0.94,
       tense: "present",
       label: `Every other ${day}`,
@@ -784,6 +789,26 @@ function resolveAbsoluteCalendarDate(
         ? "event"
         : "event";
 
+  if (isBirthday) {
+    const month = date.date.getMonth();
+    const dayOfMonth = date.date.getDate();
+    return buildResolution(input, {
+      kind: "recurring",
+      startDate: toDateKey(date.date),
+      recurrence: { frequency: "yearly", month, dayOfMonth },
+      startTime: time.startTime,
+      endTime: time.endTime,
+      isTimed: time.isTimed,
+      timeSource: time.source,
+      durationMinutes: time.durationMinutes,
+      timelineRole: role,
+      confidence: 0.9,
+      tense: tense === "unknown" ? "future" : tense,
+      label: date.label,
+      needsConfirmation: false,
+    });
+  }
+
   return buildResolution(input, {
     kind: "single_date",
     startDate: toDateKey(date.date),
@@ -921,7 +946,7 @@ export function resolveTimeline(
   const resolution =
     resolveDeadline(sourceText, text, now) ??
     resolveDurationLog(sourceText, text, now) ??
-    resolveRecurring(sourceText, text, time) ??
+    resolveRecurring(sourceText, text, time, now) ??
     resolveWeekend(sourceText, text, now) ??
     resolveRange(sourceText, text, now, tense, time) ??
     resolveRelative(sourceText, text, now, time) ??

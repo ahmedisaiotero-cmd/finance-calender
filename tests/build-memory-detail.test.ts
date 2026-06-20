@@ -22,7 +22,9 @@ const momsBirthday: CapturedSyncItem = {
   timeLabel: "Flexible",
   timeline: {
     timelineRole: "event",
+    kind: "recurring",
     startDate: "2026-06-22",
+    recurrence: { frequency: "yearly", month: 5, dayOfMonth: 22 },
     label: "June 22",
   },
   meaning: {
@@ -111,6 +113,10 @@ assert.equal(detail.category, "Family");
 assert.equal(detail.appears, "June 22");
 assert.equal(detail.mentionedInBrief, true);
 assert.equal(detail.calendarImpact, true);
+assert.equal(detail.briefEligible, true);
+assert.equal(detail.recurrence, "Every year");
+assert.ok(detail.nextOccurrence);
+assert.ok(detail.originalInput);
 assert.ok(detail.relatedMemories.length >= 1);
 assert.ok(
   detail.relatedMemories.some((memory) =>

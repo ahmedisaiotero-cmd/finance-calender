@@ -5,6 +5,7 @@ import {
   attemptBriefCapture,
   captureFromBriefInput,
 } from "@/lib/mobile-prototype/capture-brief-input";
+import { resolveCaptureDateKey } from "@/lib/captured-to-timeline";
 
 const reference = new Date("2026-06-14T18:00:00");
 
@@ -87,6 +88,34 @@ for (const text of examples) {
   if (vague.status === "too_vague") {
     assert.match(vague.message, /Tell Sync something that happened/i);
   }
+}
+
+{
+  const reference = new Date("2026-06-14T18:00:00");
+  const payday = captureFromBriefInput("I get paid every other Thursday", {
+    items: [],
+    reference,
+  });
+  assert.ok(payday);
+  const item = {
+    id: payday!.plan.id,
+    title: payday!.title,
+    category: payday!.plan.category,
+    prompt: payday!.plan.prompt,
+    destinations: payday!.destinations,
+    dateLabel: payday!.plan.dateLabel,
+    timeLabel: payday!.plan.timeLabel,
+    timeline: payday!.plan.timeline,
+    parsedInput: payday!.plan.parsedInput,
+    meaning: payday!.meaning,
+    status: "active" as const,
+    createdAt: reference.toISOString(),
+    updatedAt: reference.toISOString(),
+  };
+  const nextKey = resolveCaptureDateKey(item, reference);
+  assert.ok(nextKey);
+  const brief = buildDailyBrief({ items: [item], reference });
+  assert.match(brief.lede, /Payday is in \d+ days/i);
 }
 
 console.log("capture-brief-input tests passed");

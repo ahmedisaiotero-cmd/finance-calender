@@ -103,6 +103,7 @@ function parseTimeLabel(text: string): string {
 }
 
 function parseFrequency(text: string): PulsePlanFrequency {
+  if (/\b(birthday|anniversary)\b/.test(text)) return "yearly";
   if (/\b(monthly|every month|per month|\/mo)\b/.test(text)) return "monthly";
   if (/\b(weekly|every week|per week)\b/.test(text)) return "weekly";
   if (/\b(yearly|annual|annually|every year)\b/.test(text)) return "yearly";

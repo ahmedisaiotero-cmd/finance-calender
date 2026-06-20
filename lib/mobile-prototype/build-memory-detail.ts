@@ -7,16 +7,27 @@ import {
   type DailyBriefSnapshot,
 } from "@/lib/mobile-prototype/build-daily-brief";
 import { loadUserProfile } from "@/lib/sync-profile/user-profile";
+import {
+  daysUntilDateKey,
+  formatRecurrenceLabel,
+  isBriefEligibleMemory,
+  resolveNextOccurrenceDateKey,
+} from "@/lib/timeline/next-occurrence";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
 
 export type MemoryDetailView = {
   id: string;
   title: string;
+  originalInput: string;
   whyRemembered: string;
   category: string;
+  resolvedDate: string;
+  recurrence: string | null;
+  nextOccurrence: string | null;
   appears: string;
   mentionedInBrief: boolean;
   calendarImpact: boolean;
+  briefEligible: boolean;
   relatedMemories: string[];
   prompt: string;
 };
@@ -44,6 +55,14 @@ export function memoryPrimaryCategory(item: CapturedSyncItem): string {
   return "Personal";
 }
 
+function formatDateKeyLabel(dateKey: string) {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+  });
+}
+
 export function formatMemoryAppears(
   item: CapturedSyncItem,
   reference = new Date(),
@@ -53,11 +72,7 @@ export function formatMemoryAppears(
     return item.dateLabel !== "Flexible" ? item.dateLabel : "—";
   }
 
-  const [year, month, day] = key.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-  });
+  return formatDateKeyLabel(key);
 }
 
 export function whySyncRemembers(item: CapturedSyncItem): string {
@@ -72,6 +87,9 @@ export function whySyncRemembers(item: CapturedSyncItem): string {
   const prompt = item.originalPrompt ?? item.prompt;
 
   if (/\bbirthday\b/i.test(prompt)) {
+    if (item.destinations.includes("Relationships")) {
+      return "A relationship milestone you asked Sync to keep in view.";
+    }
     return "A family date you asked Sync to keep in view.";
   }
 
@@ -100,7 +118,8 @@ export function memoryHasCalendarImpact(item: CapturedSyncItem): boolean {
   }
 
   return Boolean(
-    item.timeline?.startDate ||
+    item.timeline?.recurrence ||
+      item.timeline?.startDate ||
       item.timeline?.deadlineDate ||
       item.timeline?.startTime ||
       item.timeline?.deadlineTime,
@@ -204,14 +223,23 @@ export function buildMemoryDetail(
       reference,
     });
 
+  const nextKey = item.timeline
+    ? resolveNextOccurrenceDateKey(item.timeline, reference)
+    : resolveCaptureDateKey(item, reference);
+
   return {
     id: item.id,
     title: item.title,
+    originalInput: item.originalPrompt ?? item.prompt,
     whyRemembered: whySyncRemembers(item),
     category: memoryPrimaryCategory(item),
+    resolvedDate: formatMemoryAppears(item, reference),
+    recurrence: formatRecurrenceLabel(item.timeline),
+    nextOccurrence: nextKey ? formatDateKeyLabel(nextKey) : null,
     appears: formatMemoryAppears(item, reference),
     mentionedInBrief: itemMentionedInBrief(item, brief, reference),
     calendarImpact: memoryHasCalendarImpact(item),
+    briefEligible: isBriefEligibleMemory(item, reference, nextKey),
     relatedMemories: findRelatedMemories(item, items, reference),
     prompt: item.originalPrompt ?? item.prompt,
   };
