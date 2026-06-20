@@ -1,0 +1,379 @@
+.mobile-prototype-root {
+  --mp-device-w: 393px;
+  --mp-device-h: 844px;
+  --mp-pad-x: 20px;
+  --mp-chrome-h: 48px;
+
+  width: var(--mp-device-w);
+  height: var(--mp-device-h);
+  max-width: var(--mp-device-w);
+  max-height: var(--mp-device-h);
+  overflow: hidden;
+  margin: 0;
+  position: relative;
+  font-family: var(--font-mobile-body), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  touch-action: manipulation;
+  overscroll-behavior: none;
+}
+
+html:has(.mobile-prototype-root) {
+  overflow: hidden;
+}
+
+html:has(.mobile-prototype-root) body {
+  overflow: hidden;
+  margin: 0;
+  min-height: var(--mp-device-h);
+}
+
+.mobile-prototype {
+  --mp-bg: #070605;
+  --mp-bg-soft: #0e0c09;
+  --mp-bg-elevated: rgba(22, 18, 14, 0.72);
+  --mp-bg-glass: rgba(255, 244, 220, 0.04);
+  --mp-fg: #f6efe3;
+  --mp-fg-muted: rgba(246, 239, 227, 0.62);
+  --mp-fg-subtle: rgba(246, 239, 227, 0.38);
+  --mp-accent: #b8842f;
+  --mp-accent-deep: #8f6320;
+  --mp-accent-glow: rgba(184, 132, 47, 0.28);
+  --mp-accent-muted: rgba(184, 132, 47, 0.14);
+  --mp-border: rgba(246, 239, 227, 0.1);
+  --mp-border-strong: rgba(184, 132, 47, 0.22);
+  --mp-input-bg: rgba(246, 239, 227, 0.04);
+  --mp-chip-bg: rgba(246, 239, 227, 0.05);
+  --mp-chip-active-bg: rgba(184, 132, 47, 0.16);
+  --mp-chip-active-border: rgba(184, 132, 47, 0.42);
+  --mp-button-fg: #120e08;
+  --mp-shadow: 0 24px 60px rgba(0, 0, 0, 0.42);
+  --mp-glow: radial-gradient(
+    120% 80% at 50% -10%,
+    rgba(184, 132, 47, 0.2) 0%,
+    rgba(184, 132, 47, 0.04) 38%,
+    transparent 72%
+  );
+  --mp-vignette: radial-gradient(
+    130% 100% at 50% 100%,
+    rgba(7, 6, 5, 0) 40%,
+    rgba(7, 6, 5, 0.65) 100%
+  );
+
+  position: relative;
+  isolation: isolate;
+  width: var(--mp-device-w);
+  height: var(--mp-device-h);
+  color: var(--mp-fg);
+  background: var(--mp-bg);
+  overflow: hidden;
+}
+
+.mobile-prototype[data-theme="light"] {
+  --mp-bg: #eee7da;
+  --mp-bg-soft: #f5f0e5;
+  --mp-bg-elevated: rgba(255, 252, 246, 0.82);
+  --mp-bg-glass: rgba(255, 255, 255, 0.55);
+  --mp-fg: #12110e;
+  --mp-fg-muted: rgba(18, 17, 14, 0.62);
+  --mp-fg-subtle: rgba(18, 17, 14, 0.4);
+  --mp-accent: #0f3b2c;
+  --mp-accent-deep: #08261c;
+  --mp-accent-glow: rgba(15, 59, 44, 0.16);
+  --mp-accent-muted: rgba(15, 59, 44, 0.1);
+  --mp-border: rgba(18, 17, 14, 0.1);
+  --mp-border-strong: rgba(15, 59, 44, 0.22);
+  --mp-input-bg: rgba(18, 17, 14, 0.04);
+  --mp-chip-bg: rgba(18, 17, 14, 0.04);
+  --mp-chip-active-bg: rgba(15, 59, 44, 0.1);
+  --mp-chip-active-border: rgba(15, 59, 44, 0.34);
+  --mp-button-fg: #f5f0e5;
+  --mp-shadow: 0 20px 50px rgba(18, 17, 14, 0.12);
+  --mp-glow: radial-gradient(
+    120% 80% at 50% -10%,
+    rgba(15, 59, 44, 0.12) 0%,
+    rgba(15, 59, 44, 0.03) 40%,
+    transparent 72%
+  );
+  --mp-vignette: radial-gradient(
+    130% 100% at 50% 100%,
+    rgba(238, 231, 218, 0) 40%,
+    rgba(238, 231, 218, 0.75) 100%
+  );
+}
+
+.mobile-prototype::before,
+.mobile-prototype::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.mobile-prototype::before {
+  background: var(--mp-glow);
+}
+
+.mobile-prototype::after {
+  background: var(--mp-vignette);
+}
+
+.mobile-prototype-shell {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: var(--mp-device-w);
+  height: var(--mp-device-h);
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mobile-prototype-chrome {
+  display: flex;
+  height: var(--mp-chrome-h);
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 8px var(--mp-pad-x) 0;
+}
+
+.mobile-prototype-screen {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mobile-prototype-pad-x {
+  padding-left: var(--mp-pad-x);
+  padding-right: var(--mp-pad-x);
+}
+
+.mobile-prototype-display {
+  font-family: var(--font-mobile-display), Georgia, serif;
+}
+
+.mobile-prototype-glass {
+  border: 1px solid var(--mp-border);
+  background: var(--mp-bg-glass);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.mobile-prototype-fade-in {
+  animation: mp-fade-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.mobile-prototype-rise-1 {
+  animation: mp-rise 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.05s both;
+}
+
+.mobile-prototype-rise-2 {
+  animation: mp-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+}
+
+.mobile-prototype-rise-3 {
+  animation: mp-rise 0.95s cubic-bezier(0.22, 1, 0.36, 1) 0.28s both;
+}
+
+.mobile-prototype-rise-4 {
+  animation: mp-rise 1s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both;
+}
+
+.mobile-prototype-pulse {
+  animation: mp-pulse 2s ease-in-out infinite;
+}
+
+.mobile-prototype-progress {
+  display: flex;
+  gap: 6px;
+}
+
+.mobile-prototype-progress span {
+  height: 3px;
+  flex: 1;
+  border-radius: 999px;
+  background: var(--mp-border);
+  transition: background 0.35s ease, transform 0.35s ease;
+}
+
+.mobile-prototype-progress span[data-active="true"] {
+  background: var(--mp-accent);
+  transform: scaleY(1.15);
+}
+
+.mobile-prototype-footer {
+  flex-shrink: 0;
+  border-top: 1px solid var(--mp-border);
+  background: var(--mp-bg-glass);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  padding: 14px var(--mp-pad-x) 22px;
+}
+
+.mobile-prototype-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@keyframes mp-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mp-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes mp-pulse {
+  0%,
+  100% {
+    opacity: 0.42;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Daily Brief — personal briefing */
+.daily-brief::before,
+.daily-brief::after {
+  display: none;
+}
+
+.daily-brief {
+  position: relative;
+  background: var(--mp-bg);
+}
+
+.daily-brief-theme {
+  position: absolute;
+  top: 10px;
+  right: var(--mp-pad-x);
+  z-index: 2;
+  border: none;
+  background: transparent;
+  padding: 4px 0;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--mp-fg-subtle);
+  opacity: 0.45;
+}
+
+.daily-brief-screen {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.daily-brief-scroll {
+  min-height: 0;
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-top: 28px;
+  padding-bottom: 36px;
+}
+
+.daily-brief-date {
+  display: block;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0.005em;
+  color: var(--mp-fg-muted);
+}
+
+.daily-brief-greeting {
+  margin-top: 20px;
+  font-size: 34px;
+  font-weight: 500;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  color: var(--mp-fg);
+}
+
+.daily-brief-lede {
+  margin-top: 18px;
+  max-width: 32ch;
+  font-size: 17px;
+  line-height: 1.55;
+  letter-spacing: -0.012em;
+  color: var(--mp-fg-muted);
+}
+
+.daily-brief-passage {
+  margin-top: 52px;
+}
+
+.daily-brief-whisper {
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  color: var(--mp-fg-subtle);
+}
+
+.daily-brief-paragraph {
+  font-size: 18px;
+  line-height: 1.72;
+  letter-spacing: -0.018em;
+  color: var(--mp-fg);
+}
+
+.daily-brief-paragraph + .daily-brief-paragraph {
+  margin-top: 14px;
+}
+
+.daily-brief-note {
+  margin-top: 48px;
+  font-size: 17px;
+  line-height: 1.6;
+  font-style: italic;
+  color: var(--mp-fg-muted);
+}
+
+.daily-brief-capture {
+  flex-shrink: 0;
+  padding-top: 16px;
+  padding-bottom: 24px;
+}
+
+.daily-brief-input {
+  width: 100%;
+  border: none;
+  border-top: 1px solid var(--mp-border);
+  background: transparent;
+  padding: 16px 0 0;
+  font-size: 18px;
+  line-height: 1.5;
+  letter-spacing: -0.015em;
+  color: var(--mp-fg);
+  outline: none;
+}
+
+.daily-brief-input::placeholder {
+  color: var(--mp-fg-subtle);
+}
