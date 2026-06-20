@@ -1,0 +1,133 @@
+---
+description: Sync build workflow — how to evaluate, implement, and ship features without drifting from the vision
+alwaysApply: true
+---
+
+# Sync Product Workflow
+
+## Before implementing any feature
+
+### 1. Identify which area it improves
+
+- Today
+- Memory
+- My Life
+- Understanding
+- Consequences
+- Trust
+
+### 2. Search for existing shared Sync logic first
+
+Prefer reusing:
+
+- `meaning-engine`
+- `sync-consequences`
+- `importance-scoring`
+- `resolve-timeline`
+- `sync-time-blocks`
+- `briefing-composer`
+- `memory-understanding`
+- `capture-action-resolver`
+- `apply-capture-input`
+- ambiguity detection
+- duplicate detection
+
+**Do not** create duplicate mobile-only intelligence if shared logic exists.
+
+### 3. Evaluate the feature
+
+Answer:
+
+- How does this help answer **"What do I need to know right now?"**
+- How does this reduce mental load?
+- What real-life behavior becomes easier?
+- Does this improve Today, Memory, My Life, Understanding, Consequences, or Trust?
+
+**If none apply: do not build it.**
+
+### 4. Add tests
+
+Prefer messy real-life input.
+
+### 5. Preserve Sync voice
+
+Sync should sound: **calm, observant, concise, trustworthy.**
+
+Avoid:
+
+- corporate SaaS language
+- productivity coaching
+- motivational slogans
+- generic AI wording
+
+Prefer specific phrases:
+
+- Rent is due Friday.
+- Tomorrow starts early.
+- You're off tomorrow.
+- Your friend's birthday is tomorrow.
+- Work begins at 11:00 AM after a busy morning.
+
+## Build order
+
+1. Shared intelligence / domain layer
+2. Tests
+3. Mobile shell integration
+4. Minimal UI
+5. Polish
+
+Never build UI first if the intelligence does not exist.
+
+## Do not build unless explicitly approved
+
+- new main tabs
+- dashboards
+- analytics
+- charts
+- productivity pages
+- task manager UI
+- full chatbot UI
+- standalone calendar page
+- standalone finance page
+- standalone health page
+- social features
+- gamification
+- streak systems
+
+## Red flag list
+
+If a proposed feature includes any of the following, **stop and explain why it is being proposed** before implementation:
+
+- dashboards
+- analytics
+- charts
+- productivity scores
+- life scores
+- streak systems
+- habit tracking systems
+- leaderboards
+- social feeds
+- gamification
+- finance dashboard pages
+- health dashboard pages
+- calendar dashboard pages
+- chatbot-first experiences
+
+## Definition of done
+
+A feature is **not complete** unless:
+
+- it supports the Sync vision
+- it improves Today, Memory, My Life, Understanding, Consequences, or Trust
+- it reuses shared intelligence where possible
+- it includes tests
+- it reduces clutter
+- it does not turn Sync into a dashboard
+
+## Current priority
+
+Make Sync **useful** before making it bigger.
+
+Focus: intelligence quality, consequence ranking, life load detection, memory understanding, My Life model, trust/edit/delete, messy real-life input testing.
+
+Design is currently good enough. **Do not redesign** unless fixing clarity.

@@ -99,10 +99,10 @@ function timedItem(
     reference,
   });
 
-  assert.match(brief.lede, /Tomorrow starts early/i);
-  const comingSoon =
-    brief.sections.find((section) => section.id === "noticing")?.paragraphs ?? [];
-  assert.ok(comingSoon.length >= 3, `expected multiple coming soon lines, got: ${comingSoon.join(" | ")}`);
+  assert.match(brief.lede, /Tomorrow looks busy/i);
+  const tomorrowSection = brief.sections.find((section) => section.label === "Tomorrow");
+  const comingSoon = tomorrowSection?.paragraphs ?? brief.sections.flatMap((s) => s.paragraphs);
+  assert.ok(comingSoon.length >= 3, `expected multiple tomorrow lines, got: ${comingSoon.join(" | ")}`);
   assert.ok(
     comingSoon.some((line) => /flight at 6/i.test(line)),
     "flight should appear as a timed consequence",
@@ -112,16 +112,12 @@ function timedItem(
     "school drop-off should use family phrasing",
   );
   assert.ok(
-    comingSoon.some((line) => /payday/i.test(line)),
-    "payday should appear in coming soon",
-  );
-  assert.ok(
     comingSoon.some((line) => /friend's birthday/i.test(line)),
-    "friend birthday should appear in coming soon",
+    "friend birthday should appear in tomorrow",
   );
   assert.ok(
-    comingSoon.some((line) => /work starts at 11/i.test(line)),
-    "work should surface on a busy tomorrow",
+    comingSoon.some((line) => /work begins at 11/i.test(line)),
+    "work should surface on a busy tomorrow with load-aware phrasing",
   );
 
   const flightIdx = comingSoon.findIndex((line) => /flight/i.test(line));

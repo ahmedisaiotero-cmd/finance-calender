@@ -10,6 +10,7 @@ import {
   analyzeMeaning,
   buildWhySummaryFromMeaning,
 } from "@/lib/intelligence/meaning-engine";
+import { resolveMemoryUnderstanding } from "@/lib/intelligence/memory-understanding";
 import {
   describeBriefPresence,
   describeImportance,
@@ -319,7 +320,7 @@ export function buildMemoryDetail(
     id: item.id,
     title: displayMemoryTitle(item),
     originalInput: item.originalPrompt ?? item.prompt,
-    cleanedSummary: meaning.summary?.trim() || displayMemoryTitle(item),
+    cleanedSummary: resolveMemoryUnderstanding(item, reference),
     whyRemembered: whySyncRemembers(item, reference),
     importance: describeImportance(scoreMemoryImportance(item, reference)),
     category: memoryPrimaryCategory(item),

@@ -5,10 +5,10 @@ import {
   importanceToPriorityBoost,
   scoreMemoryImportance,
 } from "@/lib/intelligence/importance-scoring";
+import { composeCuratedBrief } from "@/lib/intelligence/briefing-composer";
 import {
   BRIEF_EMPTY_NO_CONTEXT,
   BRIEF_EMPTY_QUIET,
-  BRIEF_SECTION_AHEAD,
 } from "@/lib/mobile-prototype/sync-voice";
 import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
 import { conflictPriorityScore } from "@/lib/trust/conflict-priority";
@@ -1138,64 +1138,24 @@ export function composeDailyBriefFromConsequences(
   options: {
     userName?: string | null;
     hasUserContext: boolean;
+    priorities?: string[];
   },
 ): DailyBriefFromConsequences {
   const userName = options.userName ?? null;
 
-  if (!options.hasUserContext) {
-    return {
-      userName,
-      lede: BRIEF_EMPTY_NO_CONTEXT,
-      sections: [],
-      isEmpty: true,
-      consequences: [],
-    };
-  }
-
-  const headlineCandidates = consequences
-    .filter((c) => c.horizon === "headline" && c.briefEligible)
-    .sort((a, b) => a.priority - b.priority);
-
-  const lede =
-    headlineCandidates[0]?.surfaceText ??
-    (consequences.some((c) => c.briefEligible)
-      ? BRIEF_EMPTY_QUIET
-      : BRIEF_EMPTY_NO_CONTEXT);
-
-  const comingSoon = consequences
-    .filter(shouldShowInComingSoon)
-    .sort((a, b) => {
-      const dayA = a.daysUntil ?? 99;
-      const dayB = b.daysUntil ?? 99;
-      if (dayA !== dayB) return dayA - dayB;
-      if (a.dateKey && b.dateKey && a.dateKey !== b.dateKey) {
-        return a.dateKey.localeCompare(b.dateKey);
-      }
-      const minuteA = a.sortMinutes ?? 24 * 60;
-      const minuteB = b.sortMinutes ?? 24 * 60;
-      if (minuteA !== minuteB) return minuteA - minuteB;
-      return a.priority - b.priority;
-    })
-    .map((c) => c.surfaceText)
-    .filter((text, index, list) => {
-      if (briefFactsOverlap(text, lede)) return false;
-      return !list.slice(0, index).some((prev) => briefFactsOverlap(prev, text));
-    });
-
-  const sections =
-    comingSoon.length > 0
-      ? [{ id: "noticing" as const, label: BRIEF_SECTION_AHEAD, paragraphs: comingSoon }]
-      : [];
-
-  const hasHeadline =
-    lede !== BRIEF_EMPTY_QUIET && lede !== BRIEF_EMPTY_NO_CONTEXT;
-  const isEmpty = sections.length === 0 && !hasHeadline;
+  const curated = composeCuratedBrief({
+    consequences,
+    priorities: options.priorities ?? [],
+    hasUserContext: options.hasUserContext,
+    emptyNoContext: BRIEF_EMPTY_NO_CONTEXT,
+    emptyQuiet: BRIEF_EMPTY_QUIET,
+  });
 
   return {
     userName,
-    lede: isEmpty ? BRIEF_EMPTY_NO_CONTEXT : lede,
-    sections,
-    isEmpty,
+    lede: curated.lede,
+    sections: curated.sections,
+    isEmpty: curated.isEmpty,
     consequences,
   };
 }
@@ -1232,5 +1192,6 @@ export function buildConsequenceBrief(input: {
   return composeDailyBriefFromConsequences(consequences, {
     userName,
     hasUserContext,
+    priorities: lifeProfile?.priorities ?? [],
   });
 }

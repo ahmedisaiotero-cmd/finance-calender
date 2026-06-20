@@ -1,52 +1,52 @@
 ---
-description: SYNC product vision — source of truth for design, UX, and implementation
+description: Sync product vision — what Sync is and is not; required before any design or implementation
 alwaysApply: true
 ---
 
-# SYNC Vision (required reading)
+# Sync Vision (required reading)
 
-Before any design, UX, or implementation decision, read `SYNC_VISION.md` in the project root and treat it as the product source of truth.
+Also read `SYNC_VISION.md` in the project root for extended compassion, language, and UX principles.
 
-## Core philosophy
+## What Sync is
 
-Extreme Synchronization. Extreme Clarity. Extreme Simplicity. **Extreme Compassion.**
+Sync is a **personal life briefing and memory system**.
 
-Sync **connects** to tools users trust — it does not replace them. It reads signals that matter and translates them into calm guidance.
+## What Sync is not
 
-**Interpretation over information. Clarity over completeness.**
+- a task manager
+- a productivity dashboard
+- a planner
+- a notes app
+- a chatbot
+- a calendar clone
+- a habit tracker
 
-Users should feel informed, supported, and capable — never overwhelmed, never judged.
+## Core question
 
-## The Sync Test (apply before building)
+**"What do I need to know right now?"**
 
-1. Does this reduce mental load?
-2. Can the user understand this in under five seconds?
-3. Does this help the user decide what matters right now?
-4. Does this make the user feel more capable instead of more anxious?
-5. Is this the simplest possible version?
+## Core loop
 
-If any answer is "no," rethink the implementation.
+1. Tell Sync what happened or what is coming.
+2. Sync understands it.
+3. Sync remembers it.
+4. Sync organizes the consequences.
+5. Sync surfaces what matters when it matters.
 
-## Language
+## Primary areas
 
-Never shame-based or fear-based copy. Prefer: needs attention, opportunity to adjust, you're making progress, here's what matters next.
+| Area | Purpose |
+|------|---------|
+| **Today** | What matters now |
+| **Memory** | What Sync remembers |
+| **My Life** | What Sync knows about the user |
 
-## Pulse
+## Product truth
 
-**Pulse** is Sync's interpretation layer on every primary page — never a score, never judgment. It answers: *Given everything Sync knows, how should I approach today?* (or the domain equivalent.)
+The value of Sync is **reducing mental load**.
 
-## Product framing
+Sync should **understand life** — not simply store information.
 
-Sync is a **compassionate unified life timeline** — not a finance app, fitness app, habit tracker, or widget dashboard.
+## When requests conflict with this vision
 
-Default to **Level 1** information (what matters). Never show Level 3 (everything) by default.
-
-## When requests conflict with the vision
-
-Do not silently comply. Explain the conflict with specific principles from `SYNC_VISION.md`, then propose a simpler alternative that aligns with Sync.
-
-## Engineering guardrails
-
-- Prefer reusable components; favor consistency over novelty
-- Apply compassion incrementally — no full redesigns required to improve tone
-- When uncertain, choose what makes life feel calmer
+Do not silently comply. Explain the conflict using these principles, then propose a simpler alternative that aligns with Sync.

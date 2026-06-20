@@ -111,9 +111,10 @@ function capture(
   assert.match(brief.lede, /Work starts at 11:00 AM/i);
   assert.doesNotMatch(brief.lede, /Payday|Mom's Birthday|exercise/i);
 
-  const comingSoon = brief.sections.find((section) => section.id === "noticing");
-  assert.equal(comingSoon?.label, "Ahead");
-  assert.doesNotMatch(comingSoon?.paragraphs[0] ?? "", /haven't logged exercise/i);
+  const noticingSections = brief.sections.filter((section) => section.id === "noticing");
+  const thisWeek = noticingSections.find((section) => section.label === "This Week");
+  assert.ok(thisWeek, "expected a This Week section");
+  assert.doesNotMatch(thisWeek?.paragraphs[0] ?? "", /haven't logged exercise/i);
 }
 
 {
@@ -160,13 +161,14 @@ function capture(
   assert.match(brief.lede, /Work starts at 11:00 AM/i);
   assert.doesNotMatch(brief.lede, /Payday is in 5 days/i);
 
-  const comingSoon = brief.sections.find((section) => section.id === "noticing");
-  assert.ok(comingSoon, "expected coming soon section");
+  const noticingSections = brief.sections.filter((section) => section.id === "noticing");
+  const thisWeek = noticingSections.find((section) => section.label === "This Week");
+  assert.ok(thisWeek, "expected coming soon section");
   assert.ok(
-    comingSoon.paragraphs.some((line) =>
+    thisWeek.paragraphs.some((line) =>
       /Payday lands Friday|Rent is due Friday/i.test(line),
     ),
-    `expected payday or rent in coming soon, got: ${comingSoon.paragraphs.join(" | ")}`,
+    `expected payday or rent in this week, got: ${thisWeek.paragraphs.join(" | ")}`,
   );
 }
 
@@ -304,11 +306,10 @@ function capture(
     reference,
   });
 
-  const comingSoon =
-    brief.sections.find((section) => section.id === "noticing")?.paragraphs ?? [];
-  const tomorrowIdx = comingSoon.findIndex((line) => /Tomorrow is open/i.test(line));
-  const paydayIdx = comingSoon.findIndex((line) => /Payday lands Wednesday/i.test(line));
-  const anniversaryIdx = comingSoon.findIndex((line) => /Anniversary is in/i.test(line));
+  const allParagraphs = brief.sections.flatMap((section) => section.paragraphs);
+  const tomorrowIdx = allParagraphs.findIndex((line) => /Tomorrow is open/i.test(line));
+  const paydayIdx = allParagraphs.findIndex((line) => /Payday lands Wednesday/i.test(line));
+  const anniversaryIdx = allParagraphs.findIndex((line) => /Anniversary is in/i.test(line));
 
   if (tomorrowIdx >= 0 && paydayIdx >= 0) {
     assert.ok(tomorrowIdx < paydayIdx, "tomorrow should appear before payday");

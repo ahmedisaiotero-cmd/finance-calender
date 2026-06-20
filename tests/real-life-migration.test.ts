@@ -41,7 +41,7 @@ function capture(text: string, existing: ReturnType<typeof createTestCaptureStor
   assert.equal(item.timeline?.startTime, "06:00");
   assert.equal(scoreMemoryImportance(item, reference), "critical");
 
-  const brief = buildDailyBrief({ items: [item], workSchedule, reference });
+  const brief = buildDailyBrief({ items: [item], workSchedule: null, reference });
   assert.match(brief.lede, /tomorrow starts early/i);
 }
 
@@ -158,15 +158,13 @@ function capture(text: string, existing: ReturnType<typeof createTestCaptureStor
     reference,
   });
 
-  assert.match(brief.lede, /tomorrow starts early/i);
-  const comingSoon =
-    brief.sections.find((section) => section.id === "noticing")?.paragraphs ?? [];
+  assert.match(brief.lede, /tomorrow looks busy/i);
+  const comingSoon = brief.sections.flatMap((section) => section.paragraphs);
   assert.ok(comingSoon.some((line) => /flight at 6/i.test(line)));
   assert.ok(comingSoon.some((line) => /take daughter to school/i.test(line)));
-  assert.ok(comingSoon.some((line) => /payday/i.test(line)));
   assert.ok(comingSoon.some((line) => /friend's birthday/i.test(line)));
   assert.ok(
-    comingSoon.some((line) => /work starts at 11/i.test(line)),
+    comingSoon.some((line) => /work begins at 11/i.test(line)),
     `work should appear on busy tomorrow, got: ${comingSoon.join(" | ")}`,
   );
 

@@ -13,6 +13,10 @@ import {
   greetingForHour,
   type BriefSection,
 } from "@/lib/mobile-prototype/build-daily-brief";
+import {
+  briefParagraphKey,
+  briefSectionKey,
+} from "@/lib/mobile-prototype/brief-render-keys";
 import { loadLifeProfile } from "@/lib/mobile-prototype/life-profile";
 import {
   BRIEF_LOADING,
@@ -23,14 +27,23 @@ import {
 } from "@/lib/mobile-prototype/sync-voice";
 import { loadActiveWorkSchedule } from "@/lib/user-timeline-context";
 
-function BriefPassage({ section }: { section: BriefSection }) {
+function BriefPassage({
+  section,
+  sectionIndex,
+}: {
+  section: BriefSection;
+  sectionIndex: number;
+}) {
   return (
     <div
       className={`sync-brief-passage${section.id === "noticing" ? " sync-brief-passage--soon" : ""}`}
     >
       {section.label && <p className="sync-brief-whisper">{section.label}</p>}
       {section.paragraphs.map((paragraph, index) => (
-        <p key={`${section.id}-${index}`} className="sync-brief-paragraph">
+        <p
+          key={briefParagraphKey(section, sectionIndex, index)}
+          className="sync-brief-paragraph"
+        >
           {paragraph}
         </p>
       ))}
@@ -194,8 +207,12 @@ export function TodayScreen() {
       ) : (
         <div className="sync-brief-body">
           <p className="sync-brief-lede mobile-prototype-display">{brief.lede}</p>
-          {brief.sections.map((section) => (
-            <BriefPassage key={section.id} section={section} />
+          {brief.sections.map((section, index) => (
+            <BriefPassage
+              key={briefSectionKey(section, index)}
+              section={section}
+              sectionIndex={index}
+            />
           ))}
         </div>
       )}

@@ -64,6 +64,7 @@ export type CapturedSyncItem = {
   workAvailability?: "off" | "overtime";
   timeline?: TimelineResolution;
   meaning?: MeaningAnalysis;
+  understanding?: string;
   protectedTime?: ProtectedTimeState;
   notes?: string;
   status: CaptureStatus;
@@ -82,6 +83,7 @@ type CapturedItemsContextValue = {
     extras?: {
       meaning?: MeaningAnalysis;
       protectedTime?: ProtectedTimeState;
+      understanding?: string;
     },
   ) => CapturedSyncItem;
   updateCapturedItem: (
@@ -126,6 +128,7 @@ function normalizeStoredItem(item: CapturedSyncItem): CapturedSyncItem {
     destinations: normalizeStoredDestinations(item.destinations),
     timeline: item.timeline,
     meaning: item.meaning,
+    understanding: item.understanding,
     protectedTime: item.protectedTime,
     originalPrompt: item.originalPrompt,
     normalizationCorrections: item.normalizationCorrections,
@@ -208,6 +211,7 @@ export function CapturedItemsProvider({
       extras?: {
         meaning?: MeaningAnalysis;
         protectedTime?: ProtectedTimeState;
+        understanding?: string;
       },
     ) => {
       const now = new Date().toISOString();
@@ -227,6 +231,7 @@ export function CapturedItemsProvider({
         workAvailability: plan.parsedInput?.workAvailability,
         timeline: plan.timeline,
         meaning: extras?.meaning,
+        understanding: extras?.understanding,
         protectedTime: extras?.protectedTime,
         status: "active",
         createdAt: plan.createdAt ?? now,

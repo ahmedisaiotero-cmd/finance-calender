@@ -157,6 +157,13 @@ export function cleanMemoryTitle(input: MemoryTitleInput): string {
     return "Rent Due";
   }
 
+  if (
+    /\bsend\b.*\b(mama|mom|mother)\b.*\b(money|cash)\b/i.test(prompt) ||
+    /\bsend\b.*\b(money|cash)\b.*\b(mama|mom|mother)\b/i.test(prompt)
+  ) {
+    return "Send Money to Mom";
+  }
+
   const takeChild = prompt.match(/\btake\s+(?:my\s+)?(daughter|son)\s+to\s+school\b/i);
   if (takeChild?.[1]) {
     return `Take ${relationLabel(takeChild[1])} to School`;

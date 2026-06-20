@@ -181,19 +181,20 @@ const workSchedule = {
     reference,
   });
 
-  const comingSoon = brief.sections.find((section) => section.id === "noticing");
-  assert.ok(comingSoon, "expected coming soon section");
-  assert.ok(comingSoon.paragraphs.length >= 2, "coming soon should use separate lines");
+  const comingSoon = brief.sections.filter((section) => section.id === "noticing");
+  assert.ok(comingSoon.length > 0, "expected coming soon sections");
+  const paragraphs = comingSoon.flatMap((section) => section.paragraphs);
+  assert.ok(paragraphs.length >= 2, "coming soon should use separate lines");
   assert.ok(
-    comingSoon.paragraphs.every((line) => !line.includes(". ") || line.split(". ").length === 1),
+    paragraphs.every((line) => !line.includes(". ") || line.split(". ").length === 1),
     "each coming soon entry should be one line, not a joined paragraph",
   );
   assert.ok(
-    comingSoon.paragraphs.some((line) => /payday/i.test(line)),
+    paragraphs.some((line) => /payday/i.test(line)),
     "payday should appear in coming soon",
   );
   assert.ok(
-    !comingSoon.paragraphs.some((line) => /\d{1,2}:\d{2}\s*work/i.test(line)),
+    !paragraphs.some((line) => /\d{1,2}:\d{2}\s*work/i.test(line)),
     "routine work schedule lines should not appear in coming soon",
   );
 }

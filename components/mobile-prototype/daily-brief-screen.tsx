@@ -11,18 +11,31 @@ import {
   loadPreferredName,
   type BriefSection,
 } from "@/lib/mobile-prototype/build-daily-brief";
+import {
+  briefParagraphKey,
+  briefSectionKey,
+} from "@/lib/mobile-prototype/brief-render-keys";
 import { loadActiveWorkSchedule } from "@/lib/user-timeline-context";
 
 type ThemeMode = "light" | "dark";
 
-function BriefPassage({ section }: { section: BriefSection }) {
+function BriefPassage({
+  section,
+  sectionIndex,
+}: {
+  section: BriefSection;
+  sectionIndex: number;
+}) {
   return (
     <div className="daily-brief-passage">
       {section.label && (
         <p className="daily-brief-whisper">{section.label}</p>
       )}
-      {section.paragraphs.map((paragraph) => (
-        <p key={paragraph} className="daily-brief-paragraph">
+      {section.paragraphs.map((paragraph, index) => (
+        <p
+          key={briefParagraphKey(section, sectionIndex, index)}
+          className="daily-brief-paragraph"
+        >
           {paragraph}
         </p>
       ))}
@@ -112,8 +125,12 @@ export function DailyBriefScreen() {
 
             <p className="daily-brief-lede">{brief.lede}</p>
 
-            {brief.sections.map((section) => (
-              <BriefPassage key={section.id} section={section} />
+            {brief.sections.map((section, index) => (
+              <BriefPassage
+                key={briefSectionKey(section, index)}
+                section={section}
+                sectionIndex={index}
+              />
             ))}
 
             {recentNote && (

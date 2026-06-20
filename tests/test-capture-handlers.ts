@@ -11,7 +11,7 @@ export function createTestCaptureStore(initial: CapturedSyncItem[] = []) {
       plan: PulsePlan & { status: "saved" },
       destinations: SyncDestination[],
       title?: string,
-      extras?: { meaning?: MeaningAnalysis },
+      extras?: { meaning?: MeaningAnalysis; understanding?: string },
     ): CapturedSyncItem => {
       const now = new Date().toISOString();
       const captured: CapturedSyncItem = {
@@ -30,6 +30,7 @@ export function createTestCaptureStore(initial: CapturedSyncItem[] = []) {
         workAvailability: plan.parsedInput?.workAvailability,
         timeline: plan.timeline,
         meaning: extras?.meaning,
+        understanding: extras?.understanding,
         status: "active",
         createdAt: plan.createdAt ?? now,
         updatedAt: now,

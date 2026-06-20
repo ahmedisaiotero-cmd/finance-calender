@@ -18,6 +18,7 @@ import {
   loadUserProfile,
 } from "@/lib/sync-profile/user-profile";
 import type { CaptureCategoryHint } from "@/lib/sync-capture/capture-hint";
+import { buildMemoryUnderstanding } from "@/lib/intelligence/memory-understanding";
 import { cleanMemoryTitle } from "@/lib/sync-capture/memory-title";
 import {
   detectSyncTimeBlockOverlaps,
@@ -270,6 +271,7 @@ export function saveCapture(
     extras?: {
       meaning?: MeaningAnalysis;
       protectedTime?: CapturedSyncItem["protectedTime"];
+      understanding?: string;
     },
   ) => CapturedSyncItem,
   options?: {
@@ -289,11 +291,22 @@ export function saveCapture(
       }
     : undefined;
 
+  const understanding = buildMemoryUnderstanding({
+    title,
+    prompt: plan.prompt,
+    originalPrompt: plan.originalPrompt,
+    destinations,
+    timeline: plan.timeline,
+    category: plan.category,
+    workAvailability: plan.parsedInput?.workAvailability,
+    moneyType: plan.parsedInput?.moneyType,
+  });
+
   const item = addCapturedItem(
     { ...plan, status: "saved" },
     destinations,
     title,
-    { meaning, protectedTime },
+    { meaning, protectedTime, understanding },
   );
 
   return {

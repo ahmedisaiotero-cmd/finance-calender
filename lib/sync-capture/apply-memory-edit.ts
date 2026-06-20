@@ -1,4 +1,4 @@
-import { buildUpdatedCaptureFromPlan } from "@/lib/capture-action-resolver";
+import { buildMemoryUnderstanding } from "@/lib/intelligence/memory-understanding";
 import { sanitizeSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";
 import { CAPTURE_EDIT_MEMORY } from "@/lib/mobile-prototype/sync-voice";
 import type {
@@ -70,6 +70,16 @@ export function applyMemoryEdit(
   const updated = {
     ...base,
     meaning: prepared.meaning,
+    understanding: buildMemoryUnderstanding({
+      title,
+      prompt: trimmed,
+      originalPrompt: trimmed,
+      destinations,
+      timeline: enriched.timeline,
+      category: enriched.category,
+      workAvailability: enriched.parsedInput?.workAvailability,
+      moneyType: enriched.parsedInput?.moneyType,
+    }),
     originalPrompt: trimmed,
   };
 
