@@ -31,7 +31,7 @@ function addDays(date: Date, amount: number) {
 function decisionAt(
   reference: Date,
   items: ReturnType<typeof createTestCaptureStore>["items"],
-  maxSupporting = 4,
+  options: { maxSupporting?: number; priorities?: string[] } = {},
 ) {
   const brief = buildDailyBrief({ items, reference, workSchedule });
   const blocks = buildSyncTimeBlocksForRange({
@@ -49,8 +49,49 @@ function decisionAt(
     reference,
     workSchedule,
     hasUserContext: items.length > 0,
-    maxSupporting,
+    maxSupporting: options.maxSupporting,
+    priorities: options.priorities,
   });
+}
+
+// Profile priorities lift matching consequences when their urgency is otherwise equal.
+{
+  const reference = new Date("2026-06-14T18:00:00");
+  const decision = decideTodayPriorities({
+    consequences: [
+      {
+        id: "payday",
+        sourceMemoryId: null,
+        kind: "income",
+        surfaceText: "Payday is tomorrow.",
+        daysUntil: 1,
+        dateKey: "2026-06-15",
+        priority: 10,
+        horizon: "coming_soon",
+        area: "finance",
+        briefEligible: true,
+      },
+      {
+        id: "school",
+        sourceMemoryId: null,
+        kind: "family_moment",
+        surfaceText: "Take daughter to school tomorrow.",
+        daysUntil: 1,
+        dateKey: "2026-06-15",
+        priority: 10,
+        horizon: "coming_soon",
+        area: "family",
+        briefEligible: true,
+      },
+    ],
+    items: [],
+    blocks: [],
+    reference,
+    hasUserContext: true,
+    priorities: ["Family"],
+  });
+
+  assert.match(decision.primary.text, /daughter.*school/i);
 }
 
 function seedScenario(reference: Date) {
@@ -178,7 +219,7 @@ function allDecisionText(decision: ReturnType<typeof decideTodayPriorities>) {
     captureFromBriefInput(text, ctx, store.handlers);
   }
 
-  const decision = decisionAt(reference, store.items, 2);
+  const decision = decisionAt(reference, store.items);
   const surfaced = 1 + decision.supporting.length;
 
   assert.ok(surfaced <= 3, `expected at most 3 surfaced priorities, got ${surfaced}`);

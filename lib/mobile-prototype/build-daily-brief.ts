@@ -16,6 +16,7 @@ export type BriefSection = {
 
 export type DailyBriefSnapshot = {
   userName: string | null;
+  priorities?: string[];
   lede: string;
   sections: BriefSection[];
   isEmpty: boolean;
@@ -124,6 +125,7 @@ export function buildDailyBrief(input: {
   const result = buildConsequenceBrief(input);
   return {
     userName: result.userName,
+    priorities: input.lifeProfile?.priorities ?? [],
     lede: result.lede,
     sections: result.sections,
     isEmpty: result.isEmpty,

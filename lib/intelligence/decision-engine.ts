@@ -72,6 +72,44 @@ function isWorkScheduleBlock(block: SyncTimeBlock) {
   return block.blockType === "schedule" || block.title === "Work";
 }
 
+function profilePriorityBoost(
+  area: string,
+  text: string,
+  priorities: string[],
+): number {
+  if (priorities.length === 0) return 0;
+
+  const normalizedArea = area.toLowerCase();
+  const normalizedText = text.toLowerCase();
+  const matches = (priority: string, areas: string[], pattern: RegExp) =>
+    priorities.includes(priority) &&
+    (areas.includes(normalizedArea) || pattern.test(normalizedText));
+
+  if (matches("Family", ["family", "school"], /\b(daughter|son|school|mom|dad|family)\b/)) {
+    return 30;
+  }
+  if (matches("Relationships", ["relationships"], /\b(friend|partner|birthday|anniversary)\b/)) {
+    return 30;
+  }
+  if (matches("Money", ["finance"], /\b(payday|rent|bill|due|finance)\b/)) {
+    return 30;
+  }
+  if (matches("Work", ["work"], /\b(work|shift|project|flight)\b/)) {
+    return 25;
+  }
+  if (matches("Health", ["health"], /\b(gym|workout|doctor|health)\b/)) {
+    return 25;
+  }
+  if (matches("Goals", ["goals"], /\b(goal|milestone|progress)\b/)) {
+    return 20;
+  }
+  if (matches("Home", ["home"], /\b(home|house|repair|maintenance)\b/)) {
+    return 20;
+  }
+
+  return 0;
+}
+
 export function isTomorrowSummaryText(text: string): boolean {
   return /tomorrow (has a tight morning|starts early|looks busy|is mostly)/i.test(
     text,
@@ -139,6 +177,7 @@ function candidatesFromTodayBlocks(
   blocks: SyncTimeBlock[],
   items: CapturedSyncItem[],
   reference: Date,
+  priorities: string[],
 ): DecisionCandidate[] {
   const todayKey = toDateKey(reference);
   const now = currentMinutes(reference);
@@ -187,6 +226,8 @@ function candidatesFromTodayBlocks(
       score = 850 - (start - now);
     }
 
+    score += profilePriorityBoost(block.area, text, priorities);
+
     candidates.push({
       text,
       score,
@@ -215,6 +256,7 @@ function candidatesFromConsequences(
   items: CapturedSyncItem[],
   reference: Date,
   excludeTodayTimed: boolean,
+  priorities: string[],
 ): DecisionCandidate[] {
   const tomorrow = consequences.filter(
     (consequence) => consequence.daysUntil === 1 && consequence.briefEligible,
@@ -265,6 +307,8 @@ function candidatesFromConsequences(
       if (consequence.kind === "income" || /\bflight\b/i.test(text)) {
         score += 25;
       }
+
+      score += profilePriorityBoost(consequence.area, text, priorities);
 
       return { text, score, consequence, source: "consequence" as const };
     });
@@ -345,7 +389,8 @@ function selectPriorities(
 export function decideTodayPriorities(input: DecisionEngineInput): TodayDecision {
   const reference = input.reference ?? new Date();
   const hasUserContext = input.hasUserContext ?? input.items.length > 0;
-  const maxSupporting = input.maxSupporting ?? 4;
+  const maxSupporting = input.maxSupporting ?? 2;
+  const priorities = input.priorities ?? [];
 
   if (!hasUserContext) {
     return {
@@ -363,13 +408,19 @@ export function decideTodayPriorities(input: DecisionEngineInput): TodayDecision
 
   const { consequences, items, blocks } = input;
 
-  const todayCandidates = candidatesFromTodayBlocks(blocks, items, reference);
+  const todayCandidates = candidatesFromTodayBlocks(
+    blocks,
+    items,
+    reference,
+    priorities,
+  );
   const hasTodayPriority = todayCandidates.length > 0;
   const consequenceCandidates = candidatesFromConsequences(
     consequences,
     items,
     reference,
     hasTodayPriority,
+    priorities,
   );
 
   const merged = applyLifeContextConnections(

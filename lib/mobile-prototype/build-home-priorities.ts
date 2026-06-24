@@ -235,6 +235,7 @@ export function buildHomePriorities(input: {
   reference?: Date;
   workSchedule?: PersistedWorkSchedule | null;
   hasUserContext?: boolean;
+  priorities?: string[];
 }): HomePrioritiesView {
   const reference = input.reference ?? new Date();
   const { consequences, items } = input;
@@ -282,7 +283,7 @@ export function buildHomePriorities(input: {
     reference,
     workSchedule: input.workSchedule,
     hasUserContext,
-    maxSupporting: 4,
+    priorities: input.priorities,
   });
 
   if (decision.isQuiet) {

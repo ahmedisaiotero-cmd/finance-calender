@@ -30,6 +30,7 @@ export function buildTodayView(input: {
     reference,
     workSchedule: input.workSchedule,
     hasUserContext: !input.brief.isEmpty,
+    priorities: input.brief.priorities,
   });
 
   return {
