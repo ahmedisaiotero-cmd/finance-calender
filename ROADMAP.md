@@ -51,6 +51,36 @@ Before closing Phase 1, verify:
 
 ---
 
+## Intelligence architecture
+
+Sync intelligence follows four layers. Domains (Money, Health, Work, etc.) are categories — not separate agents.
+
+| Layer | Status | Key modules |
+|-------|--------|-------------|
+| **Memory** | Done | `lib/sync-capture/*`, `lib/captured-items.tsx`, `memory-profile.ts`, `memory-aging.ts` |
+| **Understanding** | Done | `meaning-engine.ts`, `memory-understanding.ts`, `importance-scoring.ts` |
+| **Consequence** | Done | `consequence-engine.ts`, `sync-consequences.ts` |
+| **Decision** | **Next** | Target: `lib/intelligence/decision-engine.ts` |
+
+Ranking today is split across `briefing-composer.ts`, `build-home-priorities.ts`, and `sync-pulse.ts`. Consolidate into a shared Decision Engine before adding new Today or Pulse behavior.
+
+**Next major intelligence milestone:** Decision Engine — look at many memories/consequences and rank the **1–3 that matter most today**.
+
+---
+
+## Phase 1.5 — Decision Engine (intelligence)
+
+*Goal: Today answers "what matters now" from consequences, not ad-hoc ranking.*
+
+- [ ] Add `lib/intelligence/decision-engine.ts` (shared ranking API)
+- [ ] Inputs: `buildAllConsequences()`, user profile priorities, life load, brief eligibility
+- [ ] Outputs: primary priority, 1–2 supporting priorities, Pulse state inputs
+- [ ] Wire `build-today-view.ts` / Today screen through decision engine
+- [ ] Migrate logic from `briefing-composer.ts` and `build-home-priorities.ts` incrementally
+- [ ] Tests: 100 memories with only 3 relevant today; light memory suppressed; urgent item surfaces
+
+---
+
 ## Phase 2 — Identity & real accounts
 
 *Goal: Sync knows who you are; data is scoped to your workspace.*
@@ -119,8 +149,9 @@ Each integration ships with clear source labeling, calm error states, and no sha
 
 1. Read `SYNC_VISION.md` before starting any item.
 2. **Phase 1 must pass all four Definition of Done criteria** before starting Phase 2.
-3. For each feature, run the **Sync Test** from the vision doc.
-4. Update checkboxes here when work ships.
+3. Prefer **Phase 1.5 (Decision Engine)** before broad Phase 2 UI or integration work.
+4. For each feature, run the **Sync Test** from the vision doc.
+5. Update checkboxes here when work ships.
 
 ---
 
