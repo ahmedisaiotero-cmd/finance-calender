@@ -1,28 +1,24 @@
+import type { CapturedSyncItem } from "@/lib/captured-items";
 import {
   buildEditPlanFromCommand,
   buildUpdatedCaptureFromPlan,
   resolveCaptureAction,
 } from "@/lib/capture-action-resolver";
-import type { CapturedSyncItem } from "@/lib/captured-items";
-import { createPulsePlan } from "@/lib/pulse/create-pulse-plan";
 import { sanitizeSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";
 import type { CaptureCategoryHint } from "@/lib/sync-capture/capture-hint";
 import {
   compactCaptureTitle,
   enrichCapturePlan,
+  forceSaveUniversalCapture,
   isSilentCaptureReady,
   prepareCaptureFromText,
   saveCapture,
   type CapturePipelineContext,
   type PreparedCapture,
 } from "@/lib/sync-capture/save-capture";
-import { detectCaptureClarification } from "@/lib/sync-capture/capture-clarification";
 import type { MeaningAnalysis } from "@/lib/intelligence/meaning-engine";
 import {
-  CAPTURE_CLARIFY_MORE,
-  CAPTURE_CLARIFY_PLACE,
   CAPTURE_CLARIFY_REMEMBER_WHAT,
-  CAPTURE_CLARIFY_WHEN,
   CAPTURE_CLARIFY_WHO,
   CAPTURE_DELETE_NOT_FOUND,
   CAPTURE_DUPLICATE,
@@ -39,6 +35,8 @@ export type ApplyCaptureContext = {
   workSchedule?: PersistedWorkSchedule | null;
   reference?: Date;
   categoryHint?: CaptureCategoryHint;
+  captureSource?: import("@/lib/sync-capture/capture-source").CaptureSource;
+  voiceTranscript?: string;
 };
 
 export type ApplyCaptureHandlers = {
@@ -130,6 +128,10 @@ function isVagueCaptureInput(text: string) {
   return words.length <= 2 && !hasSignal;
 }
 
+export function isCaptureInputVague(text: string) {
+  return isVagueCaptureInput(text);
+}
+
 function ambiguousReferenceMessage(text: string): string | null {
   const normalized = text.trim().toLowerCase();
   if (/^(call|text|message)\s+(her|him|them)\b/.test(normalized)) {
@@ -141,33 +143,6 @@ function ambiguousReferenceMessage(text: string): string | null {
   return null;
 }
 
-function clarificationForCapture(
-  plan: ReturnType<typeof createPulsePlan>,
-  destinations: string[],
-): { message: string; suggestions: string[] } {
-  const timeline = plan.timeline;
-  const hasDate = Boolean(timeline?.startDate || timeline?.deadlineDate);
-
-  if (destinations.length === 0) {
-    return {
-      message: CAPTURE_CLARIFY_PLACE,
-      suggestions: ["today", "tomorrow", "Friday"],
-    };
-  }
-
-  if (!hasDate) {
-    return {
-      message: CAPTURE_CLARIFY_WHEN,
-      suggestions: ["today", "tomorrow", "Friday", "next Friday"],
-    };
-  }
-
-  return {
-    message: CAPTURE_CLARIFY_MORE,
-    suggestions: ["today", "tomorrow", "next week"],
-  };
-}
-
 function pipelineContext(
   context: ApplyCaptureContext,
 ): CapturePipelineContext {
@@ -176,6 +151,19 @@ function pipelineContext(
     workSchedule: context.workSchedule,
     reference: context.reference,
     categoryHint: context.categoryHint,
+    captureSource: context.captureSource,
+    voiceTranscript: context.voiceTranscript,
+  };
+}
+
+function captureSaveOptions(
+  context: ApplyCaptureContext,
+  protectTime?: boolean,
+) {
+  return {
+    protectTime,
+    captureSource: context.captureSource ?? "typed",
+    voiceTranscript: context.voiceTranscript,
   };
 }
 
@@ -309,20 +297,6 @@ export function applyCaptureInput(
 
   const prepared = prepareCaptureFromText(trimmed, pipelineContext(context));
   if (prepared && isSilentCaptureReady(prepared)) {
-    const captureClarification = detectCaptureClarification(
-      trimmed,
-      prepared,
-      reference,
-    );
-    if (captureClarification) {
-      return {
-        status: "needs_clarification",
-        draftText: trimmed,
-        message: captureClarification.message,
-        suggestions: captureClarification.suggestions,
-      };
-    }
-
     if (prepared.duplicate.isDuplicate) {
       return {
         status: "duplicate",
@@ -333,7 +307,7 @@ export function applyCaptureInput(
 
     saveCapture(prepared, handlers.addCapturedItem, {
       skipDuplicateCheck: false,
-      protectTime: prepared.meaning.protection.recommended,
+      ...captureSaveOptions(context, prepared.meaning.protection.recommended),
     });
     const overlap = prepared.preview.when.overlap;
     const overlapNotice = overlap
@@ -348,19 +322,30 @@ export function applyCaptureInput(
     };
   }
 
-  const rawPlan = createPulsePlan(trimmed, {
-    timeline: { now: reference },
-    categoryHint: context.categoryHint,
-  });
-  const plan = enrichCapturePlan(rawPlan, reference);
-  const destinations = prepared?.destinations ?? [];
-  const clarification = clarificationForCapture(plan, destinations);
-  const ambiguous = ambiguousReferenceMessage(trimmed);
+  const fallback = forceSaveUniversalCapture(
+    trimmed,
+    pipelineContext(context),
+    handlers.addCapturedItem,
+  );
+
+  if ("isDuplicate" in fallback && fallback.isDuplicate) {
+    return {
+      status: "duplicate",
+      title: fallback.title,
+      message: CAPTURE_DUPLICATE,
+    };
+  }
+
+  const overlap = fallback.prepared.preview.when.overlap;
+  const overlapNotice = overlap
+    ? [overlap.headline, overlap.conflictMeaning].filter(Boolean).join(" ")
+    : undefined;
 
   return {
-    status: "needs_clarification",
-    draftText: trimmed,
-    message: ambiguous ?? clarification.message,
-    suggestions: clarification.suggestions,
+    status: "saved",
+    kind: "create",
+    prepared: fallback.prepared,
+    title: fallback.prepared.title,
+    overlapNotice,
   };
 }

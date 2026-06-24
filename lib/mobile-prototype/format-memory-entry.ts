@@ -1,12 +1,13 @@
 import type { CapturedSyncItem } from "@/lib/captured-items";
-import { describeItemTiming } from "@/lib/mobile-prototype/build-daily-brief";
+import { isVisibleInMemoryList, memoryListSortScore } from "@/lib/intelligence/memory-aging";
+import { resolveMemoryUnderstanding } from "@/lib/intelligence/memory-understanding";
 import { dedupeMemoryItems } from "@/lib/sync-capture/memory-dedup";
 import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
 
 export type MemoryEntryView = {
   id: string;
   title: string;
-  timing: string | null;
+  subtitle: string;
   whenLabel: string;
   prompt: string;
   destinations: string[];
@@ -38,12 +39,20 @@ export function buildMemoryEntries(
   items: CapturedSyncItem[],
   reference = new Date(),
 ): MemoryEntryView[] {
-  return dedupeMemoryItems(items, reference)
-    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  const active = dedupeMemoryItems(items, reference).filter((item) =>
+    isVisibleInMemoryList(item, items, reference),
+  );
+
+  return active
+    .sort(
+      (a, b) =>
+        memoryListSortScore(b, items, reference) -
+        memoryListSortScore(a, items, reference),
+    )
     .map((item) => ({
       id: item.id,
       title: displayMemoryTitle(item),
-      timing: describeItemTiming(item, reference),
+      subtitle: resolveMemoryUnderstanding(item, reference),
       whenLabel: item.timeline?.label ?? item.dateLabel,
       prompt: item.originalPrompt ?? item.prompt,
       destinations: item.destinations,

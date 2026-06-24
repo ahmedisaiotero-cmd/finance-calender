@@ -1,5 +1,9 @@
 import { resolveCaptureDateKey } from "@/lib/captured-to-timeline";
 import type { CapturedSyncItem } from "@/lib/captured-items";
+import {
+  buildMemoryProfile,
+  type MemoryProfile,
+} from "@/lib/intelligence/memory-profile";
 import { normalizeCaptureInput } from "@/lib/parser/normalize-capture-input";
 import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
 import { formatSyncClock } from "@/lib/sync-time-blocks";
@@ -44,6 +48,55 @@ function timePhrase(timeline: CapturedSyncItem["timeline"]) {
   return formatSyncClock(raw);
 }
 
+function interpretLightMemory(profile: MemoryProfile, text: string): string | null {
+  if (profile.type === "habit" || /\bcoffee\b/i.test(text)) {
+    return "Small daily habit.";
+  }
+  if (profile.type === "meal") {
+    return "Meal logged.";
+  }
+  if (profile.type === "expense") {
+    if (/\$\s*\d+|\d+\s*dollars?/i.test(text)) {
+      return "Small money note saved.";
+    }
+    return "Spending logged.";
+  }
+  if (/\b(shower(?:ed|ing)?|slept|sleep)\b/i.test(text)) {
+    return "Personal care logged.";
+  }
+  return null;
+}
+
+function interpretEmotionalMemory(text: string, days: number | null): string {
+  if (/\b(happy|excited|grateful|great day|good day)\b/i.test(text)) {
+    return days === 0 ? "Positive moment noted today." : "Positive moment recorded.";
+  }
+  if (/\b(sad|upset|anxious|stressed|depressed|lonely|cried|crying|feeling low|feeling down)\b/i.test(text)) {
+    return days === 0
+      ? "Emotional check-in noted today."
+      : "Emotional check-in recorded.";
+  }
+  return "Emotional check-in recorded.";
+}
+
+function interpretFromProfile(
+  profile: MemoryProfile,
+  text: string,
+  days: number | null,
+  when: string,
+  time: string | null,
+): string | null {
+  if (profile.weight === "light") {
+    return interpretLightMemory(profile, text);
+  }
+
+  if (profile.type === "emotion") {
+    return interpretEmotionalMemory(text, days);
+  }
+
+  return null;
+}
+
 export function buildMemoryUnderstanding(
   item: Pick<
     CapturedSyncItem,
@@ -62,6 +115,7 @@ export function buildMemoryUnderstanding(
   const prompt = (item.originalPrompt ?? item.prompt).trim();
   const normalizedPrompt = normalizeCaptureInput(prompt).normalized;
   const text = `${item.title} ${normalizedPrompt}`.toLowerCase();
+  const profile = buildMemoryProfile(item as CapturedSyncItem, reference);
   const dateKey =
     (item.timeline
       ? resolveNextOccurrenceDateKey(item.timeline, reference)
@@ -69,6 +123,17 @@ export function buildMemoryUnderstanding(
   const days = daysUntilDateKey(dateKey, reference);
   const when = whenPhrase(days, dateKey, item.timeline?.label);
   const time = timePhrase(item.timeline);
+
+  const profileInterpretation = interpretFromProfile(
+    profile,
+    text,
+    days,
+    when,
+    time,
+  );
+  if (profileInterpretation) {
+    return profileInterpretation;
+  }
 
   if (
     /\bsend\b.*\b(mama|mom|mother)\b.*\b(money|cash)\b/i.test(normalizedPrompt) ||
@@ -118,58 +183,51 @@ export function buildMemoryUnderstanding(
   }
 
   if (/\brent\b/i.test(text) && /\b(due|pay)\b/i.test(text)) {
-    return days === 1
-      ? "Rent is due tomorrow."
-      : `Rent is due ${when}.`;
+    return days === 1 ? "Rent is due tomorrow." : `Rent is due ${when}.`;
   }
 
   if (
     /\b(payday|pay day|get paid|every other)\b/i.test(text) ||
     item.moneyType === "income"
   ) {
-    return days === 1
-      ? "Payday lands tomorrow."
-      : `Payday lands ${when}.`;
+    return days === 1 ? "Payday lands tomorrow." : `Payday lands ${when}.`;
   }
 
   if (
     item.workAvailability === "off" ||
     /\b(don't|dont)\s+work\b/i.test(normalizedPrompt)
   ) {
-    return days === 1
-      ? "You're off work tomorrow."
-      : `You're off work ${when}.`;
+    return days === 1 ? "You're off work tomorrow." : `You're off work ${when}.`;
   }
 
   if (/\banniversary\b/i.test(text)) {
-    return days === 1
-      ? "Your anniversary is tomorrow."
-      : `Your anniversary is ${when}.`;
+    return days === 1 ? "Your anniversary is tomorrow." : `Your anniversary is ${when}.`;
   }
 
   if (/\b(gym|workout)\b/i.test(text) && days != null && days < 0) {
     return "You went to the gym recently.";
   }
 
-  if (/\b(ate|eating)\b/i.test(text)) {
-    return days != null && days <= 0
-      ? `You noted eating ${when}.`
-      : "You noted something you ate.";
-  }
-
   if (/\bworld cup\b/i.test(text)) {
     return `World Cup games are ${when}.`;
   }
 
-  const title = displayMemoryTitle(item as CapturedSyncItem);
-  if (days != null && days >= 0) {
-    if (time) {
-      return `${title} is ${when} at ${time}.`;
-    }
-    return `${title} is ${when}.`;
+  if (profile.weight === "light") {
+    return interpretLightMemory(profile, text) ?? "Light note logged.";
   }
 
-  return `${title} is on your mind.`;
+  if (profile.type === "commitment" || profile.type === "reminder") {
+    const title = displayMemoryTitle(item as CapturedSyncItem);
+    if (days === 1) return `${title} is tomorrow.`;
+    if (days === 0) return `${title} is today.`;
+    if (days != null && days > 1) return `${title} is ${when}.`;
+  }
+
+  if (profile.weight === "meaningful" && profile.type === "note") {
+    return "Something meaningful to hold onto.";
+  }
+
+  return "Noted — I'll keep this in context.";
 }
 
 export function resolveMemoryUnderstanding(
@@ -181,3 +239,5 @@ export function resolveMemoryUnderstanding(
   }
   return buildMemoryUnderstanding(item, reference);
 }
+
+export { buildMemoryProfile } from "@/lib/intelligence/memory-profile";

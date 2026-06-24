@@ -71,6 +71,9 @@ export type CapturedSyncItem = {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
+  captureSource?: "typed" | "voice";
+  /** Raw speech transcript when captured by voice. */
+  voiceTranscript?: string;
 };
 
 type CapturedItemsContextValue = {
@@ -84,6 +87,8 @@ type CapturedItemsContextValue = {
       meaning?: MeaningAnalysis;
       protectedTime?: ProtectedTimeState;
       understanding?: string;
+      captureSource?: CapturedSyncItem["captureSource"];
+      voiceTranscript?: string;
     },
   ) => CapturedSyncItem;
   updateCapturedItem: (
@@ -132,6 +137,8 @@ function normalizeStoredItem(item: CapturedSyncItem): CapturedSyncItem {
     protectedTime: item.protectedTime,
     originalPrompt: item.originalPrompt,
     normalizationCorrections: item.normalizationCorrections,
+    captureSource: item.captureSource ?? "typed",
+    voiceTranscript: item.voiceTranscript,
     status: item.status ?? "active",
     createdAt: item.createdAt ?? now,
     updatedAt: item.updatedAt ?? item.createdAt ?? now,
@@ -212,6 +219,8 @@ export function CapturedItemsProvider({
         meaning?: MeaningAnalysis;
         protectedTime?: ProtectedTimeState;
         understanding?: string;
+        captureSource?: CapturedSyncItem["captureSource"];
+        voiceTranscript?: string;
       },
     ) => {
       const now = new Date().toISOString();
@@ -233,6 +242,8 @@ export function CapturedItemsProvider({
         meaning: extras?.meaning,
         understanding: extras?.understanding,
         protectedTime: extras?.protectedTime,
+        captureSource: extras?.captureSource ?? "typed",
+        voiceTranscript: extras?.voiceTranscript,
         status: "active",
         createdAt: plan.createdAt ?? now,
         updatedAt: now,

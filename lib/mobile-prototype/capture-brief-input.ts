@@ -2,14 +2,28 @@ import type { CapturedSyncItem } from "@/lib/captured-items";
 import type { CaptureCategoryHint } from "@/lib/sync-capture/capture-hint";
 import {
   applyCaptureInput,
+  type ApplyCaptureContext,
   type ApplyCaptureResult,
 } from "@/lib/sync-capture/apply-capture-input";
+import {
+  captureSourceMetadata,
+  resolveCaptureText,
+  type CaptureSourceMetadata,
+  type SyncCaptureInput,
+} from "@/lib/sync-capture/capture-source";
+import {
+  saveCapture,
+  type PreparedCapture,
+} from "@/lib/sync-capture/save-capture";
+import { CAPTURE_DUPLICATE } from "@/lib/mobile-prototype/sync-voice";
 import type { PreparedCapture } from "@/lib/sync-capture/save-capture";
 import { createPulsePlan } from "@/lib/pulse/create-pulse-plan";
 import { sanitizeSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";
 import type { PulsePlan } from "@/lib/pulse/types";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
 import { describeItemTiming } from "@/lib/mobile-prototype/build-daily-brief";
+import { buildMemoryUnderstanding } from "@/lib/intelligence/memory-understanding";
+import { buildMemoryProfile } from "@/lib/intelligence/memory-profile";
 import { formatCaptureAcknowledgment as voiceAcknowledgment } from "@/lib/mobile-prototype/sync-voice";
 
 export type BriefCaptureResult = {
@@ -28,7 +42,7 @@ export type BriefCaptureAttempt =
       suggestions: string[];
     }
   | { status: "too_vague"; message: string }
-  | { status: "duplicate"; message: string; title: string }
+  | { status: "duplicate"; message: string; title: string; existingItem?: CapturedSyncItem }
   | { status: "empty" };
 
 function toBriefAttempt(
@@ -115,7 +129,7 @@ function toBriefAttempt(
 }
 
 export function attemptBriefCapture(
-  text: string,
+  input: SyncCaptureInput | string,
   context: {
     items: CapturedSyncItem[];
     workSchedule?: PersistedWorkSchedule | null;
@@ -136,15 +150,18 @@ export function attemptBriefCapture(
     softDeleteCapturedItem: (id: string) => void;
   },
 ): BriefCaptureAttempt {
+  const text = resolveCaptureText(input);
+  const sourceMeta = captureSourceMetadata(input);
+
   return (
     toBriefAttempt(
-      applyCaptureInput(text, context, handlers),
+      applyCaptureInput(text, { ...context, ...sourceMeta }, handlers),
     ) ?? { status: "empty" }
   );
 }
 
 export function captureFromBriefInput(
-  text: string,
+  input: SyncCaptureInput | string,
   context: {
     items: CapturedSyncItem[];
     workSchedule?: PersistedWorkSchedule | null;
@@ -153,11 +170,66 @@ export function captureFromBriefInput(
   },
   handlers: Parameters<typeof attemptBriefCapture>[2],
 ): BriefCaptureResult | null {
-  const attempt = attemptBriefCapture(text, context, handlers);
+  const attempt = attemptBriefCapture(input, context, handlers);
   if (attempt.status === "saved" && attempt.kind === "create") {
     return attempt.result;
   }
   return null;
+}
+
+export function commitPreparedCapture(
+  prepared: PreparedCapture,
+  context: Omit<ApplyCaptureContext, "captureSource" | "voiceTranscript">,
+  sourceMeta: CaptureSourceMetadata,
+  handlers: Parameters<typeof attemptBriefCapture>[2],
+  options?: { skipDuplicateCheck?: boolean; forceNewId?: boolean },
+): BriefCaptureAttempt {
+  if (prepared.duplicate.isDuplicate && !options?.skipDuplicateCheck) {
+    const existing = prepared.duplicate.bestMatch?.item;
+    return {
+      status: "duplicate",
+      title: prepared.title,
+      message: CAPTURE_DUPLICATE,
+      existingItem: existing,
+    };
+  }
+
+  const toSave: PreparedCapture =
+    options?.forceNewId
+      ? {
+          ...prepared,
+          plan: { ...prepared.plan, id: crypto.randomUUID() },
+        }
+      : prepared;
+
+  const saveContext: ApplyCaptureContext = {
+    ...context,
+    ...sourceMeta,
+  };
+
+  saveCapture(toSave, handlers.addCapturedItem, {
+    skipDuplicateCheck: options?.skipDuplicateCheck ?? false,
+    protectTime: toSave.meaning.protection.recommended,
+    captureSource: saveContext.captureSource ?? "typed",
+    voiceTranscript: saveContext.voiceTranscript,
+  });
+
+  const overlap = toSave.preview.when.overlap;
+  const overlapNotice = overlap
+    ? [overlap.headline, overlap.conflictMeaning].filter(Boolean).join(" ")
+    : undefined;
+
+  return {
+    status: "saved",
+    kind: "create",
+    overlapNotice,
+    result: {
+      plan: { ...toSave.plan, status: "saved" },
+      destinations: toSave.destinations,
+      title: toSave.title,
+      meaning: toSave.meaning,
+    },
+  };
 }
 
 export function formatCaptureAcknowledgment(
@@ -180,8 +252,32 @@ export function formatCaptureAcknowledgment(
     updatedAt: new Date().toISOString(),
   };
 
-  const timing =
-    kind === "create" ? describeItemTiming(stub, reference) : null;
+  const profile = buildMemoryProfile(stub, reference);
+  const understanding = buildMemoryUnderstanding(
+    {
+      title: captured.title,
+      prompt: captured.plan.prompt,
+      originalPrompt: captured.plan.originalPrompt,
+      destinations: captured.destinations,
+      timeline: captured.plan.timeline,
+      category: captured.plan.category,
+      workAvailability: captured.plan.parsedInput?.workAvailability,
+      moneyType: captured.plan.parsedInput?.moneyType,
+      parsedInput: captured.plan.parsedInput,
+    },
+    reference,
+  );
 
-  return voiceAcknowledgment(kind, captured.title, timing);
+  const acknowledgmentDetail =
+    kind === "create"
+      ? profile.weight === "light" ||
+        profile.type === "emotion" ||
+        profile.type === "expense" ||
+        profile.type === "habit" ||
+        profile.type === "meal"
+        ? understanding
+        : describeItemTiming(stub, reference)
+      : null;
+
+  return voiceAcknowledgment(kind, captured.title, acknowledgmentDetail);
 }

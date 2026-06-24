@@ -79,7 +79,7 @@ function isRelationshipLanguage(plan: PulsePlan) {
 }
 
 function isHealthLanguage(plan: PulsePlan) {
-  return /\b(doctor|dentist|therapy|appointment|checkup|medical|hospital|gym|workout|shower|sleep|medication|medicine)\b/i.test(
+  return /\b(doctor|dentist|therapy|appointment|checkup|medical|hospital|gym|workout|shower|sleep|medication|medicine|sad|upset|anxious|stressed|depressed|lonely|cried|crying|feeling|weird|happy|excited|grateful)\b/i.test(
     plan.prompt,
   );
 }
@@ -92,6 +92,16 @@ function isSchoolLanguage(plan: PulsePlan) {
 
 function isGoalLanguage(plan: PulsePlan) {
   return /\b(sync|project|business|goal|progress|work on)\b/i.test(plan.prompt);
+}
+
+function isProjectWorkLanguage(plan: PulsePlan) {
+  return (
+    /\b(worked on|working on|coded|coding|project|sync|app|building|focus session|spent \d+ hours)\b/i.test(
+      plan.prompt,
+    ) ||
+    (/\b(worked|working)\b/i.test(plan.prompt) &&
+      /\b(project|sync|app|code)\b/i.test(plan.prompt))
+  );
 }
 
 function inferCategoryDestinations(plan: PulsePlan): SyncDestination[] {
@@ -128,6 +138,10 @@ function inferCategoryDestinations(plan: PulsePlan): SyncDestination[] {
 
   if (isSchoolLanguage(plan)) {
     return hasTimelineDestination(plan) ? ["School", "Calendar"] : ["School"];
+  }
+
+  if (isProjectWorkLanguage(plan)) {
+    return hasTimelineDestination(plan) ? ["Work", "Calendar"] : ["Work"];
   }
 
   if (isGoalLanguage(plan)) {

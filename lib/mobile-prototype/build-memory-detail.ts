@@ -12,8 +12,14 @@ import {
 } from "@/lib/intelligence/meaning-engine";
 import { resolveMemoryUnderstanding } from "@/lib/intelligence/memory-understanding";
 import {
+  buildMemoryProfile,
+  describeMemoryConfidence,
+  describeMemoryType,
+  describeMemoryWeight,
+  describeTimeRelevance,
+} from "@/lib/intelligence/memory-profile";
+import {
   describeBriefPresence,
-  describeImportance,
   describeSurfaceEligibility,
   describeTimeImpact,
   whyRememberedFallback,
@@ -22,7 +28,6 @@ import {
   extractPersonFromMemory,
   formatRelatedPersonLabel,
 } from "@/lib/intelligence/person-entities";
-import { scoreMemoryImportance } from "@/lib/intelligence/importance-scoring";
 import { areNoisyRelatedMemories, isBirthdayMemory } from "@/lib/sync-capture/memory-dedup";
 import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
 import { isWorkDayOffItem } from "@/lib/sync-capture/work-availability";
@@ -62,6 +67,10 @@ export type MemoryDetailView = {
   briefEligible: boolean;
   relatedMemories: RelatedMemoryView[];
   prompt: string;
+  memoryType: string;
+  timeRelevance: string;
+  confidence: string;
+  accumulation: string | null;
 };
 
 function activeItem(item: CapturedSyncItem) {
@@ -312,6 +321,7 @@ export function buildMemoryDetail(
       items: [item],
     });
   const person = extractPersonFromMemory(item);
+  const profile = buildMemoryProfile(item, reference);
   const mentionedInBrief = itemMentionedInBrief(item, brief, reference);
   const briefEligible = isBriefEligibleMemory(item, reference, nextKey);
   const calendarImpact = memoryHasCalendarImpact(item);
@@ -322,8 +332,8 @@ export function buildMemoryDetail(
     originalInput: item.originalPrompt ?? item.prompt,
     cleanedSummary: resolveMemoryUnderstanding(item, reference),
     whyRemembered: whySyncRemembers(item, reference),
-    importance: describeImportance(scoreMemoryImportance(item, reference)),
-    category: memoryPrimaryCategory(item),
+    importance: describeMemoryWeight(profile.weight),
+    category: profile.area,
     relatedPerson: person ? formatRelatedPersonLabel(person) : null,
     resolvedDate: formatMemoryAppears(item, reference),
     recurrence: formatRecurrenceLabel(item.timeline),
@@ -337,5 +347,11 @@ export function buildMemoryDetail(
     briefEligible,
     relatedMemories: findRelatedMemories(item, items, reference),
     prompt: item.originalPrompt ?? item.prompt,
+    memoryType: describeMemoryType(profile.type),
+    timeRelevance: describeTimeRelevance(profile.timeRelevance),
+    confidence: describeMemoryConfidence(profile.confidence),
+    accumulation: profile.accumulation
+      ? profile.accumulation.charAt(0).toUpperCase() + profile.accumulation.slice(1)
+      : null,
   };
 }

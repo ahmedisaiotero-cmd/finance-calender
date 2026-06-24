@@ -270,7 +270,7 @@ export function composeCuratedBrief(options: {
   }
 
   const tomorrowLoad = assessTomorrowLoad(consequences);
-  const loadHeadline = headlineForTomorrowLoad(tomorrowLoad);
+  const loadHeadline = headlineForTomorrowLoad(tomorrowLoad, consequences);
 
   const headlineCandidates = consequences
     .filter(

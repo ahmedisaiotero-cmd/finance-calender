@@ -55,8 +55,19 @@ function consequence(
   assert.equal(assessment.level, "heavy");
   assert.equal(assessment.earlyStart, true);
   assert.equal(
-    headlineForTomorrowLoad(assessment),
-    "Tomorrow looks busy.",
+    headlineForTomorrowLoad(assessment, [
+      consequence({ kind: "event", surfaceText: "Flight at 6:00 AM.", sortMinutes: 6 * 60 }),
+      consequence({
+        kind: "family_moment",
+        surfaceText: "Take daughter to school tomorrow.",
+      }),
+      consequence({ kind: "work_start", surfaceText: "Work starts at 11:00 AM." }),
+      consequence({
+        kind: "relationship_moment",
+        surfaceText: "Your friend's birthday is tomorrow.",
+      }),
+    ]),
+    "Tomorrow starts early.",
   );
 }
 

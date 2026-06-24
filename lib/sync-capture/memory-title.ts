@@ -1,4 +1,6 @@
+import { normalizeCaptureInput } from "@/lib/parser/normalize-capture-input";
 import { titleCaseKeep } from "@/lib/pulse/parse-pulse-prompt";
+import { isMoneyLanguage } from "@/lib/sync-capture/surface-copy";
 import type {
   PulseMoneyType,
   PulsePlanCategory,
@@ -53,7 +55,8 @@ function relationLabel(token: string): string {
 }
 
 function combinedText(input: MemoryTitleInput) {
-  return `${input.title} ${input.prompt}`.toLowerCase();
+  const normalizedPrompt = normalizeCaptureInput(input.prompt).normalized;
+  return `${input.title} ${normalizedPrompt}`.toLowerCase();
 }
 
 function isPayday(input: MemoryTitleInput, text: string) {
@@ -112,10 +115,23 @@ function looksLikeRawCaptureTitle(title: string) {
 
 export function cleanMemoryTitle(input: MemoryTitleInput): string {
   const prompt = input.prompt.trim();
+  const normalizedPrompt = normalizeCaptureInput(prompt).normalized;
   const text = combinedText(input);
 
   if (isPayday(input, text)) {
     return "Payday";
+  }
+
+  if (
+    isMoneyLanguage(prompt) &&
+    /^\$?\d+(?:\.\d{1,2})?\s*(dollars?|bucks?)?$/i.test(normalizedPrompt.trim())
+  ) {
+    return "Small money note";
+  }
+
+  if (/\bsend\b.*\b(money|cash|\$\d+)/.test(normalizedPrompt)) {
+    const toMom = /\b(mom|mama|mother)\b/.test(normalizedPrompt);
+    return toMom ? "Send money to Mom" : "Money transfer";
   }
 
   if (
@@ -164,13 +180,40 @@ export function cleanMemoryTitle(input: MemoryTitleInput): string {
     return "Send Money to Mom";
   }
 
-  const takeChild = prompt.match(/\btake\s+(?:my\s+)?(daughter|son)\s+to\s+school\b/i);
+  const takeChild = normalizedPrompt.match(/\btake\s+(?:my\s+)?(daughter|son)\s+to\s+school\b/i);
   if (takeChild?.[1]) {
     return `Take ${relationLabel(takeChild[1])} to School`;
   }
 
   if (/\bshower(?:ed|ing)?\b/i.test(text)) {
     return "Shower Logged";
+  }
+
+  if (/\bcoffee\b/i.test(text) && !/\b(meeting|date)\b/i.test(text)) {
+    return "Coffee";
+  }
+
+  if (
+    /\b(sad|upset|anxious|stressed|depressed|lonely|feeling low|feeling down|cried|crying)\b/i.test(
+      text,
+    )
+  ) {
+    return "Emotional Check-in";
+  }
+
+  const expenseMatch = prompt.match(
+    /\b(?:spent|paid|spend)\s+\$?(\d+(?:\.\d{1,2})?)\s*(?:at|on|for)?\s*([a-z0-9'&\s-]{2,30})/i,
+  );
+  if (expenseMatch) {
+    const place = expenseMatch[2]?.trim().replace(/\s+(and|it|was).*$/i, "").trim();
+    if (place && place.length <= 24) {
+      return titleCaseKeep(place);
+    }
+    return "Small Purchase";
+  }
+
+  if (/\b(spent|paid|bought|purchase)\b/i.test(text) && input.category === "expense") {
+    return "Small Purchase";
   }
 
   if (/\b(slept|sleep)\b/i.test(text) && input.category !== "workout") {
@@ -189,12 +232,31 @@ export function cleanMemoryTitle(input: MemoryTitleInput): string {
     return "Medication";
   }
 
+  if (/\bcleaned my room\b/i.test(text) || /\bclean(?:ed)? the room\b/i.test(text)) {
+    return "Room cleaned";
+  }
+
+  if (/\bfixed my car\b/i.test(text) || /\bcar (?:fix|repair)/i.test(text)) {
+    return "Car fixed";
+  }
+
+  if (
+    (/\b(worked on|working on)\b/i.test(text) && /\b(project|sync|app)\b/i.test(text)) ||
+    (/\bworked\b/i.test(text) && /\bproject\b/i.test(text))
+  ) {
+    return "Project work";
+  }
+
+  if (/\bcoded\b|\bcoding\b/i.test(text)) {
+    return "Coding session";
+  }
+
   if (
     (input.category === "workday" || /\b(overtime|worked)\b/i.test(text)) &&
     !isWorkDayOffLanguage(prompt)
   ) {
     if (/\bovertime\b/i.test(text)) return "Overtime";
-    if (/\bworked\b/i.test(text)) return "Work Logged";
+    if (/\bworked\b/i.test(text)) return "Work logged";
     return "Work";
   }
 

@@ -5,6 +5,7 @@ import {
 import type { CapturedSyncItem } from "@/lib/captured-items";
 import type { PulsePlanCategory } from "@/lib/pulse/types";
 import type { TimelineEvent } from "@/lib/timeline-events";
+import { isMoneyLanguage } from "@/lib/sync-capture/surface-copy";
 
 function formatClock(value?: string) {
   if (!value) return undefined;
@@ -25,6 +26,11 @@ function formatDuration(minutes: number): string {
 }
 
 export function isRelationshipCapture(item: CapturedSyncItem): boolean {
+  const text = `${item.title} ${item.originalPrompt ?? item.prompt}`.toLowerCase();
+  if (isMoneyLanguage(text) && /\bsend\b.*\b(money|cash|\$\d+)/.test(text)) {
+    return false;
+  }
+
   return (
     item.destinations.includes("Relationships") ||
     item.category === "date-night" ||
@@ -37,16 +43,18 @@ export function isRelationshipCapture(item: CapturedSyncItem): boolean {
 export function captureLifeCategory(
   item: CapturedSyncItem,
 ): TimelineEvent["lifeCategory"] {
-  if (isRelationshipCapture(item)) return "relationships";
-  if (item.destinations.includes("Health") || item.category === "workout") {
-    return "health";
-  }
+  const text = `${item.title} ${item.originalPrompt ?? item.prompt}`;
   if (
     item.destinations.includes("Finance") ||
     item.category === "expense" ||
-    item.category === "subscription"
+    item.category === "subscription" ||
+    isMoneyLanguage(text)
   ) {
     return "money";
+  }
+  if (isRelationshipCapture(item)) return "relationships";
+  if (item.destinations.includes("Health") || item.category === "workout") {
+    return "health";
   }
   if (item.destinations.includes("Work") || item.category === "workday" || item.category === "work-schedule") {
     return "work";

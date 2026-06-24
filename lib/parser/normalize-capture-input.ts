@@ -46,6 +46,7 @@ const TYPO_CORRECTIONS: CorrectionRule[] = [
   [/\bduaghter\b/g, "daughter", "duaghter -> daughter", "typo"],
   [/\bdaugher\b/g, "daughter", "daugher -> daughter", "typo"],
   [/\bsvchool\b/g, "school", "svchool -> school", "typo"],
+  [/\bscvhool\b/g, "school", "scvhool -> school", "typo"],
   [/\bhavbe\b/g, "have", "havbe -> have", "typo"],
   [/\bbday\b/g, "birthday", "bday -> birthday", "fuzzy"],
   [/\bbdays\b/g, "birthdays", "bdays -> birthdays", "fuzzy"],

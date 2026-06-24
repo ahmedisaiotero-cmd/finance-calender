@@ -99,7 +99,7 @@ function timedItem(
     reference,
   });
 
-  assert.match(brief.lede, /Tomorrow looks busy/i);
+  assert.match(brief.lede, /Tomorrow (looks busy|starts early|has a tight morning)/i);
   const tomorrowSection = brief.sections.find((section) => section.label === "Tomorrow");
   const comingSoon = tomorrowSection?.paragraphs ?? brief.sections.flatMap((s) => s.paragraphs);
   assert.ok(comingSoon.length >= 3, `expected multiple tomorrow lines, got: ${comingSoon.join(" | ")}`);

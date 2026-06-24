@@ -89,13 +89,25 @@ export function assessTomorrowLoad(
 
 export function headlineForTomorrowLoad(
   assessment: TomorrowLoadAssessment,
+  consequences: SyncConsequence[] = [],
 ): string | null {
-  if (assessment.level === "heavy" || assessment.level === "busy") {
-    return "Tomorrow looks busy.";
-  }
+  const tomorrowEarly = consequences.filter(
+    (consequence) =>
+      consequence.daysUntil === 1 &&
+      consequence.briefEligible &&
+      consequence.sortMinutes != null &&
+      consequence.sortMinutes < 9 * 60,
+  );
 
   if (assessment.earlyStart) {
+    if (tomorrowEarly.length >= 2) {
+      return "Tomorrow has a tight morning.";
+    }
     return "Tomorrow starts early.";
+  }
+
+  if (assessment.level === "heavy" || assessment.level === "busy") {
+    return "Tomorrow looks busy.";
   }
 
   if (assessment.level === "normal" && assessment.commitmentCount >= 3) {

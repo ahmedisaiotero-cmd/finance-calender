@@ -39,6 +39,20 @@ export function detectPulseCategory(
   if (/\b(remind|reminder|cancel|due|rent)\b/.test(text)) return "reminder";
 
   if (
+    /\bsend\b.*\b(money|cash|\$\d+)/.test(text) ||
+    /\bsend money to\b/.test(text)
+  ) {
+    return "expense";
+  }
+
+  if (
+    /\$\s*\d+|\b\d+\s*(dollars?|bucks?)\b/.test(text) &&
+    !/\b(workout|hours?)\b/.test(text)
+  ) {
+    return "expense";
+  }
+
+  if (
     /\b(subscribed|subscribe|subscription|renewal|trial|charge|bill)\b/.test(
       text,
     )
@@ -57,6 +71,16 @@ export function detectPulseCategory(
   if (/\b(workout|gym|exercise|lift|run|cardio)\b/.test(text)) return "workout";
 
   if (/\bwork on\b/.test(text)) return "task";
+
+  if (
+    /\b(worked on|working on|spent \d+ hours?|building|coded|coding|cursor work|focus session)\b/.test(
+      text,
+    ) ||
+    (/\b(worked|working|coded)\b/.test(text) &&
+      /\b(project|sync|app|code)\b/.test(text))
+  ) {
+    return "task";
+  }
 
   if (isStandingWorkScheduleLanguage(text)) return "work-schedule";
 

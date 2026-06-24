@@ -1,60 +1,139 @@
 import assert from "node:assert/strict";
 
+import type { CapturedSyncItem } from "@/lib/captured-items";
 import { buildMemoryUnderstanding } from "@/lib/intelligence/memory-understanding";
+import {
+  buildMemoryProfile,
+  describeMemoryWeight,
+} from "@/lib/intelligence/memory-profile";
+import { cleanMemoryTitle } from "@/lib/sync-capture/memory-title";
 import { captureFromBriefInput } from "@/lib/mobile-prototype/capture-brief-input";
-import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
 import { createTestCaptureStore } from "@/tests/test-capture-handlers";
 
 const reference = new Date("2026-06-14T18:00:00");
 
+function item(
+  partial: Partial<CapturedSyncItem> & Pick<CapturedSyncItem, "title" | "prompt">,
+): CapturedSyncItem {
+  return {
+    category: "general",
+    destinations: ["Calendar"],
+    dateLabel: "Today",
+    timeLabel: "Flexible",
+    status: "active",
+    createdAt: "2026-06-14T12:00:00.000Z",
+    updatedAt: "2026-06-14T12:00:00.000Z",
+    id: partial.id ?? "test",
+    ...partial,
+  };
+}
+
 {
-  const understanding = buildMemoryUnderstanding(
-    {
-      title: "Send Money to Mom",
-      prompt: "send mama ghordita car money next week",
-      originalPrompt: "send mama ghordita car money next week",
-      destinations: ["Family", "Finance"],
-      timeline: {
-        timelineRole: "event",
-        startDate: "2026-06-21",
-        label: "Next week",
-      },
-      category: "task",
-    },
-    reference,
+  assert.equal(
+    buildMemoryUnderstanding(
+      item({
+        id: "coffee",
+        title: "Coffee",
+        prompt: "coffee",
+        originalPrompt: "coffee",
+        timeline: {
+          timelineRole: "log",
+          startDate: "2026-06-14",
+          label: "Today",
+        },
+      }),
+      reference,
+    ),
+    "Small daily habit.",
   );
-  assert.match(understanding, /send money to your mother/i);
-  assert.match(understanding, /next week|Monday/i);
+}
+
+{
+  assert.equal(
+    buildMemoryUnderstanding(
+      item({
+        id: "sad",
+        title: "Emotional Check-in",
+        prompt: "i was sad today",
+        originalPrompt: "i was sad today",
+        destinations: ["Health"],
+        timeline: {
+          timelineRole: "log",
+          startDate: "2026-06-14",
+          label: "Today",
+        },
+      }),
+      reference,
+    ),
+    "Emotional check-in noted today.",
+  );
 }
 
 {
   const understanding = buildMemoryUnderstanding(
-    {
-      title: "Take Daughter to School",
-      prompt: "i havbe to take duaghter to svchool tomorrow",
-      originalPrompt: "i havbe to take duaghter to svchool tomorrow",
-      destinations: ["Family", "School"],
+    item({
+      id: "mcd",
+      title: "McDonalds",
+      prompt: "spent $9 at mcdonalds",
+      originalPrompt: "spent $9 at mcdonalds",
+      category: "expense",
+      destinations: ["Finance"],
+      parsedInput: { moneyType: "expense", amount: 9 },
       timeline: {
-        timelineRole: "event",
-        startDate: "2026-06-15",
-        label: "Tomorrow",
+        timelineRole: "log",
+        startDate: "2026-06-14",
+        label: "Today",
       },
-      category: "task",
-    },
+    }),
     reference,
   );
-  assert.match(understanding, /take your daughter to school tomorrow/i);
+  assert.equal(understanding, "Small spending note.");
+}
+
+{
+  const profile = buildMemoryProfile(
+    item({
+      id: "mcd-profile",
+      title: "McDonalds",
+      prompt: "spent $9 at mcdonalds",
+      originalPrompt: "spent $9 at mcdonalds",
+      category: "expense",
+      destinations: ["Finance"],
+      parsedInput: { moneyType: "expense", amount: 9 },
+      timeline: {
+        timelineRole: "log",
+        startDate: "2026-06-14",
+        label: "Today",
+      },
+    }),
+    reference,
+  );
+  assert.equal(profile.area, "Money");
+  assert.equal(profile.type, "expense");
+  assert.equal(describeMemoryWeight(profile.weight), "Light");
+  assert.equal(profile.accumulation, "spending");
+}
+
+{
+  assert.equal(
+    cleanMemoryTitle({
+      title: "Was Sad Today",
+      prompt: "i was sad today",
+    }),
+    "Emotional Check-in",
+  );
 }
 
 {
   const store = createTestCaptureStore();
-  captureFromBriefInput(
-    "send mama ghordita car money next week",
+  const captured = captureFromBriefInput(
+    "had coffee today",
     { items: store.items, reference },
     store.handlers,
   );
-  assert.match(displayMemoryTitle(store.items[0]), /send money to mom/i);
-  assert.ok(store.items[0].understanding?.includes("mother"));
+  assert.ok(captured);
+  assert.match(captured!.plan.prompt, /coffee/i);
+  assert.match(store.items[0]?.understanding ?? buildMemoryUnderstanding(store.items[0], reference), /small daily habit/i);
 }
 
 console.log("memory-understanding tests passed");

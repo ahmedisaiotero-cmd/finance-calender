@@ -2,6 +2,7 @@ import { captureLifeCategory, resolveCaptureDateKey } from "@/lib/captured-to-ti
 import { titleSimilarity } from "@/lib/capture-duplicate-detection";
 import type { CapturedSyncItem } from "@/lib/captured-items";
 import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
+import { isMoneyLanguage } from "@/lib/sync-capture/surface-copy";
 import {
   formatRecurrenceLabel,
   resolveNextOccurrenceDateKey,
@@ -21,6 +22,9 @@ function memoryCategoryBucket(item: CapturedSyncItem): string {
     item.destinations.includes("Finance") ||
     item.parsedInput?.moneyType === "income" ||
     item.moneyType === "income" ||
+    item.category === "expense" ||
+    item.category === "subscription" ||
+    isMoneyLanguage(text) ||
     /\b(payday|rent|bill|subscription)\b/.test(text)
   ) {
     return "Money";

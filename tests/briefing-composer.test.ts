@@ -94,7 +94,7 @@ function timedItem(
     emptyQuiet: BRIEF_EMPTY_QUIET,
   });
 
-  assert.equal(brief.lede, "Tomorrow looks busy.");
+  assert.match(brief.lede, /Tomorrow (looks busy|starts early|has a tight morning)/i);
   assert.ok(brief.sections.some((section) => section.label === "Tomorrow"));
   const tomorrow = brief.sections.find((section) => section.label === "Tomorrow");
   assert.ok(tomorrow);

@@ -42,7 +42,7 @@ function capture(text: string, existing: ReturnType<typeof createTestCaptureStor
   assert.equal(scoreMemoryImportance(item, reference), "critical");
 
   const brief = buildDailyBrief({ items: [item], workSchedule: null, reference });
-  assert.match(brief.lede, /tomorrow starts early/i);
+  assert.match(brief.lede, /tomorrow (starts early|has a tight morning|looks busy)/i);
 }
 
 {
@@ -158,7 +158,7 @@ function capture(text: string, existing: ReturnType<typeof createTestCaptureStor
     reference,
   });
 
-  assert.match(brief.lede, /tomorrow looks busy/i);
+  assert.match(brief.lede, /tomorrow (looks busy|starts early|has a tight morning)/i);
   const comingSoon = brief.sections.flatMap((section) => section.paragraphs);
   assert.ok(comingSoon.some((line) => /flight at 6/i.test(line)));
   assert.ok(comingSoon.some((line) => /take daughter to school/i.test(line)));

@@ -6,5 +6,5 @@ export const metadata = {
 };
 
 export default function DailyBriefPage() {
-  return <SyncMobileApp initialTab="today" />;
+  return <SyncMobileApp />;
 }

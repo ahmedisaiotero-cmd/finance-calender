@@ -117,7 +117,7 @@ assert.equal(detail.recurrence, "Every year");
 assert.ok(detail.nextOccurrence);
 assert.ok(detail.originalInput);
 assert.ok(detail.cleanedSummary);
-assert.equal(detail.importance, "High on my radar");
+assert.equal(detail.importance, "Meaningful");
 assert.equal(detail.relatedPerson, "Mom");
 assert.ok(detail.relatedMemories.length >= 1);
 assert.ok(

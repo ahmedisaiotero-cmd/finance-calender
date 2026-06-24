@@ -19,6 +19,7 @@ export type DailyBriefSnapshot = {
   lede: string;
   sections: BriefSection[];
   isEmpty: boolean;
+  consequences?: import("@/lib/intelligence/sync-consequences").SyncConsequence[];
 };
 
 function daysUntil(dateKey: string | null, reference: Date) {
@@ -127,6 +128,7 @@ export function buildDailyBrief(input: {
     lede: result.lede,
     sections: result.sections,
     isEmpty: result.isEmpty,
+    consequences: result.consequences,
   };
 }
 

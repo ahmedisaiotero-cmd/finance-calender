@@ -2,32 +2,19 @@
 
 import { useEffect, useRef } from "react";
 
-import type { MemoryDetailView } from "@/lib/mobile-prototype/build-memory-detail";
+import type { MemoryReflectionView } from "@/lib/mobile-prototype/build-memory-reflection";
 import {
   MEMORY_BACK,
-  MEMORY_DETAILS_HEADING,
+  MEMORY_CONNECTED_HEADING,
   MEMORY_EDIT_ACTION,
   MEMORY_EDIT_CANCEL,
   MEMORY_EDIT_HEADING,
   MEMORY_EDIT_SAVE,
-  MEMORY_LABEL_AREA,
-  MEMORY_LABEL_BRIEF,
-  MEMORY_LABEL_NEXT,
-  MEMORY_LABEL_PERSON,
-  MEMORY_LABEL_REPEATS,
-  MEMORY_LABEL_SURFACE,
-  MEMORY_LABEL_TIME,
-  MEMORY_LABEL_WEIGHT,
-  MEMORY_LABEL_WHEN,
-  MEMORY_RELATED_HEADING,
   MEMORY_REMOVE_ACTION,
-  MEMORY_SAID_HEADING,
-  MEMORY_UNDERSTOOD_HEADING,
-  MEMORY_WHY_HEADING,
 } from "@/lib/mobile-prototype/sync-voice";
 
 type MemoryDetailScreenProps = {
-  detail: MemoryDetailView;
+  detail: MemoryReflectionView;
   onBack: () => void;
   onRemove?: () => void;
   editing?: boolean;
@@ -38,15 +25,6 @@ type MemoryDetailScreenProps = {
   onEditSave?: () => void;
   onEditCancel?: () => void;
 };
-
-function DetailRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="sync-memory-detail-row">
-      <dt className="sync-memory-detail-label">{label}</dt>
-      <dd className="sync-memory-detail-value">{value}</dd>
-    </div>
-  );
-}
 
 export function MemoryDetailScreen({
   detail,
@@ -79,11 +57,6 @@ export function MemoryDetailScreen({
           {detail.title}
         </h1>
       </header>
-
-      <section className="sync-memory-detail-section sync-memory-detail-interpretation">
-        <h2 className="sync-memory-detail-whisper">{MEMORY_WHY_HEADING}</h2>
-        <p className="sync-memory-detail-copy">{detail.whyRemembered}</p>
-      </section>
 
       {editing ? (
         <section className="sync-memory-detail-section sync-memory-detail-edit">
@@ -119,47 +92,27 @@ export function MemoryDetailScreen({
           </div>
         </section>
       ) : (
-        <>
-          <section className="sync-memory-detail-original">
-            <h2 className="sync-memory-detail-whisper">{MEMORY_SAID_HEADING}</h2>
-            <blockquote className="sync-memory-detail-original-value">
-              &ldquo;{detail.originalInput}&rdquo;
-            </blockquote>
-          </section>
-
-          <section className="sync-memory-detail-section">
-            <h2 className="sync-memory-detail-whisper">{MEMORY_UNDERSTOOD_HEADING}</h2>
-            <p className="sync-memory-detail-copy">{detail.cleanedSummary}</p>
-          </section>
-
-          <section className="sync-memory-detail-section">
-            <h2 className="sync-memory-detail-whisper">{MEMORY_DETAILS_HEADING}</h2>
-            <dl className="sync-memory-detail-facts">
-              <DetailRow label={MEMORY_LABEL_WEIGHT} value={detail.importance} />
-              <DetailRow label={MEMORY_LABEL_AREA} value={detail.category} />
-              {detail.relatedPerson && (
-                <DetailRow label={MEMORY_LABEL_PERSON} value={detail.relatedPerson} />
-              )}
-              <DetailRow label={MEMORY_LABEL_WHEN} value={detail.resolvedDate} />
-              {detail.recurrence && (
-                <DetailRow label={MEMORY_LABEL_REPEATS} value={detail.recurrence} />
-              )}
-              {detail.nextOccurrence && (
-                <DetailRow label={MEMORY_LABEL_NEXT} value={detail.nextOccurrence} />
-              )}
-              <DetailRow label={MEMORY_LABEL_BRIEF} value={detail.briefPresence} />
-              <DetailRow label={MEMORY_LABEL_SURFACE} value={detail.surfaceEligibility} />
-              <DetailRow label={MEMORY_LABEL_TIME} value={detail.timeImpact} />
-            </dl>
-          </section>
-        </>
+        <section className="sync-memory-detail-section sync-memory-detail-reflective">
+          <p className="sync-memory-detail-worth">{detail.worthLine}</p>
+          {detail.whenLine && (
+            <p className="sync-memory-detail-when">{detail.whenLine}</p>
+          )}
+          <p className="sync-memory-detail-context">{detail.contextLine}</p>
+          {detail.patternLine && (
+            <p className="sync-memory-detail-pattern">{detail.patternLine}</p>
+          )}
+          <p className="sync-memory-detail-understood">{detail.understoodLine}</p>
+          <blockquote className="sync-memory-detail-original-value sync-memory-detail-quote">
+            &ldquo;{detail.originalInput}&rdquo;
+          </blockquote>
+        </section>
       )}
 
-      {!editing && detail.relatedMemories.length > 0 && (
+      {!editing && detail.connectedMemories.length > 0 && (
         <section className="sync-memory-detail-section">
-          <h2 className="sync-memory-detail-whisper">{MEMORY_RELATED_HEADING}</h2>
+          <h2 className="sync-memory-detail-whisper">{MEMORY_CONNECTED_HEADING}</h2>
           <ul className="sync-memory-detail-related">
-            {detail.relatedMemories.map((memory) => (
+            {detail.connectedMemories.map((memory) => (
               <li key={memory.id}>{memory.title}</li>
             ))}
           </ul>

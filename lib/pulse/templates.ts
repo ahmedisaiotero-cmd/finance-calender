@@ -2,6 +2,7 @@ import {
   extractSubject,
   titleCaseKeep,
 } from "@/lib/pulse/parse-pulse-prompt";
+import { normalizeCaptureInput } from "@/lib/parser/normalize-capture-input";
 import type {
   PulseParsedInput,
   PulsePlanCategory,
@@ -67,16 +68,17 @@ function relationshipTitle(prompt: string, fallback: string): string {
 }
 
 export function familyEventTitle(prompt: string): string | null {
-  const takeChild = prompt.match(/\btake\s+(?:my\s+)?(daughter|son)\s+to\s+school\b/i);
+  const normalized = normalizeCaptureInput(prompt).normalized;
+  const takeChild = normalized.match(/\btake\s+(?:my\s+)?(daughter|son)\s+to\s+school\b/i);
   if (takeChild?.[1]) {
     const child = titleCaseKeep(takeChild[1]);
     return `Take ${child} to School`;
   }
 
-  const daughter = /\b(?:my\s+)?daughter\b/i.test(prompt);
-  const son = /\b(?:my\s+)?son\b/i.test(prompt);
-  const school = /\b(school|class|recital|ceremony|graduation)\b/i.test(prompt);
-  const event = /\bevent\b/i.test(prompt);
+  const daughter = /\b(?:my\s+)?daughter\b/i.test(normalized);
+  const son = /\b(?:my\s+)?son\b/i.test(normalized);
+  const school = /\b(school|class|recital|ceremony|graduation)\b/i.test(normalized);
+  const event = /\bevent\b/i.test(normalized);
 
   if (daughter && (school || event)) return "Daughter's School Event";
   if (son && (school || event)) return "Son's School Event";

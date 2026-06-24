@@ -1,5 +1,6 @@
 import { captureLifeCategory } from "@/lib/captured-to-timeline";
 import type { CapturedSyncItem } from "@/lib/captured-items";
+import { isMoneyLanguage } from "@/lib/sync-capture/surface-copy";
 
 export type MemoryFilterCategory =
   | "All"
@@ -45,6 +46,9 @@ export function memoryFilterCategory(
     item.destinations.includes("Finance") ||
     item.parsedInput?.moneyType === "income" ||
     item.moneyType === "income" ||
+    item.category === "expense" ||
+    item.category === "subscription" ||
+    isMoneyLanguage(text) ||
     /\b(payday|rent|bill|subscription)\b/.test(text)
   ) {
     return "Money";

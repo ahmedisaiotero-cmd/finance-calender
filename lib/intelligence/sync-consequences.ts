@@ -11,6 +11,11 @@ import {
   BRIEF_EMPTY_QUIET,
 } from "@/lib/mobile-prototype/sync-voice";
 import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
+import {
+  cleanSurfacedCopy,
+  formatDueMomentLine,
+  formatEventMomentLine,
+} from "@/lib/sync-capture/surface-copy";
 import { conflictPriorityScore } from "@/lib/trust/conflict-priority";
 import {
   collectWorkDayOffDateKeys,
@@ -23,6 +28,10 @@ import {
 } from "@/lib/sync-time-blocks";
 import { generateHomeAmbientInsight } from "@/lib/time-block-insights";
 import { isBriefEligibleMemory, resolveNextOccurrenceDateKey } from "@/lib/timeline/next-occurrence";
+import {
+  dedupeOverlappingConsequences,
+  isTimelineNoiseConsequence,
+} from "@/lib/intelligence/consequence-timing";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
 import { dayMatchesScheduleDay } from "@/lib/user-timeline-context";
 import type { SyncUserProfile } from "@/lib/sync-profile/user-profile";
@@ -193,24 +202,18 @@ function deadlineSubject(item: CapturedSyncItem) {
   return displayMemoryTitle(item);
 }
 
-function timedMomentPhrase(subject: string, days: number, dateKey: string | null) {
-  if (days === 0) return `${subject} is today`;
-  if (days === 1) return `${subject} is tomorrow`;
-  if (days >= 2 && days <= 7 && dateKey) {
-    return `${subject} is ${weekdayLabel(dateKey)}`;
-  }
-  if (days <= 14) return `${subject} is in ${days} days`;
-  return null;
+function timedMomentPhrase(
+  subject: string,
+  days: number,
+  dateKey: string | null,
+  prompt?: string,
+  time?: string | null,
+) {
+  return formatEventMomentLine({ subject, days, dateKey, prompt, time });
 }
 
 function dueMomentPhrase(subject: string, days: number, dateKey: string | null) {
-  if (days === 0) return `${subject} is due today`;
-  if (days === 1) return `${subject} is due tomorrow`;
-  if (days >= 2 && days <= 7 && dateKey) {
-    return `${subject} is due ${weekdayLabel(dateKey)}`;
-  }
-  if (days <= 14) return `${subject} is due in ${days} days`;
-  return null;
+  return formatDueMomentLine({ subject, days, dateKey });
 }
 
 function profileBoost(item: CapturedSyncItem, priorities: string[]) {
@@ -318,6 +321,17 @@ function resolveMemoryDateKey(item: CapturedSyncItem, reference: Date) {
   return nextKey ?? resolveCaptureDateKey(item, reference);
 }
 
+function attachItemTiming(
+  consequence: SyncConsequence,
+  item: CapturedSyncItem,
+): SyncConsequence {
+  const minutes =
+    item.timeline?.startTime != null
+      ? clockToMinutes(item.timeline.startTime)
+      : null;
+  return minutes != null ? { ...consequence, sortMinutes: minutes } : consequence;
+}
+
 function makeConsequence(
   partial: Omit<SyncConsequence, "id"> & { id?: string },
 ): SyncConsequence {
@@ -377,13 +391,13 @@ export function deriveConsequencesFromMemory(
       extractBirthdaySubject(prompt) ??
       `${displayMemoryTitle(item).replace(/'s Birthday$/, "'s birthday")}`;
     const kind = isRelationshipCapture(item) ? "relationship_moment" : "family_moment";
-    const phrase = timedMomentPhrase(subject, days, dateKey);
+    const phrase = timedMomentPhrase(subject, days, dateKey, prompt);
     if (phrase && days <= 14) {
       consequences.push(
         makeConsequence({
           sourceMemoryId: item.id,
           kind,
-          surfaceText: `${phrase}.`,
+          surfaceText: cleanSurfacedCopy(phrase),
           daysUntil: days,
           dateKey,
           priority: memoryPriority(item, days, kind, priorities, reference),
@@ -403,7 +417,7 @@ export function deriveConsequencesFromMemory(
         makeConsequence({
           sourceMemoryId: item.id,
           kind: "relationship_moment",
-          surfaceText: `${phrase}.`,
+          surfaceText: cleanSurfacedCopy(phrase),
           daysUntil: days,
           dateKey,
           priority: memoryPriority(item, days, "relationship_moment", priorities, reference),
@@ -426,17 +440,20 @@ export function deriveConsequencesFromMemory(
             ? `Payday lands ${weekdayLabel(dateKey)}`
             : `Payday is in ${days} days`;
     consequences.push(
-      makeConsequence({
-        sourceMemoryId: item.id,
-        kind: "income",
-        surfaceText: `${phrase}.`,
-        daysUntil: days,
-        dateKey,
-        priority: memoryPriority(item, days, "income", priorities, reference),
-        horizon: days <= 1 ? "headline" : "coming_soon",
-        area: "finance",
-        briefEligible,
-      }),
+      attachItemTiming(
+        makeConsequence({
+          sourceMemoryId: item.id,
+          kind: "income",
+          surfaceText: cleanSurfacedCopy(phrase),
+          daysUntil: days,
+          dateKey,
+          priority: memoryPriority(item, days, "income", priorities, reference),
+          horizon: days <= 1 ? "headline" : "coming_soon",
+          area: "finance",
+          briefEligible,
+        }),
+        item,
+      ),
     );
     return consequences;
   }
@@ -449,7 +466,7 @@ export function deriveConsequencesFromMemory(
         makeConsequence({
           sourceMemoryId: item.id,
           kind: "financial_due",
-          surfaceText: `${phrase}.`,
+          surfaceText: cleanSurfacedCopy(phrase),
           daysUntil: days,
           dateKey,
           priority: memoryPriority(item, days, "financial_due", priorities, reference),
@@ -466,13 +483,19 @@ export function deriveConsequencesFromMemory(
     const hasTimedStart = Boolean(item.timeline?.isTimed && item.timeline?.startTime);
     if (!hasTimedStart) {
       const subject = displayMemoryTitle(item);
-      const phrase = timedMomentPhrase(subject, days, dateKey);
+      const phrase = timedMomentPhrase(
+        subject,
+        days,
+        dateKey,
+        prompt,
+        item.timeline?.startTime ? formatSyncClock(item.timeline.startTime) : null,
+      );
       if (phrase) {
         consequences.push(
           makeConsequence({
             sourceMemoryId: item.id,
             kind: "event",
-            surfaceText: `${phrase}.`,
+            surfaceText: cleanSurfacedCopy(phrase),
             daysUntil: days,
             dateKey,
             priority: memoryPriority(item, days, "event", priorities, reference),
@@ -506,7 +529,6 @@ function demoteHeadlinesWhenDaySynthesis(
       return {
         ...consequence,
         horizon: "coming_soon" as const,
-        sortMinutes: consequence.sortMinutes ?? 12 * 60,
       };
     }
     return consequence;
@@ -615,6 +637,7 @@ function deriveTimedBlockConsequences(
       } as CapturedSyncItem);
 
       return makeConsequence({
+        id: `${block.id}-${kind}`,
         sourceMemoryId: block.sourceItemId ?? null,
         kind,
         surfaceText: formatTimedBlockSurfaceText(block, item, days),
@@ -1067,12 +1090,15 @@ export function buildAllConsequences(options: {
   );
 
   return finalizeDaySynthesis(
-    suppressRedundantFinanceHints([
-      ...memoryConsequences,
-      ...timedConsequences,
-      ...contextualConsequences,
-      ...scheduleConsequences,
-    ]),
+    dedupeOverlappingConsequences(
+      suppressRedundantFinanceHints([
+        ...memoryConsequences,
+        ...timedConsequences,
+        ...contextualConsequences,
+        ...scheduleConsequences,
+      ]),
+      activeItems,
+    ),
     reference,
   );
 }
