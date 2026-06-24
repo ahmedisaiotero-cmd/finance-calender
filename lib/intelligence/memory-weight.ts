@@ -78,7 +78,6 @@ export type MemoryWeightInput = Pick<
   | "destinations"
   | "timeline"
   | "category"
-  | "parsedInput"
   | "moneyType"
 >;
 

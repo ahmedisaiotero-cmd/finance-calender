@@ -92,7 +92,6 @@ function resolveMemoryArea(item: CapturedSyncItem): MemoryArea {
   if (category === "Family") return "Family";
   if (category === "Work") return "Work";
   if (category === "Relationships") return "Relationships";
-  if (category === "Calendar") return "Calendar";
   return "Personal";
 }
 
@@ -103,7 +102,6 @@ function resolveMemoryType(
     | "prompt"
     | "originalPrompt"
     | "category"
-    | "parsedInput"
     | "moneyType"
     | "timeline"
     | "destinations"
@@ -111,7 +109,6 @@ function resolveMemoryType(
   text: string,
 ): MemoryType {
   if (
-    item.parsedInput?.moneyType === "income" ||
     item.moneyType === "income" ||
     /\b(payday|pay day|get paid|paycheck)\b/i.test(text)
   ) {
@@ -119,7 +116,7 @@ function resolveMemoryType(
   }
 
   if (
-    item.parsedInput?.moneyType === "expense" ||
+    item.moneyType === "expense" ||
     /\b(spent|paid|purchase|bought|cost)\b/i.test(text) ||
     item.category === "expense"
   ) {

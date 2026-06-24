@@ -12,7 +12,7 @@ export type ImportanceScoreInput = {
   timeline?: TimelineResolution | null;
   reference?: Date;
   priorities?: string[];
-  baseImportance?: "low" | "medium" | "high";
+  baseImportance?: SyncImportance;
 };
 
 function daysUntilDateKey(dateKey: string | null, reference: Date) {
@@ -105,6 +105,7 @@ export function scoreImportance(input: ImportanceScoreInput): SyncImportance {
     return "medium";
   }
 
+  if (input.baseImportance === "critical") return "critical";
   if (input.baseImportance === "high") return "high";
   if (input.baseImportance === "low") return "low";
   if (isDistantEvent(days)) return "low";

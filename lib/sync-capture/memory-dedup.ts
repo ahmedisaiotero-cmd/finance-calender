@@ -20,7 +20,6 @@ function memoryCategoryBucket(item: CapturedSyncItem): string {
   const text = `${item.title} ${item.originalPrompt ?? item.prompt}`.toLowerCase();
   if (
     item.destinations.includes("Finance") ||
-    item.parsedInput?.moneyType === "income" ||
     item.moneyType === "income" ||
     item.category === "expense" ||
     item.category === "subscription" ||

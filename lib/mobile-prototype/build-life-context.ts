@@ -58,7 +58,6 @@ function itemScheduleKey(item: CapturedSyncItem, reference: Date) {
 function isPaydayMemory(item: CapturedSyncItem) {
   const text = `${item.title} ${item.originalPrompt ?? item.prompt}`.toLowerCase();
   return (
-    item.parsedInput?.moneyType === "income" ||
     item.moneyType === "income" ||
     /\b(payday|pay day|get paid|paycheck)\b/.test(text)
   );

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 import { useSidebarNavigation } from "@/hooks/use-user-life-areas";
 import { isNavItemActive } from "@/lib/user-life-areas";
@@ -30,11 +30,11 @@ type SyncLensPillsProps = {
 export function SyncLensPills({ activeLens, className }: SyncLensPillsProps) {
   const pathname = usePathname();
   const { primary } = useSidebarNavigation();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const visible = mounted
     ? primary.filter((item) => LENS_NAV_IDS.includes(item.id as SyncWorkspaceLens))

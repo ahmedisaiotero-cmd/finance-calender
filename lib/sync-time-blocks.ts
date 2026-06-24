@@ -78,9 +78,9 @@ export function formatSyncClock(value?: string) {
   return `${hour % 12 || 12}:${String(minute).padStart(2, "0")} ${meridiem}`;
 }
 
-export function formatSyncTimeBlockRange(block: SyncTimeBlock) {
+export function formatSyncTimeBlockRange(block: SyncTimeBlock): string {
   if (!block.isTimed || !block.startTime) return "All day";
-  const start = formatSyncClock(block.startTime);
+  const start = formatSyncClock(block.startTime) ?? block.startTime;
   const end = block.endTime ? formatSyncClock(block.endTime) : undefined;
   return end ? `${start}–${end}` : start;
 }

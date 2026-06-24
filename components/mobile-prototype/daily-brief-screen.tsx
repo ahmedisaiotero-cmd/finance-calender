@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 
 import { useCapturedItems } from "@/lib/captured-items";
 import { captureFromBriefInput, formatCaptureAcknowledgment } from "@/lib/mobile-prototype/capture-brief-input";
@@ -44,15 +44,20 @@ function BriefPassage({
 }
 
 export function DailyBriefScreen() {
-  const { activeItems, addCapturedItem } = useCapturedItems();
+  const {
+    activeItems,
+    addCapturedItem,
+    updateCapturedItem,
+    softDeleteCapturedItem,
+  } = useCapturedItems();
   const [theme, setTheme] = useState<ThemeMode>("dark");
   const [captureInput, setCaptureInput] = useState("");
   const [recentNote, setRecentNote] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const brief = useMemo(() => {
     if (!mounted) {
@@ -82,10 +87,18 @@ export function DailyBriefScreen() {
     const trimmed = captureInput.trim();
     if (!trimmed) return;
 
-    const captured = captureFromBriefInput(trimmed, {
-      items: activeItems,
-      workSchedule: loadActiveWorkSchedule() ?? null,
-    });
+    const captured = captureFromBriefInput(
+      trimmed,
+      {
+        items: activeItems,
+        workSchedule: loadActiveWorkSchedule() ?? null,
+      },
+      {
+        addCapturedItem,
+        updateCapturedItem,
+        softDeleteCapturedItem,
+      },
+    );
 
     if (captured) {
       addCapturedItem(captured.plan, captured.destinations, captured.title, {

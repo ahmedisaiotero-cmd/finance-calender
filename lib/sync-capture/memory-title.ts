@@ -300,7 +300,7 @@ export function displayMemoryTitle(item: CapturedSyncItem): string {
     prompt: item.originalPrompt ?? item.prompt,
     category: item.category,
     timeLabel: item.timeLabel,
-    parsedInput: item.parsedInput ?? {
+    parsedInput: {
       moneyType: item.moneyType,
       workAvailability: item.workAvailability,
     },

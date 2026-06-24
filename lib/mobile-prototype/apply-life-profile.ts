@@ -69,34 +69,52 @@ export function applyLifeProfile(
   for (const line of splitComingUpLines(profile.comingUp)) {
     if (promptAlreadyRemembered(items, line)) continue;
 
-    const attempt = attemptBriefCapture(line, {
-      items,
-      workSchedule: schedule
-        ? {
-            days: schedule.days,
-            startTime: schedule.startTime,
-            endTime: schedule.endTime,
-            recurrence: {
-              frequency: "weekly",
-              interval: 1,
-              startsOn: toDateKey(reference),
-              endsOn: null,
-            },
-            status: "active",
-          }
-        : undefined,
-      reference,
-    });
-
-    if (attempt.status !== "saved") continue;
-
-    const captured = context.addCapturedItem(
-      attempt.result.plan,
-      attempt.result.destinations,
-      attempt.result.title,
-      { meaning: attempt.result.meaning },
+    const attempt = attemptBriefCapture(
+      line,
+      {
+        items,
+        workSchedule: schedule
+          ? {
+              days: schedule.days,
+              startTime: schedule.startTime,
+              endTime: schedule.endTime,
+              recurrence: {
+                frequency: "weekly",
+                interval: 1,
+                startsOn: toDateKey(reference),
+                endsOn: null,
+              },
+              status: "active",
+            }
+          : undefined,
+        reference,
+      },
+      {
+        addCapturedItem: (plan, destinations, title, extras) => {
+          const captured = context.addCapturedItem(plan, destinations, title, extras);
+          items = [captured, ...items];
+          return captured;
+        },
+        updateCapturedItem: (id, updates) => {
+          const index = items.findIndex((item) => item.id === id);
+          if (index < 0) return null;
+          const updated = { ...items[index], ...updates };
+          items[index] = updated;
+          return updated;
+        },
+        softDeleteCapturedItem: (id) => {
+          const index = items.findIndex((item) => item.id === id);
+          if (index < 0) return;
+          items[index] = {
+            ...items[index],
+            deletedAt: new Date().toISOString(),
+            status: "cancelled",
+          };
+        },
+      },
     );
-    items = [captured, ...items];
+
+    if (attempt.status !== "saved" || attempt.kind !== "create") continue;
   }
 
   return saveUserProfile(profile);

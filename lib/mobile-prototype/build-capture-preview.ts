@@ -36,7 +36,6 @@ function stubItemFromPrepared(prepared: PreparedCapture): CapturedSyncItem {
     timeline: plan.timeline,
     workAvailability: plan.parsedInput?.workAvailability,
     moneyType: plan.parsedInput?.moneyType,
-    parsedInput: plan.parsedInput,
     status: "active",
     createdAt: plan.createdAt ?? new Date().toISOString(),
     updatedAt: new Date().toISOString(),

@@ -251,7 +251,7 @@ export function applyCaptureInput(
       action.primaryTarget,
       action.commandIntent,
       trimmed,
-      { now: reference, userContext: { workSchedule: context.workSchedule } },
+      { now: reference, userContext: { workSchedule: context.workSchedule ?? undefined } },
     );
     const enriched = enrichCapturePlan(plan, reference);
     const prepared = prepareCaptureFromText(trimmed, {
@@ -334,6 +334,10 @@ export function applyCaptureInput(
       title: fallback.title,
       message: CAPTURE_DUPLICATE,
     };
+  }
+
+  if (!("prepared" in fallback)) {
+    return { status: "empty" };
   }
 
   const overlap = fallback.prepared.preview.when.overlap;

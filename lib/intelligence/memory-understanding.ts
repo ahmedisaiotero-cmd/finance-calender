@@ -42,10 +42,10 @@ function whenPhrase(
   return "coming up";
 }
 
-function timePhrase(timeline: CapturedSyncItem["timeline"]) {
+function timePhrase(timeline: CapturedSyncItem["timeline"]): string | null {
   const raw = timeline?.startTime ?? timeline?.deadlineTime;
   if (!raw) return null;
-  return formatSyncClock(raw);
+  return formatSyncClock(raw) ?? null;
 }
 
 function interpretLightMemory(profile: MemoryProfile, text: string): string | null {
@@ -108,8 +108,7 @@ export function buildMemoryUnderstanding(
     | "category"
     | "workAvailability"
     | "moneyType"
-    | "parsedInput"
-  > & { parsedInput?: CapturedSyncItem["parsedInput"] },
+  >,
   reference = new Date(),
 ): string {
   const prompt = (item.originalPrompt ?? item.prompt).trim();

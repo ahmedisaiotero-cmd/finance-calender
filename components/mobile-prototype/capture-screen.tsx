@@ -15,7 +15,12 @@ type CaptureScreenProps = {
 };
 
 export function CaptureScreen({ onCaptured }: CaptureScreenProps) {
-  const { activeItems, addCapturedItem } = useCapturedItems();
+  const {
+    activeItems,
+    addCapturedItem,
+    updateCapturedItem,
+    softDeleteCapturedItem,
+  } = useCapturedItems();
   const [input, setInput] = useState("");
   const [draftText, setDraftText] = useState<string | null>(null);
   const [followUp, setFollowUp] = useState<{
@@ -27,31 +32,44 @@ export function CaptureScreen({ onCaptured }: CaptureScreenProps) {
     const trimmed = text.trim();
     if (!trimmed) return;
 
-    const attempt = attemptBriefCapture(trimmed, {
-      items: activeItems,
-      workSchedule: loadActiveWorkSchedule() ?? null,
-    });
+    const attempt = attemptBriefCapture(
+      trimmed,
+      {
+        items: activeItems,
+        workSchedule: loadActiveWorkSchedule() ?? null,
+      },
+      {
+        addCapturedItem,
+        updateCapturedItem,
+        softDeleteCapturedItem,
+      },
+    );
 
     if (attempt.status === "empty") return;
 
     if (attempt.status === "saved") {
-      addCapturedItem(
-        attempt.result.plan,
-        attempt.result.destinations,
-        attempt.result.title,
-        { meaning: attempt.result.meaning },
-      );
-      onCaptured(formatCaptureAcknowledgment(attempt.result));
+      if (attempt.kind === "create") {
+        onCaptured(formatCaptureAcknowledgment(attempt.result));
+      }
       setInput("");
       setDraftText(null);
       setFollowUp(null);
       return;
     }
 
-    setDraftText(attempt.draftText);
+    if (attempt.status === "needs_clarification") {
+      setDraftText(attempt.draftText);
+      setFollowUp({
+        message: attempt.message,
+        suggestions: attempt.suggestions,
+      });
+      setInput("");
+      return;
+    }
+
     setFollowUp({
       message: attempt.message,
-      suggestions: attempt.suggestions,
+      suggestions: [],
     });
     setInput("");
   };
@@ -102,7 +120,7 @@ export function CaptureScreen({ onCaptured }: CaptureScreenProps) {
         <div className="sync-capture-followup">
           <p className="sync-capture-followup-message">{followUp.message}</p>
           {draftText && (
-            <p className="sync-capture-draft">"{draftText}"</p>
+            <p className="sync-capture-draft">&ldquo;{draftText}&rdquo;</p>
           )}
           <div className="sync-capture-suggestions">
             {followUp.suggestions.map((suggestion) => (

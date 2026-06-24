@@ -1,3 +1,4 @@
+import { buildUpdatedCaptureFromPlan } from "@/lib/capture-action-resolver";
 import { buildMemoryUnderstanding } from "@/lib/intelligence/memory-understanding";
 import { sanitizeSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";
 import { CAPTURE_EDIT_MEMORY } from "@/lib/mobile-prototype/sync-voice";

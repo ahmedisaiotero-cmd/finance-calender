@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 
 import { LifeAreaScreen } from "@/components/mobile-prototype/life-area-screen";
 import { LifeTimelineScreen } from "@/components/mobile-prototype/life-timeline-screen";
@@ -41,15 +41,17 @@ type LifeRoute =
     };
 
 export function SyncMobileApp() {
-  const [view, setView] = useState<AppView>("app");
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+  const [viewOverride, setViewOverride] = useState<AppView | null>(null);
+  const view =
+    viewOverride ??
+    (mounted ? (isOnboardingComplete() ? "app" : "onboarding") : "app");
   const [route, setRoute] = useState<LifeRoute>({ name: "today" });
   const { activeItems } = useCapturedItems();
-
-  useEffect(() => {
-    setMounted(true);
-    setView(isOnboardingComplete() ? "app" : "onboarding");
-  }, []);
 
   const reference = useMemo(() => new Date(), [activeItems.length, route.name]);
 
@@ -88,7 +90,7 @@ export function SyncMobileApp() {
     return (
       <div className="mobile-prototype sync-app sync-app--onboarding" data-theme="dark">
         <div className="mobile-prototype-shell">
-          <OnboardingFlow onComplete={() => setView("app")} />
+          <OnboardingFlow onComplete={() => setViewOverride("app")} />
         </div>
       </div>
     );

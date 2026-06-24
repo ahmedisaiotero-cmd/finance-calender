@@ -261,7 +261,17 @@ export function prepareCaptureFromPlan(
     preview,
     destinations,
     title,
-    meaning: preview.meaning,
+    meaning: preview.meaning ?? {
+      importance: "medium",
+      meaningLabel: "Noted",
+      summary: title,
+      protection: {
+        eligible: false,
+        recommended: false,
+        protected: false,
+      },
+      suggestedActions: [],
+    },
     duplicate,
   };
 }
@@ -331,6 +341,8 @@ export function saveCapture(
       meaning?: MeaningAnalysis;
       protectedTime?: CapturedSyncItem["protectedTime"];
       understanding?: string;
+      captureSource?: CapturedSyncItem["captureSource"];
+      voiceTranscript?: string;
     },
   ) => CapturedSyncItem,
   options?: {
@@ -409,31 +421,34 @@ export function prepareUniversalCapture(
 
   const finalPrepared: PreparedCapture =
     prepared ??
-    ({
-      plan,
-      preview: buildSyncPreviewViewModel(plan, buildPreviewContext(context)),
-      destinations: sanitizeSyncDestinations(
+    (() => {
+      const destinations = sanitizeSyncDestinations(
         resolveSyncDestinations(plan, context.categoryHint).length > 0
           ? resolveSyncDestinations(plan, context.categoryHint)
           : ["Calendar"],
-      ),
-      title: compactCaptureTitle(plan),
-      meaning: buildMemoryUnderstanding({
-        title: compactCaptureTitle(plan),
-        prompt: plan.prompt,
-        originalPrompt: plan.originalPrompt,
-        destinations: sanitizeSyncDestinations(
-          resolveSyncDestinations(plan, context.categoryHint).length > 0
-            ? resolveSyncDestinations(plan, context.categoryHint)
-            : ["Calendar"],
-        ),
-        timeline: plan.timeline,
-        category: plan.category,
-        workAvailability: plan.parsedInput?.workAvailability,
-        moneyType: plan.parsedInput?.moneyType,
-      }),
-      duplicate: detectDuplicateCapture(plan, compactCaptureTitle(plan), context.items),
-    } satisfies PreparedCapture);
+      );
+      const title = compactCaptureTitle(plan);
+      const preview = buildSyncPreviewViewModel(plan, buildPreviewContext(context));
+
+      return {
+        plan,
+        preview,
+        destinations,
+        title,
+        meaning: preview.meaning ?? {
+          importance: "medium",
+          meaningLabel: "Noted",
+          summary: title,
+          protection: {
+            eligible: false,
+            recommended: false,
+            protected: false,
+          },
+          suggestedActions: [],
+        },
+        duplicate: detectDuplicateCapture(plan, title, context.items),
+      };
+    })();
 
   if (finalPrepared.destinations.length === 0) {
     finalPrepared.destinations = ["Calendar"];

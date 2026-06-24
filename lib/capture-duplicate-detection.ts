@@ -4,7 +4,7 @@ import { resolveCaptureDateKey } from "@/lib/captured-to-timeline";
 import {
   areMemoryDuplicates,
 } from "@/lib/sync-capture/memory-dedup";
-import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
+import { cleanMemoryTitle, displayMemoryTitle } from "@/lib/sync-capture/memory-title";
 
 export type DuplicateMatch = {
   item: CapturedSyncItem;
@@ -75,12 +75,13 @@ export function detectDuplicateCapture(
     const reasons: string[] = [];
     let score = 0;
 
-    const cleanTitle = displayMemoryTitle({
+    const cleanTitle = cleanMemoryTitle({
       title,
       prompt: plan.prompt,
       category: plan.category,
       parsedInput: plan.parsedInput,
       workAvailability: plan.parsedInput?.workAvailability,
+      moneyType: plan.parsedInput?.moneyType,
     });
 
     const similarity = Math.max(

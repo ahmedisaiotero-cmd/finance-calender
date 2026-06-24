@@ -520,7 +520,7 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
       workSchedule: loadActiveWorkSchedule() ?? null,
       selectedDestinations,
       previewMode,
-      excludeCaptureId: flow.kind === "edit" ? flow.targetId : undefined,
+      excludeCaptureId: undefined,
     });
 
     if (
@@ -546,7 +546,7 @@ export function PulseOrganizer({ variant = "default" }: { variant?: "default" | 
       workSchedule: loadActiveWorkSchedule() ?? null,
       selectedDestinations,
       previewMode,
-      excludeCaptureId: flow.kind === "edit" ? flow.targetId : undefined,
+      excludeCaptureId: undefined,
     });
 
     const saved = saveCapture(prepared, addCapturedItem, {

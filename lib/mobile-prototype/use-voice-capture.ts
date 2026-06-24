@@ -50,7 +50,10 @@ export type UseVoiceCaptureOptions = {
 
 export function useVoiceCapture(options: UseVoiceCaptureOptions) {
   const optionsRef = useRef(options);
-  optionsRef.current = options;
+
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const [listening, setListening] = useState(false);

@@ -3,7 +3,7 @@
 import { CalendarDays, LayoutDashboard, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 import { useSidebarNavigation } from "@/hooks/use-user-life-areas";
 import { isNavItemActive, type NavItem } from "@/lib/user-life-areas";
@@ -45,11 +45,11 @@ function navLabel(item: NavItem) {
 export function SyncCenteredNav() {
   const pathname = usePathname();
   const { primary } = useSidebarNavigation();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const visiblePrimary = mounted
     ? primary

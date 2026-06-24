@@ -16,7 +16,6 @@ import {
   type PreparedCapture,
 } from "@/lib/sync-capture/save-capture";
 import { CAPTURE_DUPLICATE } from "@/lib/mobile-prototype/sync-voice";
-import type { PreparedCapture } from "@/lib/sync-capture/save-capture";
 import { createPulsePlan } from "@/lib/pulse/create-pulse-plan";
 import { sanitizeSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";
 import type { PulsePlan } from "@/lib/pulse/types";
@@ -263,7 +262,6 @@ export function formatCaptureAcknowledgment(
       category: captured.plan.category,
       workAvailability: captured.plan.parsedInput?.workAvailability,
       moneyType: captured.plan.parsedInput?.moneyType,
-      parsedInput: captured.plan.parsedInput,
     },
     reference,
   );

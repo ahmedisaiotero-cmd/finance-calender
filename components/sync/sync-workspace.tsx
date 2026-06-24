@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 
 import { SyncCalendarGrid } from "@/components/calendar/sync-calendar-grid";
 import { PulseOrganizer } from "@/components/pulse/pulse-organizer";
@@ -214,12 +214,12 @@ export function SyncWorkspace({
 }: SyncWorkspaceProps) {
   const { activeItems, softDeleteCapturedItem } = useCapturedItems();
   const [notice, setNotice] = useState<string | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const reference = useMemo(() => new Date(), []);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const isHome = activeLens === "home";
   const heading = isHome ? null : LENS_HEADINGS[activeLens];

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 
 import { useCapturedItems } from "@/lib/captured-items";
 import type { CapturedSyncItem } from "@/lib/captured-items";
@@ -100,8 +100,11 @@ export function TodayScreen({
     softDeleteCapturedItem,
   } = useCapturedItems();
   const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
-  const [mounted, setMounted] = useState(false);
-  const [clientClock, setClientClock] = useState<ClientClock | null>(null);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const [input, setInput] = useState("");
   const [captureExpanded, setCaptureExpanded] = useState(false);
   const [draftText, setDraftText] = useState<string | null>(null);
@@ -113,10 +116,6 @@ export function TodayScreen({
   const [pendingDuplicate, setPendingDuplicate] = useState<PendingDuplicate | null>(null);
   const [confirmation, setConfirmation] = useState<CaptureConfirmation | null>(null);
   const [captureNotice, setCaptureNotice] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const reference = useMemo(() => new Date(), [mounted, activeItems.length]);
 
@@ -151,15 +150,14 @@ export function TodayScreen({
     [brief, activeItems, reference],
   );
 
-  useEffect(() => {
-    if (!mounted) return;
-
+  const clientClock = useMemo<ClientClock | null>(() => {
+    if (!mounted) return null;
     const now = new Date();
-    setClientClock({
+    return {
       dateTime: now.toISOString(),
       dateLabel: formatBriefDate(now),
       greeting: greetingForHour(now.getHours()),
-    });
+    };
   }, [mounted]);
 
   useEffect(() => {

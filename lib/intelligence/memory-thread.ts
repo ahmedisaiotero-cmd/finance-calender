@@ -37,7 +37,7 @@ export function resolveMemoryThread(
   if (profile.accumulation === "routine" || profile.area === "Work") {
     return "routine";
   }
-  if (profile.area === "Health" || profile.type === "log" && profile.area === "Health") {
+  if (profile.area === "Health") {
     return "health";
   }
   if (profile.accumulation === "habit") {

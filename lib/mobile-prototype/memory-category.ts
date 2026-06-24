@@ -30,6 +30,9 @@ const LIFE_CATEGORY_TO_FILTER: Record<
   work: "Work",
   goals: "Personal",
   personal: "Personal",
+  family: "Family",
+  reflection: "Personal",
+  career: "Work",
 };
 
 export function memoryFilterCategory(
@@ -44,7 +47,6 @@ export function memoryFilterCategory(
   const text = `${item.title} ${item.originalPrompt ?? item.prompt}`.toLowerCase();
   if (
     item.destinations.includes("Finance") ||
-    item.parsedInput?.moneyType === "income" ||
     item.moneyType === "income" ||
     item.category === "expense" ||
     item.category === "subscription" ||

@@ -44,7 +44,6 @@ function relativeDayPhrase(days: number) {
 function isPaydayItem(item: CapturedSyncItem) {
   const text = `${item.title} ${item.prompt}`.toLowerCase();
   return (
-    item.parsedInput?.moneyType === "income" ||
     item.moneyType === "income" ||
     /\b(payday|pay day|get paid|paycheck)\b/.test(text) ||
     item.title === "Payday" ||

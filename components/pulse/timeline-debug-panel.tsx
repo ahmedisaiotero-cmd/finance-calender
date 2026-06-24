@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 
 import { analyzeConsequences } from "@/lib/intelligence/consequence-engine";
 import { MOCK_SYNC_USER_CONTEXT } from "@/lib/intelligence/sync-user-context";
@@ -39,11 +39,11 @@ const DEBUG_USER_TIMELINE_CONTEXT: UserTimelineContext = DEV_MOCK_SCHEDULE_ENABL
 
 export function TimelineDebugPanel() {
   const [input, setInput] = useState("I worked Sunday through Monday");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const debug = useMemo(() => {
     const normalizedInput = normalizeCaptureInput(input);

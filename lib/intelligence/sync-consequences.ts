@@ -10,7 +10,7 @@ import {
   BRIEF_EMPTY_NO_CONTEXT,
   BRIEF_EMPTY_QUIET,
 } from "@/lib/mobile-prototype/sync-voice";
-import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
+import { cleanMemoryTitle, displayMemoryTitle } from "@/lib/sync-capture/memory-title";
 import {
   cleanSurfacedCopy,
   formatDueMomentLine,
@@ -182,7 +182,7 @@ function extractBirthdaySubject(prompt: string): string | null {
     return `Your ${label}'s birthday`;
   }
 
-  const titled = displayMemoryTitle({ title: "", prompt: text, category: "task" });
+  const titled = cleanMemoryTitle({ title: "", prompt: text, category: "task" });
   if (titled.endsWith("'s Birthday")) {
     const name = titled.replace(/'s Birthday$/, "");
     if (/^(Mom|Dad|Girlfriend|Boyfriend|Friend)$/i.test(name)) {

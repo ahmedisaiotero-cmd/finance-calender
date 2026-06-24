@@ -123,9 +123,6 @@ export function resolveNextOccurrenceDateKey(
     if (date < ref && /\bbirthday\b/i.test(timeline.sourceText)) {
       return rollYearlyDateKey(timeline.startDate, ref);
     }
-    if (date < ref && recurrence?.frequency === "yearly") {
-      return rollYearlyDateKey(timeline.startDate, ref);
-    }
     return timeline.startDate;
   }
 
@@ -177,7 +174,6 @@ export function isBriefEligibleMemory(
 
   const text = `${item.title} ${item.prompt}`.toLowerCase();
   const isPayday =
-    item.parsedInput?.moneyType === "income" ||
     item.moneyType === "income" ||
     /\b(payday|pay day|get paid|paycheck)\b/.test(text);
 
