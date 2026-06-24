@@ -60,24 +60,29 @@ Sync intelligence follows four layers. Domains (Money, Health, Work, etc.) are c
 | **Memory** | Done | `lib/sync-capture/*`, `lib/captured-items.tsx`, `memory-profile.ts`, `memory-aging.ts` |
 | **Understanding** | Done | `meaning-engine.ts`, `memory-understanding.ts`, `importance-scoring.ts` |
 | **Consequence** | Done | `consequence-engine.ts`, `sync-consequences.ts` |
-| **Decision** | **Next** | Target: `lib/intelligence/decision-engine.ts` |
+| **Decision** | **V1 implemented** | `decision-engine.ts`; remaining consolidation work below |
 
-Ranking today is split across `briefing-composer.ts`, `build-home-priorities.ts`, and `sync-pulse.ts`. Consolidate into a shared Decision Engine before adding new Today or Pulse behavior.
+`lib/intelligence/decision-engine.ts` now owns Today primary/supporting priority selection. `build-home-priorities.ts` delegates that selection to the shared engine; briefing and Pulse consolidation remain in progress.
 
-**Next major intelligence milestone:** Decision Engine — look at many memories/consequences and rank the **1–3 that matter most today**.
+**Next Decision milestone:** finish v1 consolidation: profile-aware ranking, a strict **1 primary + 2 supporting** cap, and shared briefing/Pulse inputs.
 
 ---
 
 ## Phase 1.5 — Decision Engine (intelligence)
 
-*Goal: Today answers "what matters now" from consequences, not ad-hoc ranking.*
+*Goal: Today answers "what matters now" from consequences through a shared decision model.*
 
-- [ ] Add `lib/intelligence/decision-engine.ts` (shared ranking API)
-- [ ] Inputs: `buildAllConsequences()`, user profile priorities, life load, brief eligibility
-- [ ] Outputs: primary priority, 1–2 supporting priorities, Pulse state inputs
-- [ ] Wire `build-today-view.ts` / Today screen through decision engine
-- [ ] Migrate logic from `briefing-composer.ts` and `build-home-priorities.ts` incrementally
-- [ ] Tests: 100 memories with only 3 relevant today; light memory suppressed; urgent item surfaces
+- [x] Add `lib/intelligence/decision-engine.ts` (shared ranking API)
+- [x] Today primary/supporting selection delegates to the Decision Engine through `build-home-priorities.ts`.
+
+### Remaining consolidation
+
+- [ ] Inputs: add user profile priorities to Decision Engine ranking; retain life load and brief eligibility.
+- [ ] Enforce the stricter default: 1 primary + 2 supporting priorities.
+- [ ] Consolidate briefing ranking so `briefing-composer.ts` follows the shared Decision Engine.
+- [ ] Derive Pulse state inputs from the shared Decision Engine rather than separate `sync-pulse.ts` precedence.
+- [x] Wire `build-today-view.ts` / Today screen through decision engine
+- [ ] Tests: 100 memories with only 3 relevant today; duplicate vague/specific events; urgent family, money, work, or health items surface.
 
 ---
 
