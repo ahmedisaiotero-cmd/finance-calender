@@ -30,11 +30,28 @@ export type DecisionCandidateSource =
   | "empty"
   | "quiet";
 
+export type DecisionScoreBreakdown = {
+  base: number;
+  todayBoost: number;
+  tomorrowBoost: number;
+  timeProximity: number;
+  profilePriority: number;
+  specificity: number;
+  penalty: number;
+};
+
 export type DecisionCandidate = {
   text: string;
   score: number;
   consequence: SyncConsequence | null;
   source: DecisionCandidateSource;
+  area?: string;
+  daysUntil?: number | null;
+  dateKey?: string | null;
+  sortMinutes?: number | null;
+  isSpecific?: boolean;
+  isContext?: boolean;
+  scoreBreakdown?: DecisionScoreBreakdown;
 };
 
 export type DecisionEngineInput = {
@@ -51,9 +68,79 @@ export type DecisionEngineInput = {
 export type TodayDecision = {
   primary: DecisionCandidate;
   supporting: DecisionCandidate[];
+  rankedCandidates: DecisionCandidate[];
   isEmpty: boolean;
   isQuiet: boolean;
 };
+
+function totalScore(breakdown: DecisionScoreBreakdown) {
+  return (
+    breakdown.base +
+    breakdown.todayBoost +
+    breakdown.tomorrowBoost +
+    breakdown.timeProximity +
+    breakdown.profilePriority +
+    breakdown.specificity +
+    breakdown.penalty
+  );
+}
+
+function scoreBreakdown(
+  parts: Partial<DecisionScoreBreakdown> & Pick<DecisionScoreBreakdown, "base">,
+): DecisionScoreBreakdown {
+  return {
+    base: parts.base,
+    todayBoost: parts.todayBoost ?? 0,
+    tomorrowBoost: parts.tomorrowBoost ?? 0,
+    timeProximity: parts.timeProximity ?? 0,
+    profilePriority: parts.profilePriority ?? 0,
+    specificity: parts.specificity ?? 0,
+    penalty: parts.penalty ?? 0,
+  };
+}
+
+function candidateMetadata(
+  text: string,
+  consequence: SyncConsequence | null,
+  source: DecisionCandidateSource,
+): Pick<
+  DecisionCandidate,
+  | "area"
+  | "daysUntil"
+  | "dateKey"
+  | "sortMinutes"
+  | "isSpecific"
+  | "isContext"
+> {
+  return {
+    area: consequence?.area,
+    daysUntil: consequence?.daysUntil,
+    dateKey: consequence?.dateKey,
+    sortMinutes: consequence?.sortMinutes,
+    isSpecific:
+      !isTomorrowSummaryText(text) &&
+      !isContextConnectionLine(text) &&
+      source !== "empty" &&
+      source !== "quiet",
+    isContext: isContextConnectionLine(text) || source === "life_context",
+  };
+}
+
+function normalizeCandidate(candidate: DecisionCandidate): DecisionCandidate {
+  const source =
+    candidate.source ??
+    (isContextConnectionLine(candidate.text) ? "life_context" : "consequence");
+  const breakdown =
+    candidate.scoreBreakdown ?? scoreBreakdown({ base: candidate.score });
+
+  return {
+    ...candidate,
+    source,
+    scoreBreakdown: breakdown,
+    score: totalScore(breakdown),
+    ...candidateMetadata(candidate.text, candidate.consequence, source),
+  };
+}
 
 function currentMinutes(reference: Date) {
   return reference.getHours() * 60 + reference.getMinutes();
@@ -212,39 +299,49 @@ function candidatesFromTodayBlocks(
     const startLabel = formatSyncClock(block.startTime);
 
     let text: string;
-    let score: number;
+    let breakdown: DecisionScoreBreakdown;
 
     if (start <= now && normalizedEnd > now) {
       text = endLabel
         ? `${title} wraps at ${endLabel}.`
         : `${title} is still in progress.`;
-      score = 900 + (normalizedEnd - now);
+      breakdown = scoreBreakdown({
+        base: 900,
+        timeProximity: normalizedEnd - now,
+      });
     } else {
       text = startLabel
         ? `${title} starts at ${startLabel}.`
         : `${title} is later today.`;
-      score = 850 - (start - now);
+      breakdown = scoreBreakdown({
+        base: 850,
+        timeProximity: -(start - now),
+      });
     }
 
-    score += profilePriorityBoost(block.area, text, priorities);
+    breakdown.profilePriority = profilePriorityBoost(block.area, text, priorities);
+
+    const consequence: SyncConsequence = {
+      id: block.id,
+      sourceMemoryId: block.sourceItemId,
+      kind: "event",
+      surfaceText: text,
+      daysUntil: 0,
+      dateKey: todayKey,
+      priority: 5,
+      horizon: "coming_soon",
+      area: block.area,
+      briefEligible: true,
+      sortMinutes: start,
+    };
 
     candidates.push({
       text,
-      score,
+      score: totalScore(breakdown),
+      scoreBreakdown: breakdown,
       source: "today_timed",
-      consequence: {
-        id: block.id,
-        sourceMemoryId: block.sourceItemId,
-        kind: "event",
-        surfaceText: text,
-        daysUntil: 0,
-        dateKey: todayKey,
-        priority: 5,
-        horizon: "coming_soon",
-        area: block.area,
-        briefEligible: true,
-        sortMinutes: start,
-      },
+      consequence,
+      ...candidateMetadata(text, consequence, "today_timed"),
     });
   }
 
@@ -290,27 +387,41 @@ function candidatesFromConsequences(
     })
     .map((consequence) => {
       const text = personalizePriorityDetailText(consequence, [], tomorrow);
-      let score = scoreConsequenceForTodaySurface(consequence, items, reference);
-
       const days = consequence.daysUntil ?? 99;
-      if (days === 0) score += 40;
-      else if (days === 1) score += 20;
+      const breakdown = scoreBreakdown({
+        base: scoreConsequenceForTodaySurface(consequence, items, reference),
+        todayBoost: days === 0 ? 40 : 0,
+        tomorrowBoost: days === 1 ? 20 : 0,
+      });
+
 
       if (consequence.sortMinutes != null) {
-        score -= Math.max(0, consequence.sortMinutes - currentMinutes(reference)) / 10;
+        breakdown.timeProximity =
+          -Math.max(0, consequence.sortMinutes - currentMinutes(reference)) / 10;
       }
 
       if (consequence.kind === "work_start" && !consequence.sourceMemoryId) {
-        score -= 45;
+        breakdown.penalty -= 45;
       }
 
       if (consequence.kind === "income" || /\bflight\b/i.test(text)) {
-        score += 25;
+        breakdown.specificity += 25;
       }
 
-      score += profilePriorityBoost(consequence.area, text, priorities);
+      breakdown.profilePriority = profilePriorityBoost(
+        consequence.area,
+        text,
+        priorities,
+      );
 
-      return { text, score, consequence, source: "consequence" as const };
+      return {
+        text,
+        score: totalScore(breakdown),
+        scoreBreakdown: breakdown,
+        consequence,
+        source: "consequence" as const,
+        ...candidateMetadata(text, consequence, "consequence"),
+      };
     });
 }
 
@@ -329,8 +440,10 @@ export function buildTomorrowSummaryCandidate(
   return {
     text: headline,
     score: 400,
+    scoreBreakdown: scoreBreakdown({ base: 400 }),
     source: "tomorrow_summary",
     consequence: synthesis ?? null,
+    ...candidateMetadata(headline, synthesis ?? null, "tomorrow_summary"),
   };
 }
 
@@ -338,8 +451,13 @@ function selectPriorities(
   candidates: DecisionCandidate[],
   maxSupporting: number,
   consequences: SyncConsequence[],
-): { primary: DecisionCandidate; supporting: DecisionCandidate[] } {
-  const ranked = [...candidates]
+): {
+  primary: DecisionCandidate;
+  supporting: DecisionCandidate[];
+  rankedCandidates: DecisionCandidate[];
+} {
+  const ranked = candidates
+    .map(normalizeCandidate)
     .filter((candidate) => !isAwkwardBriefLine(candidate.text))
     .sort((a, b) => b.score - a.score);
 
@@ -378,12 +496,14 @@ function selectPriorities(
     primary = fallback ?? {
       text: HOME_QUIET,
       score: 0,
+      scoreBreakdown: scoreBreakdown({ base: 0 }),
       consequence: null,
       source: "quiet",
+      ...candidateMetadata(HOME_QUIET, null, "quiet"),
     };
   }
 
-  return { primary, supporting };
+  return { primary, supporting, rankedCandidates: ranked };
 }
 
 export function decideTodayPriorities(input: DecisionEngineInput): TodayDecision {
@@ -397,10 +517,13 @@ export function decideTodayPriorities(input: DecisionEngineInput): TodayDecision
       primary: {
         text: "",
         score: 0,
+        scoreBreakdown: scoreBreakdown({ base: 0 }),
         consequence: null,
         source: "empty",
+        ...candidateMetadata("", null, "empty"),
       },
       supporting: [],
+      rankedCandidates: [],
       isEmpty: true,
       isQuiet: false,
     };
@@ -430,7 +553,7 @@ export function decideTodayPriorities(input: DecisionEngineInput): TodayDecision
     reference,
   );
 
-  const { primary, supporting } = selectPriorities(
+  const { primary, supporting, rankedCandidates } = selectPriorities(
     merged,
     maxSupporting,
     consequences,
@@ -444,6 +567,7 @@ export function decideTodayPriorities(input: DecisionEngineInput): TodayDecision
   return {
     primary,
     supporting,
+    rankedCandidates,
     isEmpty: false,
     isQuiet,
   };

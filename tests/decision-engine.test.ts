@@ -116,6 +116,24 @@ function allDecisionText(decision: ReturnType<typeof decideTodayPriorities>) {
   ].join(" ");
 }
 
+function assertRankedCandidatesAreDescending(
+  decision: ReturnType<typeof decideTodayPriorities>,
+) {
+  for (let index = 1; index < decision.rankedCandidates.length; index += 1) {
+    assert.ok(
+      decision.rankedCandidates[index - 1]!.score >=
+        decision.rankedCandidates[index]!.score,
+      "rankedCandidates should be sorted by descending score",
+    );
+  }
+}
+
+function firstSpecificRankedCandidate(
+  decision: ReturnType<typeof decideTodayPriorities>,
+) {
+  return decision.rankedCandidates.find((candidate) => candidate.isSpecific);
+}
+
 // Sync ongoing at 9:30 PM — primary is sync wrap, not tomorrow summary
 {
   const reference = new Date("2026-06-14T21:30:00");
@@ -129,6 +147,8 @@ function allDecisionText(decision: ReturnType<typeof decideTodayPriorities>) {
   const decision = decisionAt(reference, store.items);
 
   assert.match(decision.primary.text, /sync work wraps at 10:00 PM/i);
+  assert.equal(decision.primary.text, firstSpecificRankedCandidate(decision)?.text);
+  assertRankedCandidatesAreDescending(decision);
   assert.ok(!isTomorrowSummaryText(decision.primary.text));
   assert.ok(decision.supporting.some((line) => /payday/i.test(line.text)));
   assert.ok(decision.supporting.some((line) => /flight/i.test(line.text)));
@@ -147,6 +167,8 @@ function allDecisionText(decision: ReturnType<typeof decideTodayPriorities>) {
   const decision = decisionAt(reference, store.items);
 
   assert.ok(!isTomorrowSummaryText(decision.primary.text));
+  assert.equal(decision.primary.text, firstSpecificRankedCandidate(decision)?.text);
+  assertRankedCandidatesAreDescending(decision);
   assert.ok(
     /payday|flight/i.test(decision.primary.text),
     `expected payday or flight primary, got: ${decision.primary.text}`,
@@ -160,6 +182,8 @@ function allDecisionText(decision: ReturnType<typeof decideTodayPriorities>) {
   const decision = decisionAt(reference, store.items);
 
   assert.match(decision.primary.text, /workout starts at 8:00 PM/i);
+  assert.equal(decision.primary.text, firstSpecificRankedCandidate(decision)?.text);
+  assertRankedCandidatesAreDescending(decision);
   assert.ok(decision.supporting.some((line) => /payday/i.test(line.text)));
   assert.ok(decision.supporting.some((line) => /flight/i.test(line.text)));
 }
@@ -178,6 +202,7 @@ function allDecisionText(decision: ReturnType<typeof decideTodayPriorities>) {
   const priorityText = allDecisionText(decision);
 
   assert.ok(!/coffee|mcdonald/i.test(priorityText), "light items should not lead Today");
+  assert.ok(!decision.rankedCandidates.some((line) => /coffee|mcdonald/i.test(line.text)));
 }
 
 // Empty state when no user context
@@ -194,6 +219,7 @@ function allDecisionText(decision: ReturnType<typeof decideTodayPriorities>) {
   assert.equal(decision.isEmpty, true);
   assert.equal(decision.primary.text, "");
   assert.equal(decision.supporting.length, 0);
+  assert.equal(decision.rankedCandidates.length, 0);
 }
 
 // Many consequences — only the top 1–3 surface
@@ -227,6 +253,61 @@ function allDecisionText(decision: ReturnType<typeof decideTodayPriorities>) {
   assert.ok(
     decision.supporting.length <= 2,
     `supporting should respect maxSupporting=2, got ${decision.supporting.length}`,
+  );
+  assertRankedCandidatesAreDescending(decision);
+  assert.ok(decision.rankedCandidates.length >= surfaced);
+}
+
+// Ranked candidates expose score breakdowns for v2 adapters without changing selection.
+{
+  const reference = new Date("2026-06-14T18:00:00");
+  const decision = decideTodayPriorities({
+    consequences: [
+      {
+        id: "payday",
+        sourceMemoryId: null,
+        kind: "income",
+        surfaceText: "Payday is tomorrow.",
+        daysUntil: 1,
+        dateKey: "2026-06-15",
+        priority: 10,
+        horizon: "coming_soon",
+        area: "finance",
+        briefEligible: true,
+      },
+      {
+        id: "school",
+        sourceMemoryId: null,
+        kind: "family_moment",
+        surfaceText: "Take daughter to school tomorrow.",
+        daysUntil: 1,
+        dateKey: "2026-06-15",
+        priority: 10,
+        horizon: "coming_soon",
+        area: "family",
+        briefEligible: true,
+      },
+    ],
+    items: [],
+    blocks: [],
+    reference,
+    hasUserContext: true,
+    priorities: ["Family"],
+  });
+
+  const school = decision.rankedCandidates.find((candidate) =>
+    /daughter.*school/i.test(candidate.text),
+  );
+
+  assert.ok(school, "expected school candidate in rankedCandidates");
+  assert.ok(
+    (school.scoreBreakdown?.profilePriority ?? 0) > 0,
+    "priority-matching candidate should expose a profilePriority score part",
+  );
+  assert.equal(
+    school.score,
+    Object.values(school.scoreBreakdown ?? {}).reduce((sum, value) => sum + value, 0),
+    "candidate score should equal the sum of its scoreBreakdown",
   );
 }
 
