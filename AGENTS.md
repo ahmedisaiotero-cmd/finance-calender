@@ -36,10 +36,11 @@ Every change must improve at least one of:
 - Today
 - My Life
 - Trust
+- Communication
 
-## The four intelligence layers
+## The intelligence layers
 
-Pipeline: **Memory → Understanding → Consequence → Decision**
+Current pipeline: **Memory → Understanding → Consequence → Decision → Communication**
 
 Money, Health, Family, Work, and Relationships are **categories**, not agents.
 
@@ -107,11 +108,25 @@ Responsibilities:
 - Prefer important people, deadlines, money, health, work, and commitments over light memories.
 - Do not overwhelm the user.
 
-**Status: missing shared layer.** Ranking logic is split across `briefing-composer.ts`, `build-home-priorities.ts`, and `sync-pulse.ts`.
+**Implemented today** (`lib/intelligence/decision-engine.ts`):
 
-**Target home:** `lib/intelligence/decision-engine.ts` — consume consequences + profile + life load; output Today priorities and Pulse inputs. UI shells stay thin.
+- Profile-aware Today ranking
+- Normal 1 primary + 2 supporting output
+- Ranked candidate metadata and score breakdowns
+- Basic intelligence validation through `npm run test:intelligence` and `npm run check`
 
-**Next major intelligence milestone:** a shared Decision Engine that looks at many memories/consequences and ranks the 1–3 that matter most today.
+**Next major intelligence milestone:** Phase 1.75 Intelligence Refinement — improve decision quality, universal understanding, communication quality, trust/explainability, and messy real-life stress tests before adding new pages or integrations.
+
+### 5. Communication Agent
+
+Question: How should Sync say this?
+
+Responsibilities:
+
+- Turn decisions into clear, specific, respectful language.
+- Keep Sync calm, positive, lightly coach-like, and useful.
+- Avoid vague, robotic, overly motivational, or judgmental phrasing.
+- Prefer specific lines like "Rent is coming up in three days. You're in a good position to handle it." over generic lines like "You have important items today."
 
 ## Design rules
 
@@ -144,8 +159,12 @@ Add messy real-life tests when changing intelligence.
 
 Good tests include:
 
-- 100 memories with only 3 relevant today
+- 100+ memories with only 3 relevant today
 - duplicate vague and specific events
+- vague notes and ambiguous captures
+- emotional entries
+- quiet weeks and overloaded weeks
+- family, money, work, and health conflicts
 - tomorrow event that matters tonight
 - light memory that should not surface
 - important family, money, work, or health item that should surface

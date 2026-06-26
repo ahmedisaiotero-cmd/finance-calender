@@ -53,18 +53,19 @@ Before closing Phase 1, verify:
 
 ## Intelligence architecture
 
-Sync intelligence follows four layers. Domains (Money, Health, Work, etc.) are categories — not separate agents.
+Sync intelligence follows five layers. Domains (Money, Health, Work, etc.) are categories — not separate agents.
 
 | Layer | Status | Key modules |
 |-------|--------|-------------|
 | **Memory** | Done | `lib/sync-capture/*`, `lib/captured-items.tsx`, `memory-profile.ts`, `memory-aging.ts` |
 | **Understanding** | Done | `meaning-engine.ts`, `memory-understanding.ts`, `importance-scoring.ts` |
 | **Consequence** | Done | `consequence-engine.ts`, `sync-consequences.ts` |
-| **Decision** | **V1 implemented** | `decision-engine.ts`; remaining consolidation work below |
+| **Decision** | **V1.5 implemented** | `decision-engine.ts`; profile-aware ranking, ranked candidate metadata, Today adapter |
+| **Communication** | **Next refinement** | Shared voice rules for specific, calm, useful briefing language |
 
-`lib/intelligence/decision-engine.ts` now owns Today primary/supporting priority selection. `build-home-priorities.ts` delegates that selection to the shared engine; briefing and Pulse consolidation remain in progress.
+`lib/intelligence/decision-engine.ts` now owns Today primary/supporting priority selection. It is profile-aware, returns ranked candidate metadata, and has basic intelligence validation scripts. `build-home-priorities.ts` delegates that selection to the shared engine; briefing and Pulse consolidation remain in progress.
 
-**Next Decision milestone:** finish v1 consolidation: profile-aware ranking, a strict **1 primary + 2 supporting** cap, and shared briefing/Pulse inputs.
+**Next milestone:** Phase 1.75 Intelligence Refinement — improve decision quality, universal understanding, communication, trust/explainability, and stress testing before adding new pages or integrations.
 
 ---
 
@@ -74,15 +75,52 @@ Sync intelligence follows four layers. Domains (Money, Health, Work, etc.) are c
 
 - [x] Add `lib/intelligence/decision-engine.ts` (shared ranking API)
 - [x] Today primary/supporting selection delegates to the Decision Engine through `build-home-priorities.ts`.
+- [x] Inputs: add user profile priorities to Decision Engine ranking.
+- [x] Enforce the stricter default: 1 primary + 2 supporting priorities.
+- [x] Add ranked candidate metadata and score breakdowns for future shared consumers.
+- [x] Add basic intelligence validation scripts: `npm run test:intelligence` and `npm run check`.
 
 ### Remaining consolidation
 
-- [ ] Inputs: add user profile priorities to Decision Engine ranking; retain life load and brief eligibility.
-- [ ] Enforce the stricter default: 1 primary + 2 supporting priorities.
 - [ ] Consolidate briefing ranking so `briefing-composer.ts` follows the shared Decision Engine.
 - [ ] Derive Pulse state inputs from the shared Decision Engine rather than separate `sync-pulse.ts` precedence.
 - [x] Wire `build-today-view.ts` / Today screen through decision engine
-- [ ] Tests: 100 memories with only 3 relevant today; duplicate vague/specific events; urgent family, money, work, or health items surface.
+- [ ] Expand stress tests: 100+ memories, duplicate vague/specific events, urgent family/money/work/health conflicts, emotional entries, quiet weeks, overloaded weeks, and ambiguous captures.
+
+---
+
+## Phase 1.75 — Intelligence Refinement
+
+*Goal: refine Sync's brain before adding new pages, category sprawl, or integrations.*
+
+### 1. Decision Quality
+
+- [ ] Reliably filter many memories/consequences down to the 1–3 that matter most today.
+- [ ] Prefer specific, time-sensitive, profile-relevant consequences over vague summaries.
+- [ ] Keep Today calm: normal output remains 1 primary + 2 supporting items.
+
+### 2. Universal Understanding
+
+- [ ] Recognize events, tasks, worries, goals, relationships, preferences, routines, money details, health signals, family context, ideas, emotions, commitments, vague life notes, and things that are not calendar events.
+- [ ] Separate light memories from meaningful life context without forcing users to categorize inputs.
+
+### 3. Communication Engine
+
+- [ ] Add a shared Communication layer: **Memory → Understanding → Consequence → Decision → Communication**.
+- [ ] Answer: "How should Sync say this?"
+- [ ] Prefer clear, specific, respectful, positive, lightly coach-like, calm language.
+- [ ] Avoid vague, overly motivational, robotic, or judgmental copy.
+- [ ] Replace generic lines like "You have important items today" with useful specifics like "Rent is coming up in three days. You're in a good position to handle it."
+
+### 4. Trust and Explainability
+
+- [ ] Explain why something surfaced today.
+- [ ] Explain why something was remembered, faded, or not shown.
+- [ ] Show confidence when Sync is unsure.
+
+### 5. Stress Testing
+
+- [ ] Add messy real-life tests for 100+ memories, duplicate events, vague notes, emotional entries, quiet weeks, overloaded weeks, family/money/work/health conflicts, ambiguous captures, and lightweight memories that should not surface.
 
 ---
 

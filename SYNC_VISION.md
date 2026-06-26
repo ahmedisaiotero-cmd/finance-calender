@@ -18,7 +18,8 @@ Its purpose is to reduce mental load by helping people understand what matters *
 2. Sync understands it.
 3. Sync remembers it.
 4. Sync organizes the consequences.
-5. Sync surfaces what matters when it matters.
+5. Sync decides what matters now.
+6. Sync communicates it clearly and calmly.
 
 The value of Sync is **understanding life**, not storing information.
 
@@ -169,9 +170,17 @@ Examples:
 
 Sync should sound **calm, observant, concise, trustworthy**.
 
+Communication is the fifth intelligence layer:
+
+**Memory → Understanding → Consequence → Decision → Communication**
+
+Communication answers: *How should Sync say this?* It should turn decisions into specific, useful lines instead of generic summaries.
+
 **Prefer specific:**
 
 - Rent is due Friday.
+- Rent is coming up in three days. You're in a good position to handle it.
+- Workout is the next thing worth protecting today.
 - Tomorrow starts early.
 - Tomorrow looks busy.
 - You're off tomorrow.
@@ -184,6 +193,7 @@ Sync should sound **calm, observant, concise, trustworthy**.
 - productivity coaching (*stay on track*, *manage your tasks*)
 - motivational slogans
 - generic AI wording
+- vague summaries like *You have important items today*
 - shame-based or fear-based framing
 
 **Prefer over punitive:**
@@ -274,6 +284,7 @@ Focus:
 - life load detection
 - memory understanding
 - My Life model (priorities affecting Today)
+- communication quality
 - trust / edit / delete
 - real-life messy input testing
 

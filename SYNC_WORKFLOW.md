@@ -12,6 +12,7 @@ Every change must improve at least one of:
 - **Today**
 - **My Life**
 - **Trust**
+- **Communication**
 
 If it does not improve one of these, **do not build it.**
 
@@ -29,16 +30,27 @@ The value of Sync should **increase as more life is captured**. The goal is unde
 
 ## Intelligence pipeline
 
-**Memory → Understanding → Consequence → Decision**
+**Memory → Understanding → Consequence → Decision → Communication**
 
 | Layer | Question | Primary modules | Status |
 |-------|----------|-----------------|--------|
 | Memory | What happened? | `lib/sync-capture/*`, `lib/captured-items.tsx`, `memory-profile.ts`, `memory-aging.ts` | Implemented |
 | Understanding | Why does it matter? | `meaning-engine.ts`, `memory-understanding.ts`, `importance-scoring.ts` | Implemented |
 | Consequence | What changes? | `consequence-engine.ts`, `sync-consequences.ts` | Implemented |
-| Decision | What matters today? | `briefing-composer.ts`, `build-home-priorities.ts` (partial) | **Missing shared layer** |
+| Decision | What matters today? | `decision-engine.ts`, `build-home-priorities.ts` adapter | V1.5 implemented |
+| Communication | How should Sync say this? | Sync copy, briefing, and future shared communication rules | Next refinement |
 
-**Next major intelligence milestone:** `lib/intelligence/decision-engine.ts` — rank the 1–3 items that matter most today from many memories/consequences. Today UI and Pulse should consume it; they should not own ranking logic.
+Decision Engine v1.5 is profile-aware, returns ranked candidate metadata, and has basic intelligence validation scripts. Today UI consumes the shared engine; Daily Brief and Pulse consolidation remain later work.
+
+**Next major intelligence milestone:** Phase 1.75 Intelligence Refinement — improve the brain of Sync before adding new pages or integrations.
+
+Phase 1.75 focuses on:
+
+- **Decision Quality:** reliably choose the 1–3 memories/consequences that matter most today from many possible inputs.
+- **Universal Understanding:** recognize events, tasks, worries, goals, relationships, preferences, routines, money details, health signals, family context, ideas, emotions, commitments, vague life notes, and non-calendar captures.
+- **Communication Engine:** decide how Sync should say things clearly, specifically, respectfully, positively, calmly, and without vague/robotic/judgmental language.
+- **Trust and Explainability:** explain why something surfaced, why it was remembered, why it faded, why it was not shown, and confidence when unsure.
+- **Stress Testing:** validate messy real-life sets with 100+ memories, duplicates, vague notes, emotional entries, quiet weeks, overloaded weeks, cross-domain conflicts, ambiguous captures, and lightweight memories that should not surface.
 
 ## Primary user loop
 
@@ -77,7 +89,7 @@ Users should not manage categories. Sync determines them.
 
 Deprioritize: goals, productivity systems, streaks, analytics, advanced settings, additional life areas.
 
-Focus: Capture, Memory, Understanding, Consequences, **Decision**.
+Focus: Capture, Memory, Understanding, Consequences, **Decision**, and **Communication**.
 
 ## Definition of done
 
