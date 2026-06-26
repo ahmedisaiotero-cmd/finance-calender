@@ -69,14 +69,6 @@ const HIGH_IMPORTANCE_PATTERNS = [
   /\b(school event|recital|ceremony)\b/i,
 ];
 
-const MEDIUM_IMPORTANCE_PATTERNS = [
-  /\b(gym|workout|exercise|lift|run|cardio)\b/i,
-  /\b(friends?|date night|date with)\b/i,
-  /\b(project work|studying|study)\b/i,
-  /\b(bill due|rent due|payday|pay day)\b/i,
-  /\b(work shift|shift)\b/i,
-];
-
 const LOW_IMPORTANCE_PATTERNS = [
   /\b(groceries|grocery|errand|small errand)\b/i,
   /\b(casual note|general reminder)\b/i,

@@ -1,5 +1,5 @@
 import { resolveCaptureDateKey } from "@/lib/captured-to-timeline";
-import type { CapturedSyncItem, SyncDestination } from "@/lib/captured-items";
+import type { CapturedSyncItem } from "@/lib/captured-items";
 import { groupEventsByDate, toDateKey } from "@/lib/calendar-utils";
 import type { PulsePlan } from "@/lib/pulse/types";
 import type { TimelineResolution } from "@/lib/timeline/resolve-timeline";

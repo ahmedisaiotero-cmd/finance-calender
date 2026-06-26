@@ -21,7 +21,6 @@ import {
   FORECAST_MONEY_BEFORE_RENT,
   FORECAST_NOTHING_NEEDS_ATTENTION,
   FORECAST_PEOPLE_THIS_WEEK,
-  FORECAST_QUIET_EVENING,
   FORECAST_QUIET_AFTER,
   FORECAST_SHARPEN,
   FORECAST_SPACE_EVENING,
@@ -37,15 +36,6 @@ export type LifeContextCandidate = {
   consequence: SyncConsequence | null;
   suppressTopics: string[];
 };
-
-function normalizeText(text: string) {
-  return text.toLowerCase().replace(/[.!?]/g, "").trim();
-}
-
-function mentionsTopic(text: string, topics: string[]) {
-  const normalized = normalizeText(text);
-  return topics.some((topic) => normalized.includes(topic));
-}
 
 function itemScheduleKey(item: CapturedSyncItem, reference: Date) {
   return (

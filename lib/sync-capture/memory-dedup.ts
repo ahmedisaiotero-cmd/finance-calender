@@ -153,7 +153,6 @@ export function areMemoryDuplicates(
 
 export function pickCanonicalMemory(
   items: CapturedSyncItem[],
-  reference = new Date(),
 ): CapturedSyncItem {
   return [...items].sort((a, b) => {
     const quality = titleQualityScore(b) - titleQualityScore(a);

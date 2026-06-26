@@ -5,7 +5,11 @@ import type {
   DecisionScoreBreakdown,
   TodayDecision,
 } from "@/lib/intelligence/decision-engine";
-import { runSyncEngine } from "@/lib/intelligence/sync-engine";
+import {
+  runSyncEngine,
+  type SyncEngineLine,
+  type SyncSurfacingReason,
+} from "@/lib/intelligence/sync-engine";
 import type { SyncConsequence } from "@/lib/intelligence/sync-consequences";
 
 function breakdown(
@@ -124,6 +128,24 @@ function decision(
   };
 }
 
+function assertExplanation(line: SyncEngineLine) {
+  assert.ok(line.explanation.isExplainable);
+  assert.ok(line.explanation.headline);
+  assert.equal(line.explanation.confidence, line.confidence);
+  assert.deepEqual(
+    line.explanation.details.map((detail) => detail.reason),
+    line.reasons,
+  );
+  assert.deepEqual(line.explanation.evidence, line.evidence);
+}
+
+function explanationDetail(
+  line: SyncEngineLine,
+  reason: SyncSurfacingReason,
+) {
+  return line.explanation.details.find((detail) => detail.reason === reason);
+}
+
 {
   const input = decision();
   const output = runSyncEngine({ decision: input });
@@ -156,6 +178,7 @@ function decision(
     assert.ok(line.confidence);
     assert.ok(line.reasons.length > 0, `expected reasons for ${line.text}`);
     assert.ok(line.evidence.length > 0, `expected evidence for ${line.text}`);
+    assertExplanation(line);
     assert.equal(line.quality.hasIntent, true);
     assert.equal(line.quality.hasConfidence, true);
     assert.equal(line.quality.hasReason, true);
@@ -182,6 +205,25 @@ function decision(
   assert.equal(output.primary.confidence, "high");
   assert.ok(output.primary.reasons.includes("today"));
   assert.ok(output.primary.reasons.includes("time_sensitive"));
+  assert.equal(output.primary.explanation.headline, "This has a specific time.");
+  assert.equal(
+    explanationDetail(output.primary, "today")?.summary,
+    "This is happening today.",
+  );
+  assert.ok(
+    explanationDetail(output.primary, "today")?.evidence.some(
+      (item) => item.type === "timing" && item.label === "Days until",
+    ),
+  );
+  assert.equal(
+    explanationDetail(output.primary, "time_sensitive")?.summary,
+    "This has a specific time.",
+  );
+  assert.ok(
+    explanationDetail(output.primary, "time_sensitive")?.evidence.some(
+      (item) => item.type === "timing" && item.label === "Sort minutes",
+    ),
+  );
 }
 
 {
@@ -209,6 +251,16 @@ function decision(
     output.primary.reasons.includes("life_load") ||
       output.primary.reasons.includes("tomorrow"),
   );
+  assert.equal(output.primary.explanation.confidence, output.primary.confidence);
+  assert.ok(
+    explanationDetail(output.primary, "tomorrow") ||
+      explanationDetail(output.primary, "life_load"),
+  );
+  assert.ok(
+    output.primary.explanation.details.some((detail) =>
+      ["tomorrow", "life_load"].includes(detail.reason),
+    ),
+  );
 }
 
 {
@@ -232,8 +284,17 @@ function decision(
   });
 
   assert.equal(output.primary.intent, "reflect");
+  assert.equal(output.primary.confidence, "medium");
   assert.ok(output.primary.reasons.includes("context"));
   assert.ok(output.primary.reasons.includes("pattern"));
+  assert.equal(
+    explanationDetail(output.primary, "context")?.summary,
+    "This adds useful context to today.",
+  );
+  assert.equal(
+    explanationDetail(output.primary, "pattern")?.summary,
+    "This appears to connect to a repeated pattern.",
+  );
 }
 
 {
@@ -255,8 +316,17 @@ function decision(
   });
 
   assert.ok(output.primary.reasons.includes("profile_priority"));
+  assert.equal(
+    explanationDetail(output.primary, "profile_priority")?.summary,
+    "This matches a current profile priority.",
+  );
   assert.ok(
     output.primary.evidence.some(
+      (item) => item.label === "Profile priority boost" && item.value === 30,
+    ),
+  );
+  assert.ok(
+    explanationDetail(output.primary, "profile_priority")?.evidence.some(
       (item) => item.label === "Profile priority boost" && item.value === 30,
     ),
   );
@@ -291,6 +361,16 @@ function decision(
   assert.equal(output.arc, null);
   assert.ok(output.primary.reasons.includes("empty"));
   assert.equal(output.primary.quality.preservesVisibleText, true);
+  assert.equal(output.primary.explanation.isExplainable, true);
+  assert.equal(
+    explanationDetail(output.primary, "empty")?.summary,
+    "Sync does not have enough context yet.",
+  );
+  assert.ok(
+    !output.primary.explanation.evidence.some(
+      (item) => item.type === "memory" || item.type === "consequence",
+    ),
+  );
 }
 
 {
@@ -321,6 +401,12 @@ function decision(
   assert.equal(output.primary.text, "Today is quiet.");
   assert.equal(output.arc?.theme, "quiet");
   assert.ok(output.primary.reasons.includes("quiet"));
+  assert.equal(output.primary.explanation.isExplainable, true);
+  assert.equal(
+    explanationDetail(output.primary, "quiet")?.summary,
+    "Sync did not find anything pressing.",
+  );
+  assert.equal(explanationDetail(output.primary, "quiet")?.tone, "gentle");
 }
 
 {
@@ -340,6 +426,7 @@ function decision(
   });
 
   assert.equal(output.primary.text, "You need to call Mom.");
+  assert.equal(output.primary.explanation.headline, "This is happening today.");
   assert.equal(output.primary.quality.forbiddenPhraseFound, true);
   assert.ok(output.quality.warnings.includes("forbidden_phrase_found"));
 }

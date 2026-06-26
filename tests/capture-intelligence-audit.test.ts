@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 
 import { createPulsePlan } from "@/lib/pulse/create-pulse-plan";
-import { resolveSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";
 import {
   isSilentCaptureReady,
   prepareCaptureFromText,

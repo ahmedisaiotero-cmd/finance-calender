@@ -24,10 +24,6 @@ import type { CaptureCategoryHint } from "@/lib/sync-capture/capture-hint";
 import { buildMemoryUnderstanding } from "@/lib/intelligence/memory-understanding";
 import { isNonCalendarLifeNote } from "@/lib/intelligence/life-note-classifier";
 import { cleanMemoryTitle } from "@/lib/sync-capture/memory-title";
-import {
-  detectSyncTimeBlockOverlaps,
-  proposedSyncTimeBlocksFromPlan,
-} from "@/lib/sync-time-blocks";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
 
 export type CapturePipelineContext = {

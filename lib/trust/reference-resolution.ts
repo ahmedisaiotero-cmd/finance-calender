@@ -1,7 +1,5 @@
 import type { CapturedSyncItem } from "@/lib/captured-items";
 import { titleSimilarity } from "@/lib/capture-duplicate-detection";
-import type { MeaningImportance } from "@/lib/intelligence/meaning-engine";
-import type { SyncTimeBlockArea, SyncTimeBlockType } from "@/lib/sync-time-blocks";
 import {
   detectSyncCommandIntent,
   type SyncCommandIntent,

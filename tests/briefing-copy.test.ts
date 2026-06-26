@@ -37,10 +37,6 @@ function capture(text: string) {
   return store.items[store.items.length - 1];
 }
 
-function allSurfacedText(parts: string[]) {
-  return parts.join(" ");
-}
-
 function assertCleanCopy(text: string) {
   assert.ok(!isAwkwardSurfacedLine(text), `awkward surfaced copy: ${text}`);
   assert.ok(!/\bis tomorrow\b/i.test(text) || !/\btomorrow\b.*\bis tomorrow\b/i.test(text));

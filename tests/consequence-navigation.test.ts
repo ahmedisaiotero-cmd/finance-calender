@@ -5,7 +5,6 @@ import {
   buildDrilldownForInsight,
   pickBestSupportingConsequence,
 } from "@/lib/intelligence/consequence-link";
-import { buildAllConsequences } from "@/lib/intelligence/sync-consequences";
 import { buildDailyBrief } from "@/lib/mobile-prototype/build-daily-brief";
 import { buildLifeDrilldownView } from "@/lib/mobile-prototype/build-life-drilldown";
 import { buildTodayView } from "@/lib/mobile-prototype/build-today-view";

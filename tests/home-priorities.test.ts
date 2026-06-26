@@ -98,6 +98,8 @@ function assertSyncEngineMetadata(view: ReturnType<typeof homeAt>) {
     assert.ok(line.confidence, `missing confidence for ${line.text}`);
     assert.ok(line.reasons.length > 0, `missing reasons for ${line.text}`);
     assert.ok(line.evidence.length > 0, `missing evidence for ${line.text}`);
+    assert.ok(line.explanation.isExplainable, `missing explanation for ${line.text}`);
+    assert.ok(line.explanation.headline, `missing explanation headline for ${line.text}`);
     assert.equal(line.quality.hasIntent, true);
     assert.equal(line.quality.hasConfidence, true);
     assert.equal(line.quality.hasReason, true);

@@ -83,8 +83,6 @@ function interpretFromProfile(
   profile: MemoryProfile,
   text: string,
   days: number | null,
-  when: string,
-  time: string | null,
 ): string | null {
   if (profile.weight === "light" && profile.type !== "routine") {
     return interpretLightMemory(profile, text);
@@ -179,8 +177,6 @@ export function buildMemoryUnderstanding(
     profile,
     text,
     days,
-    when,
-    time,
   );
   if (profileInterpretation) {
     return profileInterpretation;

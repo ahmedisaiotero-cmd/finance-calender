@@ -108,7 +108,6 @@ export function buildForesightBuckets(options: {
 
 export function headlineHorizon(
   consequences: SyncConsequence[],
-  reference = new Date(),
 ): ForesightHorizon {
   const headline = consequences
     .filter((c) => c.horizon === "headline" && c.briefEligible)

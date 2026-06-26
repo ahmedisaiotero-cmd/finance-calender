@@ -30,7 +30,6 @@ import { generateHomeAmbientInsight } from "@/lib/time-block-insights";
 import { isBriefEligibleMemory, resolveNextOccurrenceDateKey } from "@/lib/timeline/next-occurrence";
 import {
   dedupeOverlappingConsequences,
-  isTimelineNoiseConsequence,
 } from "@/lib/intelligence/consequence-timing";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
 import { dayMatchesScheduleDay } from "@/lib/user-timeline-context";
@@ -655,7 +654,6 @@ function deriveTimedBlockConsequences(
 function deriveContextualConsequences(
   items: CapturedSyncItem[],
   reference: Date,
-  priorities: string[],
 ): SyncConsequence[] {
   const consequences: SyncConsequence[] = [];
 
@@ -1086,7 +1084,6 @@ export function buildAllConsequences(options: {
   const contextualConsequences = deriveContextualConsequences(
     activeItems,
     reference,
-    priorities,
   );
 
   return finalizeDaySynthesis(
@@ -1101,62 +1098,6 @@ export function buildAllConsequences(options: {
     ),
     reference,
   );
-}
-
-function normalizeBriefFact(text: string) {
-  return text.toLowerCase().replace(/[.!?]/g, "").trim();
-}
-
-function briefFactsOverlap(a: string, b: string) {
-  const left = normalizeBriefFact(a);
-  const right = normalizeBriefFact(b);
-  if (!left || !right) return false;
-  if (left === right) return true;
-  if (left.includes(right) || right.includes(left)) return true;
-
-  const sharedTopics = [
-    "payday",
-    "work starts",
-    "evening opens",
-    "open after",
-    "birthday",
-    "rent",
-    "off tomorrow",
-    "off today",
-  ];
-
-  return sharedTopics.some(
-    (topic) => left.includes(topic) && right.includes(topic),
-  );
-}
-
-function isVagueConsequence(text: string) {
-  const normalized = text.toLowerCase();
-  return (
-    /worth a (quick )?check/.test(normalized) ||
-    /worth a spot/.test(normalized) ||
-    /worth noticing/.test(normalized) ||
-    /haven't logged exercise/.test(normalized) ||
-    /exercise in \d+ days/.test(normalized)
-  );
-}
-
-function shouldShowInComingSoon(consequence: SyncConsequence) {
-  if (!consequence.briefEligible) return false;
-  if (consequence.horizon !== "coming_soon") return false;
-  if (isVagueConsequence(consequence.surfaceText)) return false;
-  if (consequence.kind === "day_synthesis") return false;
-  if (consequence.kind === "health_log") return false;
-  if (consequence.kind === "work_start") {
-    return (consequence.daysUntil ?? 99) <= 1;
-  }
-  if (
-    /\b\d{1,2}:\d{2}\s*(AM|PM)?\s+work\b/i.test(consequence.surfaceText) ||
-    /\btomorrow:\s*\d/i.test(consequence.surfaceText)
-  ) {
-    return false;
-  }
-  return true;
 }
 
 export function composeDailyBriefFromConsequences(

@@ -16,10 +16,7 @@ import {
   type SyncTimeBlockOverlap,
 } from "@/lib/sync-time-blocks";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
-import {
-  analyzeConsequences,
-  type ConsequenceAnalysis,
-} from "@/lib/intelligence/consequence-engine";
+import { analyzeConsequences } from "@/lib/intelligence/consequence-engine";
 import type { SyncUserContext } from "@/lib/intelligence/sync-user-context";
 import { titleCaseKeep } from "@/lib/pulse/parse-pulse-prompt";
 import { resolveSyncDestinations, sanitizeSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";

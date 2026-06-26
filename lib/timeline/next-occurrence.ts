@@ -135,7 +135,7 @@ export function resolveNextOccurrenceDateKey(
 
 function rollYearlyDateKey(startDate: string | undefined, reference: Date) {
   if (!startDate) return null;
-  const [year, month, day] = startDate.split("-").map(Number);
+  const [, month, day] = startDate.split("-").map(Number);
   let date = new Date(reference.getFullYear(), month - 1, day);
   if (date < startOfDay(reference)) {
     date = new Date(reference.getFullYear() + 1, month - 1, day);

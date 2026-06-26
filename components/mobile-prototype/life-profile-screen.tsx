@@ -3,7 +3,6 @@
 import { useState } from "react";
 
 import {
-  OnboardingShell,
   SyncBrandMark,
   SyncChipGrid,
   SyncGhostButton,

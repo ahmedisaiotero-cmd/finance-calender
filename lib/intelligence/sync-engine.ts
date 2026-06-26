@@ -46,6 +46,25 @@ export type SyncEvidence = {
   value?: string | number | boolean | null;
 };
 
+export type SyncExplanationTone = "direct" | "gentle" | "uncertain";
+
+export type SyncExplanationDetail = {
+  reason: SyncSurfacingReason;
+  label: string;
+  summary: string;
+  confidence: SyncConfidence;
+  tone: SyncExplanationTone;
+  evidence: SyncEvidence[];
+};
+
+export type SyncLineExplanation = {
+  headline: string;
+  details: SyncExplanationDetail[];
+  evidence: SyncEvidence[];
+  confidence: SyncConfidence;
+  isExplainable: boolean;
+};
+
 export type SyncLineSource = {
   decisionSource: DecisionCandidateSource;
   consequenceId?: string;
@@ -71,6 +90,7 @@ export type SyncEngineLine = {
   confidence: SyncConfidence;
   reasons: SyncSurfacingReason[];
   evidence: SyncEvidence[];
+  explanation: SyncLineExplanation;
   source: SyncLineSource;
   quality: SyncLineQuality;
 };
@@ -264,6 +284,184 @@ function collectEvidence(candidate: DecisionCandidate): SyncEvidence[] {
   return evidence;
 }
 
+const REASON_EXPLANATIONS: Record<
+  SyncSurfacingReason,
+  { label: string; summary: string }
+> = {
+  today: {
+    label: "Today",
+    summary: "This is happening today.",
+  },
+  tomorrow: {
+    label: "Tomorrow",
+    summary: "This affects tomorrow.",
+  },
+  this_week: {
+    label: "This week",
+    summary: "This is coming up this week.",
+  },
+  later: {
+    label: "Later",
+    summary: "This is farther out, but still relevant.",
+  },
+  time_sensitive: {
+    label: "Time-sensitive",
+    summary: "This has a specific time.",
+  },
+  profile_priority: {
+    label: "Profile priority",
+    summary: "This matches a current profile priority.",
+  },
+  specific: {
+    label: "Specific",
+    summary: "This is a concrete item, not a vague signal.",
+  },
+  context: {
+    label: "Context",
+    summary: "This adds useful context to today.",
+  },
+  pattern: {
+    label: "Pattern",
+    summary: "This appears to connect to a repeated pattern.",
+  },
+  life_load: {
+    label: "Life load",
+    summary: "This helps explain the shape of tomorrow.",
+  },
+  quiet: {
+    label: "Quiet",
+    summary: "Sync did not find anything pressing.",
+  },
+  empty: {
+    label: "Empty",
+    summary: "Sync does not have enough context yet.",
+  },
+  decision_ranked: {
+    label: "Selected",
+    summary: "This was selected by the Decision Engine.",
+  },
+};
+
+const HEADLINE_REASON_ORDER: SyncSurfacingReason[] = [
+  "time_sensitive",
+  "today",
+  "tomorrow",
+  "profile_priority",
+  "life_load",
+  "pattern",
+  "context",
+  "specific",
+  "decision_ranked",
+  "quiet",
+  "empty",
+  "this_week",
+  "later",
+];
+
+function explanationToneForConfidence(
+  confidence: SyncConfidence,
+  reason: SyncSurfacingReason,
+): SyncExplanationTone {
+  if (confidence === "low") return "uncertain";
+  if (reason === "quiet" || reason === "empty" || reason === "pattern") {
+    return "gentle";
+  }
+  return "direct";
+}
+
+function evidenceForReason(
+  reason: SyncSurfacingReason,
+  evidence: SyncEvidence[],
+): SyncEvidence[] {
+  switch (reason) {
+    case "today":
+    case "tomorrow":
+    case "this_week":
+    case "later":
+      return evidence.filter((item) => item.type === "timing");
+    case "time_sensitive":
+      return evidence.filter(
+        (item) => item.type === "timing" && item.label === "Sort minutes",
+      );
+    case "profile_priority":
+      return evidence.filter(
+        (item) =>
+          (item.type === "score_breakdown" &&
+            item.label === "Profile priority boost") ||
+          item.type === "area",
+      );
+    case "specific":
+      return evidence.filter(
+        (item) =>
+          item.type === "decision_candidate" ||
+          item.type === "consequence" ||
+          (item.type === "score_breakdown" &&
+            item.label === "Specificity score"),
+      );
+    case "context":
+    case "pattern":
+      return evidence.filter(
+        (item) =>
+          item.type === "decision_candidate" ||
+          item.type === "area" ||
+          item.type === "memory",
+      );
+    case "life_load":
+      return evidence.filter(
+        (item) =>
+          item.type === "decision_candidate" ||
+          item.type === "consequence" ||
+          item.type === "timing",
+      );
+    case "quiet":
+    case "empty":
+      return evidence.filter((item) => item.type === "decision_candidate");
+    case "decision_ranked":
+      return evidence.filter(
+        (item) =>
+          item.type === "decision_candidate" ||
+          item.label === "Decision score",
+      );
+    default:
+      return [];
+  }
+}
+
+function headlineForReasons(reasons: SyncSurfacingReason[]) {
+  const headlineReason =
+    HEADLINE_REASON_ORDER.find((reason) => reasons.includes(reason)) ??
+    reasons[0];
+  return headlineReason
+    ? REASON_EXPLANATIONS[headlineReason].summary
+    : "Sync has evidence for why this appeared.";
+}
+
+function explainLine(
+  reasons: SyncSurfacingReason[],
+  evidence: SyncEvidence[],
+  confidence: SyncConfidence,
+): SyncLineExplanation {
+  const details = reasons.map((reason) => {
+    const explanation = REASON_EXPLANATIONS[reason];
+    return {
+      reason,
+      label: explanation.label,
+      summary: explanation.summary,
+      confidence,
+      tone: explanationToneForConfidence(confidence, reason),
+      evidence: evidenceForReason(reason, evidence),
+    };
+  });
+
+  return {
+    headline: headlineForReasons(reasons),
+    details,
+    evidence,
+    confidence,
+    isExplainable: details.length > 0,
+  };
+}
+
 function sourceForCandidate(candidate: DecisionCandidate): SyncLineSource {
   return {
     decisionSource: candidate.source,
@@ -291,12 +489,16 @@ function evaluateLineQuality(
 }
 
 function narrateCandidate(candidate: DecisionCandidate): SyncEngineLine {
+  const reasons = inferReasons(candidate);
+  const evidence = collectEvidence(candidate);
+  const confidence = inferConfidence(candidate);
   const line = {
     text: candidate.text,
     intent: inferIntent(candidate),
-    confidence: inferConfidence(candidate),
-    reasons: inferReasons(candidate),
-    evidence: collectEvidence(candidate),
+    confidence,
+    reasons,
+    evidence,
+    explanation: explainLine(reasons, evidence, confidence),
     source: sourceForCandidate(candidate),
   };
 

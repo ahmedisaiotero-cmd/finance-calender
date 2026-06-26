@@ -34,7 +34,6 @@ import { isWorkDayOffItem } from "@/lib/sync-capture/work-availability";
 import { loadUserProfile } from "@/lib/sync-profile/user-profile";
 import { memoryDisplayCategory } from "@/lib/mobile-prototype/memory-category";
 import {
-  daysUntilDateKey,
   formatRecurrenceLabel,
   isBriefEligibleMemory,
   resolveNextOccurrenceDateKey,
@@ -234,7 +233,6 @@ function relatedMemoryScore(
     score += 0.2;
   }
 
-  const itemPrompt = (item.originalPrompt ?? item.prompt).toLowerCase();
   const otherPrompt = (other.originalPrompt ?? other.prompt).toLowerCase();
   if (isBirthdayMemory(item)) {
     const person = displayMemoryTitle(item)
@@ -310,16 +308,6 @@ export function buildMemoryDetail(
     ? resolveNextOccurrenceDateKey(item.timeline, reference)
     : resolveCaptureDateKey(item, reference);
 
-  const meaning =
-    item.meaning ??
-    analyzeMeaning({
-      title: item.title,
-      normalizedText: item.originalPrompt ?? item.prompt,
-      category: item.category,
-      destinations: item.destinations,
-      timeline: item.timeline,
-      items: [item],
-    });
   const person = extractPersonFromMemory(item);
   const profile = buildMemoryProfile(item, reference);
   const mentionedInBrief = itemMentionedInBrief(item, brief, reference);
