@@ -3,6 +3,7 @@ import {
   titleCaseKeep,
 } from "@/lib/pulse/parse-pulse-prompt";
 import { normalizeCaptureInput } from "@/lib/parser/normalize-capture-input";
+import { classifyLifeNote } from "@/lib/intelligence/life-note-classifier";
 import type {
   PulseParsedInput,
   PulsePlanCategory,
@@ -372,6 +373,44 @@ function buildTask(
 }
 
 function buildGeneral(prompt: string): PulseTemplateResult {
+  const lifeNote = classifyLifeNote(prompt);
+  if (lifeNote) {
+    const titleByKind: Record<typeof lifeNote.kind, string> = {
+      concern: /\brent|bill|money|budget|afford\b/i.test(prompt)
+        ? "Money Concern"
+        : "Concern",
+      goal: /\brunning|run|workout|gym|health\b/i.test(prompt)
+        ? "Health Goal"
+        : "Personal Goal",
+      preference: "Preference",
+      health_signal: /\bsleep|slept|night\b/i.test(prompt)
+        ? "Sleep Signal"
+        : "Health Signal",
+      family_context: "Family Context",
+      idea: "Idea",
+      routine: /\bcoffee\b/i.test(prompt) ? "Coffee Routine" : "Routine",
+    };
+
+    const summaryByKind: Record<typeof lifeNote.kind, string> = {
+      concern: "A concern for Sync to remember as context.",
+      goal: "A direction you want Sync to remember.",
+      preference: "A preference Sync can use as context.",
+      health_signal: "A health signal saved quietly.",
+      family_context: "Family context saved.",
+      idea: "An idea saved without turning it into a task.",
+      routine: "A routine signal Sync can watch over time.",
+    };
+
+    return {
+      title: titleByKind[lifeNote.kind],
+      summary: summaryByKind[lifeNote.kind],
+      durationMinutes: 0,
+      includeCalendar: false,
+      previewLabel: "Context Sync can remember",
+      sections: [],
+    };
+  }
+
   const familyTitle = familyEventTitle(prompt);
   return {
     title: familyTitle ?? derivePlanTitle(prompt, "Personal Plan"),

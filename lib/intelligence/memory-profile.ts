@@ -4,6 +4,7 @@ import {
   scoreMemoryWeight,
   type MemoryWeight,
 } from "@/lib/intelligence/memory-weight";
+import { classifyLifeNote } from "@/lib/intelligence/life-note-classifier";
 import { normalizeCaptureInput } from "@/lib/parser/normalize-capture-input";
 import { memoryFilterCategory } from "@/lib/mobile-prototype/memory-category";
 import { resolveNextOccurrenceDateKey } from "@/lib/timeline/next-occurrence";
@@ -23,6 +24,13 @@ export type MemoryType =
   | "habit"
   | "meal"
   | "emotion"
+  | "concern"
+  | "goal"
+  | "preference"
+  | "health_signal"
+  | "family_context"
+  | "idea"
+  | "routine"
   | "commitment"
   | "reminder"
   | "event"
@@ -86,6 +94,21 @@ function resolveTimeRelevance(
 }
 
 function resolveMemoryArea(item: CapturedSyncItem): MemoryArea {
+  const text = `${item.title} ${item.originalPrompt ?? item.prompt}`.toLowerCase();
+  const lifeNote = classifyLifeNote(text);
+  if (lifeNote?.kind === "goal") return "Personal";
+  if (lifeNote?.kind === "preference" && /\b(workout|workouts|running|sleep|health|gym)\b/i.test(text)) {
+    return "Health";
+  }
+  if (lifeNote?.kind === "health_signal") return "Health";
+  if (lifeNote?.kind === "family_context") return "Family";
+  if (lifeNote?.kind === "routine" && /\b(sleep|workout|workouts|running|gym)\b/i.test(text)) {
+    return "Health";
+  }
+  if (lifeNote?.kind === "idea" && /\b(mom|dad|mother|father|family|daughter|son)\b/i.test(text)) {
+    return "Family";
+  }
+
   const category = memoryFilterCategory(item);
   if (category === "Money") return "Money";
   if (category === "Health") return "Health";
@@ -108,6 +131,8 @@ function resolveMemoryType(
   >,
   text: string,
 ): MemoryType {
+  const lifeNote = classifyLifeNote(text);
+
   if (
     item.moneyType === "income" ||
     /\b(payday|pay day|get paid|paycheck)\b/i.test(text)
@@ -122,6 +147,14 @@ function resolveMemoryType(
   ) {
     return "expense";
   }
+
+  if (lifeNote?.kind === "concern") return "concern";
+  if (lifeNote?.kind === "goal") return "goal";
+  if (lifeNote?.kind === "preference") return "preference";
+  if (lifeNote?.kind === "health_signal") return "health_signal";
+  if (lifeNote?.kind === "family_context") return "family_context";
+  if (lifeNote?.kind === "idea") return "idea";
+  if (lifeNote?.kind === "routine") return "routine";
 
   if (
     /\b(sad|upset|anxious|stressed|depressed|lonely|cried|crying|feeling low|feeling down|happy|excited|grateful)\b/i.test(
@@ -172,9 +205,20 @@ function resolveConfidence(
     return "low";
   }
 
-  if (type === "emotion" || type === "habit" || type === "meal" || type === "log") {
+  if (
+    type === "emotion" ||
+    type === "habit" ||
+    type === "meal" ||
+    type === "log" ||
+    type === "preference" ||
+    type === "health_signal" ||
+    type === "family_context" ||
+    type === "routine"
+  ) {
     return "high";
   }
+
+  if (type === "concern" || type === "goal" || type === "idea") return "medium";
 
   if (type === "note") return "low";
   return "medium";
@@ -186,8 +230,12 @@ function resolveAccumulation(
   text: string,
 ): MemoryAccumulation | null {
   if (type === "habit" || type === "meal") return "habit";
+  if (type === "routine") return "routine";
   if (type === "expense") return "spending";
-  if (type === "emotion") return "emotional";
+  if (type === "emotion" || type === "concern" || type === "health_signal") {
+    return "emotional";
+  }
+  if (type === "family_context") return "relationship";
   if (type === "log" && area === "Work") return "routine";
   if (type === "commitment" && area === "Relationships") return "relationship";
   if (type === "event" && area === "Relationships") return "relationship";
@@ -234,6 +282,20 @@ export function describeMemoryType(type: MemoryType): string {
       return "Meal";
     case "emotion":
       return "Emotional check-in";
+    case "concern":
+      return "Concern";
+    case "goal":
+      return "Goal";
+    case "preference":
+      return "Preference";
+    case "health_signal":
+      return "Health signal";
+    case "family_context":
+      return "Family context";
+    case "idea":
+      return "Idea";
+    case "routine":
+      return "Routine";
     case "commitment":
       return "Commitment";
     case "reminder":

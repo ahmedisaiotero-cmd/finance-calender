@@ -86,12 +86,64 @@ function interpretFromProfile(
   when: string,
   time: string | null,
 ): string | null {
-  if (profile.weight === "light") {
+  if (profile.weight === "light" && profile.type !== "routine") {
     return interpretLightMemory(profile, text);
   }
 
   if (profile.type === "emotion") {
     return interpretEmotionalMemory(text, days);
+  }
+
+  if (profile.type === "concern") {
+    if (/\brent\b|\bbill\b|\bmoney\b|\bbudget\b|\bafford\b/i.test(text)) {
+      return "Money concern noted — Sync will keep this in context without treating it like a bill.";
+    }
+    return "Concern noted — Sync will keep this in context without turning it into a task.";
+  }
+
+  if (profile.type === "goal") {
+    if (/\brunning|run|workout|gym|health\b/i.test(text)) {
+      return "Health goal noted — Sync will remember this as direction, not a calendar event.";
+    }
+    return "Goal noted — Sync will remember what you want to move toward.";
+  }
+
+  if (profile.type === "preference") {
+    if (/\bmorning\b/i.test(text) && /\b(workout|workouts|gym|running|run)\b/i.test(text)) {
+      return "Preference noted — morning workouts fit you better.";
+    }
+    return "Preference noted — Sync will use this as context.";
+  }
+
+  if (profile.type === "health_signal") {
+    if (/\bsleep|slept|night\b/i.test(text)) {
+      return "Sleep signal noted — Sync will keep this quietly in your health context.";
+    }
+    return "Health signal noted — Sync will keep this in context.";
+  }
+
+  if (profile.type === "family_context") {
+    if (/\bdad|father\b/i.test(text)) {
+      return "Family context noted — Dad may need more support lately.";
+    }
+    if (/\bmom|mother\b/i.test(text)) {
+      return "Family context noted — Mom may need more support lately.";
+    }
+    return "Family context noted — Sync will keep this relationship context in mind.";
+  }
+
+  if (profile.type === "idea") {
+    if (/\bmom|mother\b/i.test(text) && /\bbirthday\b/i.test(text)) {
+      return "Idea saved — something thoughtful for Mom's birthday.";
+    }
+    return "Idea saved — Sync will keep it without turning it into a task.";
+  }
+
+  if (profile.type === "routine") {
+    if (/\bcoffee\b/i.test(text)) {
+      return "Routine noted — coffee has been showing up regularly.";
+    }
+    return "Routine noted — Sync will watch for this pattern over time.";
   }
 
   return null;

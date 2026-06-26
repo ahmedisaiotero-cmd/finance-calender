@@ -117,4 +117,85 @@ function capture(text: string, store = createTestCaptureStore()) {
   assert.ok(!/family and relationship/i.test(health!.summary));
 }
 
+{
+  const examples = [
+    {
+      text: "I'm worried rent will be tight this month.",
+      area: "Money",
+      type: "concern",
+      destinations: ["Finance"],
+      understanding: /money concern/i,
+      notLight: true,
+    },
+    {
+      text: "I want to get better at running this summer.",
+      area: "Personal",
+      type: "goal",
+      destinations: ["Goals"],
+      understanding: /health goal|goal noted/i,
+      notLight: true,
+    },
+    {
+      text: "I prefer morning workouts.",
+      area: "Health",
+      type: "preference",
+      destinations: ["Health"],
+      understanding: /morning workouts fit/i,
+      notLight: true,
+    },
+    {
+      text: "Sleep was rough last night.",
+      area: "Health",
+      type: "health_signal",
+      destinations: ["Health"],
+      understanding: /sleep signal/i,
+      notLight: true,
+    },
+    {
+      text: "Dad has been needing more help lately.",
+      area: "Family",
+      type: "family_context",
+      destinations: ["Family"],
+      understanding: /family context noted/i,
+      notLight: true,
+    },
+    {
+      text: "Idea: plan something nice for Mom's birthday.",
+      area: "Family",
+      type: "idea",
+      destinations: ["Family"],
+      understanding: /idea saved/i,
+      notLight: true,
+    },
+    {
+      text: "Coffee has been a daily thing lately.",
+      area: "Personal",
+      type: "routine",
+      destinations: ["Goals"],
+      understanding: /routine noted/i,
+      notLight: false,
+    },
+  ] as const;
+
+  for (const example of examples) {
+    const { item } = capture(example.text);
+    const profile = buildMemoryProfile(item, reference);
+
+    assert.equal(profile.area, example.area, example.text);
+    assert.equal(profile.type, example.type, example.text);
+    assert.equal(item.destinations.includes("Calendar"), false, example.text);
+
+    for (const destination of example.destinations) {
+      assert.ok(item.destinations.includes(destination), example.text);
+    }
+
+    assert.match(item.understanding ?? "", example.understanding, example.text);
+    if (example.notLight) {
+      assert.notEqual(profile.weight, "light", example.text);
+    } else {
+      assert.equal(profile.weight, "light", example.text);
+    }
+  }
+}
+
 console.log("universal-capture tests passed");

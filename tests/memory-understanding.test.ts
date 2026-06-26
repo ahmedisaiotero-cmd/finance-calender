@@ -87,7 +87,7 @@ function item(
     }),
     reference,
   );
-  assert.equal(understanding, "Small spending note.");
+  assert.equal(understanding, "Small money note saved.");
 }
 
 {
@@ -134,6 +134,132 @@ function item(
   assert.ok(captured);
   assert.match(captured!.plan.prompt, /coffee/i);
   assert.match(store.items[0]?.understanding ?? buildMemoryUnderstanding(store.items[0], reference), /small daily habit/i);
+}
+
+{
+  assert.match(
+    buildMemoryUnderstanding(
+      item({
+        id: "rent-concern",
+        title: "Money Concern",
+        prompt: "i'm worried rent will be tight this month",
+        originalPrompt: "I'm worried rent will be tight this month.",
+        destinations: ["Finance"],
+        dateLabel: "Upcoming",
+        timeLabel: "Flexible",
+      }),
+      reference,
+    ),
+    /money concern/i,
+  );
+}
+
+{
+  assert.match(
+    buildMemoryUnderstanding(
+      item({
+        id: "running-goal",
+        title: "Running Goal",
+        prompt: "i want to get better at running this summer",
+        originalPrompt: "I want to get better at running this summer.",
+        destinations: ["Goals"],
+        dateLabel: "Upcoming",
+        timeLabel: "Flexible",
+      }),
+      reference,
+    ),
+    /health goal|goal noted/i,
+  );
+}
+
+{
+  assert.match(
+    buildMemoryUnderstanding(
+      item({
+        id: "morning-workout-preference",
+        title: "Workout Preference",
+        prompt: "i prefer morning workouts",
+        originalPrompt: "I prefer morning workouts.",
+        destinations: ["Health"],
+        dateLabel: "Upcoming",
+        timeLabel: "Flexible",
+      }),
+      reference,
+    ),
+    /morning workouts fit/i,
+  );
+}
+
+{
+  assert.match(
+    buildMemoryUnderstanding(
+      item({
+        id: "sleep-signal",
+        title: "Sleep Signal",
+        prompt: "sleep was rough last night",
+        originalPrompt: "Sleep was rough last night.",
+        destinations: ["Health"],
+        dateLabel: "Upcoming",
+        timeLabel: "Flexible",
+      }),
+      reference,
+    ),
+    /sleep signal/i,
+  );
+}
+
+{
+  assert.match(
+    buildMemoryUnderstanding(
+      item({
+        id: "dad-context",
+        title: "Dad Context",
+        prompt: "dad has been needing more help lately",
+        originalPrompt: "Dad has been needing more help lately.",
+        destinations: ["Family"],
+        dateLabel: "Upcoming",
+        timeLabel: "Flexible",
+      }),
+      reference,
+    ),
+    /family context noted/i,
+  );
+}
+
+{
+  assert.match(
+    buildMemoryUnderstanding(
+      item({
+        id: "mom-birthday-idea",
+        title: "Mom Birthday Idea",
+        prompt: "idea: plan something nice for mom's birthday",
+        originalPrompt: "Idea: plan something nice for Mom's birthday.",
+        destinations: ["Family"],
+        dateLabel: "Upcoming",
+        timeLabel: "Flexible",
+      }),
+      reference,
+    ),
+    /idea saved/i,
+  );
+}
+
+{
+  assert.match(
+    buildMemoryUnderstanding(
+      item({
+        id: "coffee-routine",
+        title: "Coffee Routine",
+        prompt: "coffee has been a daily thing lately",
+        originalPrompt: "Coffee has been a daily thing lately.",
+        destinations: ["Goals"],
+        dateLabel: "Upcoming",
+        timeLabel: "Flexible",
+      }),
+      reference,
+    ),
+    /routine noted/i,
+  );
 }
 
 console.log("memory-understanding tests passed");

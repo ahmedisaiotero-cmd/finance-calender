@@ -22,6 +22,7 @@ import {
 } from "@/lib/sync-profile/user-profile";
 import type { CaptureCategoryHint } from "@/lib/sync-capture/capture-hint";
 import { buildMemoryUnderstanding } from "@/lib/intelligence/memory-understanding";
+import { isNonCalendarLifeNote } from "@/lib/intelligence/life-note-classifier";
 import { cleanMemoryTitle } from "@/lib/sync-capture/memory-title";
 import {
   detectSyncTimeBlockOverlaps,
@@ -76,6 +77,7 @@ export function compactCaptureTitle(plan: CompactTitleInput): string {
 export function enrichCapturePlan(plan: PulsePlan, reference: Date): PulsePlan {
   const timeline = plan.timeline;
   if (!timeline) return plan;
+  const nonCalendarLifeNote = isNonCalendarLifeNote(plan.prompt);
 
   if (plan.parsedInput?.workAvailability === "off") {
     const dateKey =
@@ -106,6 +108,7 @@ export function enrichCapturePlan(plan: PulsePlan, reference: Date): PulsePlan {
   const needsToday =
     !timeline.startDate &&
     !timeline.deadlineDate &&
+    !nonCalendarLifeNote &&
     (timeline.tense === "past" ||
       plan.category === "workout" ||
       /\b(went|worked)\b/i.test(plan.prompt));
@@ -175,7 +178,7 @@ export function enrichCapturePlan(plan: PulsePlan, reference: Date): PulsePlan {
     };
   }
 
-  if (!timeline.startDate && !timeline.deadlineDate) {
+  if (!nonCalendarLifeNote && !timeline.startDate && !timeline.deadlineDate) {
     const text = plan.prompt.toLowerCase();
     const impliesToday =
       /\b(today|this morning|this afternoon|tonight|just now)\b/.test(text) ||

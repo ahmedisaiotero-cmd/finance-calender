@@ -7,6 +7,7 @@ import {
   hintDestinations,
   type CaptureCategoryHint,
 } from "@/lib/sync-capture/capture-hint";
+import { classifyLifeNote } from "@/lib/intelligence/life-note-classifier";
 
 const CATEGORY_DESTINATIONS: Record<PulsePlanCategory, SyncDestination[]> = {
   workout: ["Health", "Calendar"],
@@ -60,6 +61,16 @@ function hasTimelineDestination(plan: PulsePlan) {
   );
 }
 
+function hasConcreteCalendarTiming(plan: PulsePlan) {
+  return Boolean(
+    plan.timeline?.startDate ||
+      plan.timeline?.deadlineDate ||
+      plan.timeline?.recurrence ||
+      plan.timeline?.isTimed ||
+      (plan.dateLabel && plan.dateLabel !== "Upcoming"),
+  );
+}
+
 function isFinanceLanguage(plan: PulsePlan) {
   return /\b(rent|bill|budget|payment|pay|paid|payday|income|subscription|spent|cost|money|cash|send)\b/i.test(
     plan.prompt,
@@ -79,7 +90,7 @@ function isRelationshipLanguage(plan: PulsePlan) {
 }
 
 function isHealthLanguage(plan: PulsePlan) {
-  return /\b(doctor|dentist|therapy|appointment|checkup|medical|hospital|gym|workout|shower|sleep|medication|medicine|sad|upset|anxious|stressed|depressed|lonely|cried|crying|feeling|weird|happy|excited|grateful)\b/i.test(
+  return /\b(doctor|dentist|therapy|appointment|checkup|medical|hospital|gym|workout|workouts|running|run|shower|sleep|medication|medicine|sad|upset|anxious|stressed|depressed|lonely|cried|crying|feeling|weird|happy|excited|grateful)\b/i.test(
     plan.prompt,
   );
 }
@@ -94,6 +105,37 @@ function isGoalLanguage(plan: PulsePlan) {
   return /\b(sync|project|business|goal|progress|work on)\b/i.test(plan.prompt);
 }
 
+function destinationsForLifeNote(plan: PulsePlan): SyncDestination[] | null {
+  const lifeNote = classifyLifeNote(plan.prompt);
+  if (!lifeNote) return null;
+
+  const destinations: SyncDestination[] = [];
+  if (lifeNote.kind === "concern") {
+    if (isFinanceLanguage(plan)) destinations.push("Finance");
+    else if (isHealthLanguage(plan)) destinations.push("Health");
+    else if (isFamilyLanguage(plan)) destinations.push("Family");
+    else destinations.push("Goals");
+  }
+
+  if (lifeNote.kind === "goal") destinations.push("Goals");
+  if (lifeNote.kind === "preference") {
+    destinations.push(isHealthLanguage(plan) ? "Health" : "Goals");
+  }
+  if (lifeNote.kind === "health_signal") destinations.push("Health");
+  if (lifeNote.kind === "family_context") destinations.push("Family");
+  if (lifeNote.kind === "idea") {
+    if (isFamilyLanguage(plan)) destinations.push("Family");
+    else if (isRelationshipLanguage(plan)) destinations.push("Relationships");
+    else destinations.push("Goals");
+  }
+  if (lifeNote.kind === "routine") {
+    destinations.push(isHealthLanguage(plan) ? "Health" : "Goals");
+  }
+
+  if (hasConcreteCalendarTiming(plan)) destinations.push("Calendar");
+  return unique(destinations);
+}
+
 function isProjectWorkLanguage(plan: PulsePlan) {
   return (
     /\b(worked on|working on|coded|coding|project|sync|app|building|focus session|spent \d+ hours)\b/i.test(
@@ -105,6 +147,9 @@ function isProjectWorkLanguage(plan: PulsePlan) {
 }
 
 function inferCategoryDestinations(plan: PulsePlan): SyncDestination[] {
+  const lifeNoteDestinations = destinationsForLifeNote(plan);
+  if (lifeNoteDestinations) return lifeNoteDestinations;
+
   if (plan.parsedInput?.moneyType === "income") {
     return hasTimelineDestination(plan) ? ["Finance", "Calendar"] : ["Finance"];
   }
@@ -118,18 +163,21 @@ function inferCategoryDestinations(plan: PulsePlan): SyncDestination[] {
   }
 
   if (plan.category === "reminder" && isFinanceLanguage(plan)) {
-    return ["Finance", "Calendar"];
+    return hasTimelineDestination(plan) ? ["Finance", "Calendar"] : ["Finance"];
   }
 
   if (isFamilyLanguage(plan)) {
-    const destinations: SyncDestination[] = ["Family", "Calendar"];
+    const destinations: SyncDestination[] = ["Family"];
+    if (hasTimelineDestination(plan)) destinations.push("Calendar");
     if (isSchoolLanguage(plan)) destinations.push("School");
     if (isFinanceLanguage(plan)) destinations.push("Finance");
     return unique(destinations);
   }
 
   if (isRelationshipLanguage(plan)) {
-    return unique(["Relationships", "Calendar"]);
+    return hasTimelineDestination(plan)
+      ? unique(["Relationships", "Calendar"])
+      : ["Relationships"];
   }
 
   if (isHealthLanguage(plan)) {

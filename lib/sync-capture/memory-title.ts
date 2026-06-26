@@ -1,4 +1,5 @@
 import { normalizeCaptureInput } from "@/lib/parser/normalize-capture-input";
+import { classifyLifeNote } from "@/lib/intelligence/life-note-classifier";
 import { titleCaseKeep } from "@/lib/pulse/parse-pulse-prompt";
 import { isMoneyLanguage } from "@/lib/sync-capture/surface-copy";
 import type {
@@ -152,6 +153,42 @@ export function cleanMemoryTitle(input: MemoryTitleInput): string {
     if (/\btomorrow\b/i.test(text)) return "Overtime Tomorrow";
     if (/\btoday\b/i.test(text)) return "Overtime Today";
     return "Overtime";
+  }
+
+  const lifeNote = classifyLifeNote(prompt);
+  if (lifeNote?.kind === "concern") {
+    if (/\brent|bill|money|budget|afford\b/i.test(text)) return "Money Concern";
+    return "Concern";
+  }
+  if (lifeNote?.kind === "goal") {
+    if (/\brunning|run\b/i.test(text)) return "Running Goal";
+    if (/\bworkout|gym|health\b/i.test(text)) return "Health Goal";
+    return "Personal Goal";
+  }
+  if (lifeNote?.kind === "preference") {
+    if (/\bworkout|workouts|gym|running|run\b/i.test(text)) {
+      return "Workout Preference";
+    }
+    return "Preference";
+  }
+  if (lifeNote?.kind === "health_signal") {
+    if (/\bsleep|slept|night\b/i.test(text)) return "Sleep Signal";
+    return "Health Signal";
+  }
+  if (lifeNote?.kind === "family_context") {
+    if (/\bdad|father\b/i.test(text)) return "Dad Context";
+    if (/\bmom|mother\b/i.test(text)) return "Mom Context";
+    return "Family Context";
+  }
+  if (lifeNote?.kind === "idea") {
+    if (/\bmom|mother\b/i.test(text) && /\bbirthday|bday\b/i.test(text)) {
+      return "Mom Birthday Idea";
+    }
+    return "Idea";
+  }
+  if (lifeNote?.kind === "routine") {
+    if (/\bcoffee\b/i.test(text)) return "Coffee Routine";
+    return "Routine";
   }
 
   if (/\banniversary\b/i.test(text)) {

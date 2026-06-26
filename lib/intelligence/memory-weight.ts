@@ -31,17 +31,45 @@ export function memoryWeightFromImportance(
     /\b(sad|upset|anxious|stressed|depressed|lonely| cried|crying|feeling low|feeling down)\b/i.test(
       normalized,
     ) ||
+    /\b(worried|worry|concerned|nervous|dread|afraid|overwhelmed|tight this month)\b/i.test(
+      normalized,
+    ) ||
+    /\b(sleep was rough|rough night|low energy|exhausted|not feeling well|headache|migraine)\b/i.test(
+      normalized,
+    ) ||
     /\b(birthday|anniversary|wedding|graduation|milestone|promotion)\b/i.test(
       normalized,
     ) ||
     /\b(daughter|son|mom|dad|mother|father|family|friend|girlfriend|boyfriend|partner)\b/i.test(
       normalized,
+    ) ||
+    /\b(needing more help|needs more help|need more help|needs support|needing support|care lately)\b/i.test(
+      normalized,
     )
   ) {
-    if (importance === "low" && /\b(sad|upset|anxious|stressed|feeling)\b/i.test(normalized)) {
+    if (
+      importance === "low" &&
+      /\b(sad|upset|anxious|stressed|feeling|worried|worry|concerned|nervous|dread|afraid|overwhelmed|tight this month|sleep was rough|rough night|low energy|exhausted|not feeling well|headache|migraine|needing more help|needs more help|need more help|needs support|needing support|care lately)\b/i.test(
+        normalized,
+      )
+    ) {
       return "meaningful";
     }
     if (importance !== "low") return "meaningful";
+  }
+
+  if (
+    /\b(i want to|get better at|trying to|goal|working toward|improve|learn to)\b/i.test(
+      normalized,
+    ) ||
+    /\b(i prefer|preference|works better for me|best for me)\b/i.test(normalized) ||
+    /\b(idea|thinking about|note to self)\b/i.test(normalized)
+  ) {
+    return importance === "low" ? "important" : "meaningful";
+  }
+
+  if (/\b(daily|lately|usually|routine|habit|most days)\b/i.test(normalized)) {
+    return "light";
   }
 
   if (

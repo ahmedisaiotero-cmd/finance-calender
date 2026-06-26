@@ -5,6 +5,7 @@ import {
   type CaptureCategoryHint,
 } from "@/lib/sync-capture/capture-hint";
 import { isWorkDayOffLanguage } from "@/lib/sync-capture/work-availability";
+import { classifyLifeNote } from "@/lib/intelligence/life-note-classifier";
 
 /**
  * Maps a casual prompt to a Pulse category using keyword detection.
@@ -31,6 +32,8 @@ export function detectPulseCategory(
   }
 
   if (/\b(showered|shower)\b/.test(text)) return "general";
+
+  if (classifyLifeNote(text)) return "general";
 
   if (/\b(school|class|homework|assignment|exam|study)\b/.test(text)) {
     return "task";
