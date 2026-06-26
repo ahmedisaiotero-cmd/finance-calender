@@ -1,3 +1,4 @@
+import { briefFactsOverlap, rankBriefConsequences } from "@/lib/intelligence/decision-engine";
 import type { SyncConsequence } from "@/lib/intelligence/sync-consequences";
 import {
   assessTomorrowLoad,
@@ -27,34 +28,6 @@ const MAX_PER_GROUP: Record<BriefTimeGroup, number> = {
   this_week: 4,
   later: 2,
 };
-
-function normalizeBriefFact(text: string) {
-  return text.toLowerCase().replace(/[.!?]/g, "").trim();
-}
-
-function briefFactsOverlap(a: string, b: string) {
-  const left = normalizeBriefFact(a);
-  const right = normalizeBriefFact(b);
-  if (!left || !right) return false;
-  if (left === right) return true;
-  if (left.includes(right) || right.includes(left)) return true;
-
-  const sharedTopics = [
-    "payday",
-    "work begins",
-    "work starts",
-    "birthday",
-    "rent",
-    "flight",
-    "daughter",
-    "school",
-    "anniversary",
-  ];
-
-  return sharedTopics.some(
-    (topic) => left.includes(topic) && right.includes(topic),
-  );
-}
 
 function isVagueConsequence(text: string) {
   const normalized = text.toLowerCase();
@@ -95,48 +68,6 @@ function timeGroupForConsequence(
   return "later";
 }
 
-function profileSortBoost(
-  consequence: SyncConsequence,
-  priorities: string[],
-): number {
-  if (priorities.length === 0) return 0;
-  const text = consequence.surfaceText.toLowerCase();
-  let boost = 0;
-
-  if (
-    priorities.includes("Family") &&
-    /\b(daughter|son|school|mom|dad|family|birthday)\b/.test(text)
-  ) {
-    boost -= 6;
-  }
-  if (
-    priorities.includes("Relationships") &&
-    /\b(friend|girlfriend|boyfriend|partner|anniversary|birthday)\b/.test(text)
-  ) {
-    boost -= 6;
-  }
-  if (
-    priorities.includes("Money") &&
-    /\b(payday|rent|bill|due|finance)\b/.test(text)
-  ) {
-    boost -= 6;
-  }
-  if (
-    priorities.includes("Work") &&
-    /\b(work|shift|flight|off tomorrow)\b/.test(text)
-  ) {
-    boost -= 4;
-  }
-  if (
-    priorities.includes("Health") &&
-    /\b(gym|workout|doctor|health)\b/.test(text)
-  ) {
-    boost -= 4;
-  }
-
-  return boost;
-}
-
 function refineSurfaceText(
   consequence: SyncConsequence,
   busyMorning: boolean,
@@ -173,44 +104,25 @@ function refineSurfaceText(
   return text;
 }
 
-function sortConsequences(
-  consequences: SyncConsequence[],
-  priorities: string[],
-) {
-  return [...consequences].sort((a, b) => {
-    const profileA = profileSortBoost(a, priorities);
-    const profileB = profileSortBoost(b, priorities);
-    const dayA = a.daysUntil ?? 99;
-    const dayB = b.daysUntil ?? 99;
-    if (dayA !== dayB) return dayA - dayB;
-    if (a.dateKey && b.dateKey && a.dateKey !== b.dateKey) {
-      return a.dateKey.localeCompare(b.dateKey);
-    }
-    const minuteA = a.sortMinutes ?? 24 * 60;
-    const minuteB = b.sortMinutes ?? 24 * 60;
-    if (minuteA !== minuteB) return minuteA - minuteB;
-    const priorityA = a.priority + profileA;
-    const priorityB = b.priority + profileB;
-    return priorityA - priorityB;
-  });
-}
-
 function selectCuratedLines(
   consequences: SyncConsequence[],
   priorities: string[],
   busyMorning: boolean,
   lede: string,
 ): CuratedBriefSection[] {
-  const candidates = sortConsequences(
-    consequences.filter(
-      (consequence) =>
-        consequence.briefEligible &&
-        consequence.horizon === "coming_soon" &&
-        !isNoiseConsequence(consequence) &&
-        timeGroupForConsequence(consequence) != null,
-    ),
-    priorities,
+  const filtered = consequences.filter(
+    (consequence) =>
+      consequence.briefEligible &&
+      consequence.horizon === "coming_soon" &&
+      !isNoiseConsequence(consequence) &&
+      timeGroupForConsequence(consequence) != null,
   );
+  const candidates = rankBriefConsequences({
+    consequences: filtered,
+    priorities,
+  })
+    .map((candidate) => candidate.consequence)
+    .filter((consequence): consequence is SyncConsequence => consequence != null);
 
   const selected: Array<{ group: BriefTimeGroup; text: string }> = [];
   const counts: Record<BriefTimeGroup, number> = {

@@ -228,6 +228,9 @@ export function briefFactsOverlap(a: string, b: string) {
     "rent",
     "workout",
     "sync work",
+    "daughter",
+    "school",
+    "anniversary",
   ];
 
   return sharedTopics.some(
@@ -504,6 +507,100 @@ function selectPriorities(
   }
 
   return { primary, supporting, rankedCandidates: ranked };
+}
+
+function briefProfileSortBoost(
+  consequence: SyncConsequence,
+  priorities: string[],
+): number {
+  if (priorities.length === 0) return 0;
+  const text = consequence.surfaceText.toLowerCase();
+  let boost = 0;
+
+  if (
+    priorities.includes("Family") &&
+    /\b(daughter|son|school|mom|dad|family|birthday)\b/.test(text)
+  ) {
+    boost -= 6;
+  }
+  if (
+    priorities.includes("Relationships") &&
+    /\b(friend|girlfriend|boyfriend|partner|anniversary|birthday)\b/.test(text)
+  ) {
+    boost -= 6;
+  }
+  if (
+    priorities.includes("Money") &&
+    /\b(payday|rent|bill|due|finance)\b/.test(text)
+  ) {
+    boost -= 6;
+  }
+  if (
+    priorities.includes("Work") &&
+    /\b(work|shift|flight|off tomorrow)\b/.test(text)
+  ) {
+    boost -= 4;
+  }
+  if (
+    priorities.includes("Health") &&
+    /\b(gym|workout|doctor|health)\b/.test(text)
+  ) {
+    boost -= 4;
+  }
+
+  return boost;
+}
+
+function compareBriefConsequenceRank(
+  a: SyncConsequence,
+  b: SyncConsequence,
+  priorities: string[],
+): number {
+  const profileA = briefProfileSortBoost(a, priorities);
+  const profileB = briefProfileSortBoost(b, priorities);
+  const dayA = a.daysUntil ?? 99;
+  const dayB = b.daysUntil ?? 99;
+  if (dayA !== dayB) return dayA - dayB;
+  if (a.dateKey && b.dateKey && a.dateKey !== b.dateKey) {
+    return a.dateKey.localeCompare(b.dateKey);
+  }
+  const minuteA = a.sortMinutes ?? 24 * 60;
+  const minuteB = b.sortMinutes ?? 24 * 60;
+  if (minuteA !== minuteB) return minuteA - minuteB;
+  const priorityA = a.priority + profileA;
+  const priorityB = b.priority + profileB;
+  return priorityA - priorityB;
+}
+
+/** Daily Brief consequence ordering — parity with legacy briefing-composer sort. */
+export function rankBriefConsequences(input: {
+  consequences: SyncConsequence[];
+  priorities?: string[];
+}): DecisionCandidate[] {
+  const priorities = input.priorities ?? [];
+
+  return [...input.consequences]
+    .sort((a, b) => compareBriefConsequenceRank(a, b, priorities))
+    .map((consequence) => {
+      const profileBoost = briefProfileSortBoost(consequence, priorities);
+      const breakdown = scoreBreakdown({
+        base: consequence.priority,
+        profilePriority: -profileBoost,
+      });
+
+      return {
+        text: consequence.surfaceText,
+        score: totalScore(breakdown),
+        scoreBreakdown: breakdown,
+        consequence,
+        source: "consequence" as const,
+        ...candidateMetadata(
+          consequence.surfaceText,
+          consequence,
+          "consequence",
+        ),
+      };
+    });
 }
 
 export function decideTodayPriorities(input: DecisionEngineInput): TodayDecision {

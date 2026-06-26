@@ -38,6 +38,48 @@ function timedItem(
   };
 }
 
+function visibleBriefShape(brief: ReturnType<typeof composeCuratedBrief>) {
+  return {
+    lede: brief.lede,
+    sections: brief.sections,
+    isEmpty: brief.isEmpty,
+  };
+}
+
+const GOLDEN_BUSY_TOMORROW = {
+  lede: "Tomorrow has a tight morning.",
+  sections: [
+    {
+      id: "noticing" as const,
+      label: "Tomorrow",
+      paragraphs: [
+        "Flight at 6:00 AM.",
+        "Take daughter to school.",
+        "Work begins at 11:00 AM after a busy morning.",
+        "Your friend's birthday is tomorrow.",
+      ],
+    },
+  ],
+  isEmpty: false,
+};
+
+const GOLDEN_MONEY_PRIORITY = {
+  lede: "Work starts at 11:00 AM.",
+  sections: [
+    {
+      id: "noticing" as const,
+      label: "Tomorrow",
+      paragraphs: ["Work begins at 11:00 AM."],
+    },
+    {
+      id: "noticing" as const,
+      label: "This Week",
+      paragraphs: ["Payday lands Thursday.", "Rent is due Saturday."],
+    },
+  ],
+  isEmpty: false,
+};
+
 {
   const consequences = buildAllConsequences({
     items: [
@@ -93,6 +135,8 @@ function timedItem(
     emptyNoContext: BRIEF_EMPTY_NO_CONTEXT,
     emptyQuiet: BRIEF_EMPTY_QUIET,
   });
+
+  assert.deepEqual(visibleBriefShape(brief), GOLDEN_BUSY_TOMORROW);
 
   assert.match(brief.lede, /Tomorrow (looks busy|starts early|has a tight morning)/i);
   assert.ok(brief.sections.some((section) => section.label === "Tomorrow"));
@@ -155,12 +199,29 @@ function timedItem(
     emptyQuiet: BRIEF_EMPTY_QUIET,
   });
 
+  assert.deepEqual(visibleBriefShape(familyFirst), GOLDEN_MONEY_PRIORITY);
+
   const thisWeek = familyFirst.sections.find((section) => section.label === "This Week");
   assert.ok(thisWeek);
   const paydayIdx = thisWeek!.paragraphs.findIndex((line) => /payday/i.test(line));
   const rentIdx = thisWeek!.paragraphs.findIndex((line) => /rent/i.test(line));
   assert.ok(paydayIdx >= 0 && rentIdx >= 0);
   assert.ok(paydayIdx < rentIdx, "Money priority should surface payday before rent");
+}
+
+{
+  const brief = composeCuratedBrief({
+    consequences: [],
+    hasUserContext: false,
+    emptyNoContext: BRIEF_EMPTY_NO_CONTEXT,
+    emptyQuiet: BRIEF_EMPTY_QUIET,
+  });
+
+  assert.deepEqual(visibleBriefShape(brief), {
+    lede: BRIEF_EMPTY_NO_CONTEXT,
+    sections: [],
+    isEmpty: true,
+  });
 }
 
 console.log("briefing-composer tests passed");
