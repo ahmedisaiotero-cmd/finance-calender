@@ -34,6 +34,47 @@ function capture(
   };
 }
 
+function visibleBriefShape(brief: ReturnType<typeof buildDailyBrief>) {
+  return {
+    lede: brief.lede,
+    sections: brief.sections,
+    isEmpty: brief.isEmpty,
+    consequences: brief.consequences,
+  };
+}
+
+function visibleParagraphs(brief: ReturnType<typeof buildDailyBrief>) {
+  return brief.sections.flatMap((section) => section.paragraphs);
+}
+
+function syncEngineEvidenceValues(brief: ReturnType<typeof buildDailyBrief>) {
+  if (!brief.syncEngine) return [];
+
+  const lines = brief.syncEngine
+    ? [
+      brief.syncEngine.primary,
+      ...brief.syncEngine.supporting,
+      ...brief.syncEngine.rankedLines,
+      ...brief.syncEngine.lines.map((line) => line.syncLine),
+      ...brief.syncEngine.continuity.recentlySurfaced,
+      ...brief.syncEngine.continuity.surfacedToday,
+    ]
+    : [];
+
+  const lineEvidence = lines.flatMap((line) => [
+    ...line.evidence,
+    ...line.explanation.evidence,
+    ...line.explanation.details.flatMap((detail) => detail.evidence),
+  ]);
+
+  return [
+    ...lineEvidence,
+    ...(brief.syncEngine.arc?.evidence ?? []),
+    ...(brief.syncEngine.continuity.dominantTheme?.evidence ?? []),
+    ...brief.syncEngine.continuity.signals.flatMap((signal) => signal.evidence),
+  ];
+}
+
 {
   const brief = buildDailyBrief({
     items: [],
@@ -44,6 +85,8 @@ function capture(
 
   assert.equal(brief.isEmpty, true);
   assert.match(brief.lede, /still learning your life|Quiet for now/i);
+  assert.deepEqual(brief.sections, []);
+  assert.equal(brief.syncEngine, undefined);
 }
 
 {
@@ -115,6 +158,47 @@ function capture(
   const thisWeek = noticingSections.find((section) => section.label === "This Week");
   assert.ok(thisWeek, "expected a This Week section");
   assert.doesNotMatch(thisWeek?.paragraphs[0] ?? "", /haven't logged exercise/i);
+
+  const visible = visibleBriefShape(brief);
+  assert.match(visible.lede, /Work starts at 11:00 AM/i);
+  assert.deepEqual(visible.sections, brief.sections);
+  assert.equal(visible.isEmpty, false);
+
+  assert.ok(brief.syncEngine, "expected hidden Sync Engine metadata");
+  assert.deepEqual(
+    brief.syncEngine.lines.map((line) => line.text),
+    visibleParagraphs(brief),
+    "metadata should map to every visible paragraph in order",
+  );
+  assert.deepEqual(
+    brief.syncEngine.rankedLines.map((line) => line.text),
+    visibleParagraphs(brief),
+    "ranked Sync Engine lines should preserve Daily Brief visible order",
+  );
+  assert.equal(brief.syncEngine.quality.preservesVisibleCopy, true);
+  assert.equal(brief.syncEngine.quality.preservesDecisionOrdering, true);
+  assert.ok(brief.syncEngine.continuity);
+
+  for (const entry of brief.syncEngine.lines) {
+    assert.equal(entry.syncLine.text, entry.text);
+    assert.ok(entry.syncLine.intent);
+    assert.ok(entry.syncLine.confidence);
+    assert.ok(entry.syncLine.reasons.length > 0);
+    assert.ok(entry.syncLine.explanation.isExplainable);
+    assert.equal(entry.syncLine.quality.preservesVisibleText, true);
+  }
+
+  const evidence = syncEngineEvidenceValues(brief);
+  assert.equal(
+    evidence.some(
+      (item) =>
+        item.type === "score_breakdown" ||
+        /\bid\b/i.test(item.label) ||
+        /^(rent|mom|gym)$/i.test(String(item.value)),
+    ),
+    false,
+    "Daily Brief metadata should not expose raw scores or internal ids",
+  );
 }
 
 {
