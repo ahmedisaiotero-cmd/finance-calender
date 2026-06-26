@@ -53,7 +53,7 @@ Before closing Phase 1, verify:
 
 ## Intelligence architecture
 
-Sync intelligence follows five layers. Domains (Money, Health, Work, etc.) are categories — not separate agents.
+Sync intelligence follows six shared layers. Domains (Money, Health, Work, etc.) are categories — not separate agents.
 
 | Layer | Status | Key modules |
 |-------|--------|-------------|
@@ -61,11 +61,15 @@ Sync intelligence follows five layers. Domains (Money, Health, Work, etc.) are c
 | **Understanding** | Done | `meaning-engine.ts`, `memory-understanding.ts`, `importance-scoring.ts` |
 | **Consequence** | Done | `consequence-engine.ts`, `sync-consequences.ts` |
 | **Decision** | **V1.5 implemented** | `decision-engine.ts`; profile-aware ranking, ranked candidate metadata, Today adapter |
-| **Communication** | **Next refinement** | Shared voice rules for specific, calm, useful briefing language |
+| **Sync Engine** | **Next refinement** | `sync-engine.ts` target; voice, confidence, intent, reasons, explainability, continuity, story arc |
+
+Pipeline: **Capture → Memory → Understanding → Consequence → Decision → Sync Engine → UI**.
 
 `lib/intelligence/decision-engine.ts` now owns Today primary/supporting priority selection. It is profile-aware, returns ranked candidate metadata, and has basic intelligence validation scripts. `build-home-priorities.ts` delegates that selection to the shared engine; briefing and Pulse consolidation remain in progress.
 
-**Next milestone:** Phase 1.75 Intelligence Refinement — improve decision quality, universal understanding, communication, trust/explainability, and stress testing before adding new pages or integrations.
+Decision decides what matters. The Sync Engine decides how Sync helps the user understand it. It must preserve Decision ordering, avoid inventing facts, support continuity across days and weeks, know when silence is better than saying more, and follow `SYNC_PRINCIPLES.md` plus `SYNC_VOICE.md`.
+
+**Next milestone:** Phase 1.75 Intelligence Refinement — improve decision quality, universal understanding, Sync Engine quality, trust/explainability, and stress testing before adding new pages or integrations.
 
 ---
 
@@ -104,12 +108,15 @@ Sync intelligence follows five layers. Domains (Money, Health, Work, etc.) are c
 - [ ] Recognize events, tasks, worries, goals, relationships, preferences, routines, money details, health signals, family context, ideas, emotions, commitments, vague life notes, and things that are not calendar events.
 - [ ] Separate light memories from meaningful life context without forcing users to categorize inputs.
 
-### 3. Communication Engine
+### 3. Sync Engine
 
-- [ ] Add a shared Communication layer: **Memory → Understanding → Consequence → Decision → Communication**.
-- [ ] Answer: "How should Sync say this?"
+- [ ] Add a shared Sync Engine layer: **Capture → Memory → Understanding → Consequence → Decision → Sync Engine → UI**.
+- [ ] Answer: "How should Sync help the user understand this moment?"
+- [ ] Preserve Decision Engine ordering; never rerank priorities.
+- [ ] Avoid inventing facts; personalize only from memory, consequence, profile, timing, or pattern evidence.
 - [ ] Prefer clear, specific, respectful, positive, lightly coach-like, calm language.
 - [ ] Avoid vague, overly motivational, robotic, or judgmental copy.
+- [ ] Attach confidence language, communication intent, surfacing reasons, explainability, narrative continuity, story arc, respectful coaching, silence/noise control, and human-readable interpretation.
 - [ ] Replace generic lines like "You have important items today" with useful specifics like "Rent is coming up in three days. You're in a good position to handle it."
 
 ### 4. Trust and Explainability

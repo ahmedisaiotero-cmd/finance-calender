@@ -4,6 +4,8 @@ Before making changes, read:
 
 - SYNC_WORKFLOW.md
 - SYNC_VISION.md
+- SYNC_PRINCIPLES.md
+- SYNC_VOICE.md when communication or user-facing language is involved
 - ROADMAP.md when relevant
 
 ## Product identity
@@ -36,11 +38,11 @@ Every change must improve at least one of:
 - Today
 - My Life
 - Trust
-- Communication
+- Sync Engine
 
 ## The intelligence layers
 
-Current pipeline: **Memory → Understanding → Consequence → Decision → Communication**
+Current pipeline: **Capture → Memory → Understanding → Consequence → Decision → Sync Engine → UI**
 
 Money, Health, Family, Work, and Relationships are **categories**, not agents.
 
@@ -115,18 +117,23 @@ Responsibilities:
 - Ranked candidate metadata and score breakdowns
 - Basic intelligence validation through `npm run test:intelligence` and `npm run check`
 
-**Next major intelligence milestone:** Phase 1.75 Intelligence Refinement — improve decision quality, universal understanding, communication quality, trust/explainability, and messy real-life stress tests before adding new pages or integrations.
+**Next major intelligence milestone:** Phase 1.75 Intelligence Refinement — improve decision quality, universal understanding, Sync Engine quality, trust/explainability, and messy real-life stress tests before adding new pages or integrations.
 
-### 5. Communication Agent
+### 5. Sync Engine
 
-Question: How should Sync say this?
+Question: How should Sync help the user understand this moment?
 
 Responsibilities:
 
-- Turn decisions into clear, specific, respectful language.
-- Keep Sync calm, positive, lightly coach-like, and useful.
-- Avoid vague, robotic, overly motivational, or judgmental phrasing.
-- Prefer specific lines like "Rent is coming up in three days. You're in a good position to handle it." over generic lines like "You have important items today."
+- Translate selected decisions into human understanding.
+- Preserve Decision Engine ordering; never rerank priorities.
+- Use Sync's voice: calm, specific, respectful, useful, and evidence-based.
+- Attach confidence language, communication intent, surfacing reasons, and explainability.
+- Support continuity across days and weeks so Sync does not feel like it wakes up with amnesia.
+- Know when silence is better than saying more.
+- Follow `SYNC_PRINCIPLES.md`, `SYNC_VOICE.md`, and this file.
+
+The Sync Engine does **not** own memory storage, memory classification, consequence generation, priority ranking, duplicate filtering, UI layout, or domain-specific agents.
 
 ## Design rules
 
@@ -153,6 +160,7 @@ Before adding new code, inspect:
 - meaning engine (`meaning-engine.ts`, `memory-understanding.ts`)
 - consequence engine (`sync-consequences.ts`, `consequence-engine.ts`)
 - decision/ranking (`briefing-composer.ts`, `build-home-priorities.ts` — migrate toward `decision-engine.ts`)
+- Sync Engine / communication (`sync-engine.ts` when present, `SYNC_VOICE.md`, `SYNC_PRINCIPLES.md`)
 - timeline & calendar forecast (`calendar-day-events.ts`, `buildCalendarPulse`)
 
 Add messy real-life tests when changing intelligence.

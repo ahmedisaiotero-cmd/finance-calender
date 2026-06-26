@@ -19,7 +19,7 @@ Its purpose is to reduce mental load by helping people understand what matters *
 3. Sync remembers it.
 4. Sync organizes the consequences.
 5. Sync decides what matters now.
-6. Sync communicates it clearly and calmly.
+6. Sync helps the user understand the moment clearly and calmly.
 
 The value of Sync is **understanding life**, not storing information.
 
@@ -170,11 +170,17 @@ Examples:
 
 Sync should sound **calm, observant, concise, trustworthy**.
 
-Communication is the fifth intelligence layer:
+The Sync Engine is the sixth shared intelligence layer:
 
-**Memory → Understanding → Consequence → Decision → Communication**
+**Capture → Memory → Understanding → Consequence → Decision → Sync Engine → UI**
 
-Communication answers: *How should Sync say this?* It should turn decisions into specific, useful lines instead of generic summaries.
+Decision answers: *What matters?*
+
+The Sync Engine answers: *How should Sync help the user understand this moment?*
+
+It should turn selected decisions into specific, useful, explainable human understanding instead of generic summaries. It owns voice, tone, confidence language, communication intent, surfacing reasons, explainability, narrative continuity, story arc, respectful coaching, silence/noise control, evidence-based personalization, and human-readable interpretation.
+
+The Sync Engine must preserve Decision ordering and must not invent facts. It does not own memory storage, memory classification, consequence generation, priority ranking, duplicate filtering, UI layout, or domain-specific agents.
 
 **Prefer specific:**
 
@@ -284,7 +290,7 @@ Focus:
 - life load detection
 - memory understanding
 - My Life model (priorities affecting Today)
-- communication quality
+- Sync Engine quality
 - trust / edit / delete
 - real-life messy input testing
 

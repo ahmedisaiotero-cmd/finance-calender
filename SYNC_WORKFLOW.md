@@ -1,6 +1,6 @@
 # Sync Workflow Guardrails
 
-Read this before making changes. Also read `SYNC_VISION.md` and `.cursor/rules/sync-product-workflow.mdc`.
+Read this before making changes. Also read `SYNC_VISION.md`, `SYNC_PRINCIPLES.md`, `SYNC_VOICE.md` when language is involved, and `.cursor/rules/sync-product-workflow.mdc`.
 
 ## Before building
 
@@ -12,7 +12,7 @@ Every change must improve at least one of:
 - **Today**
 - **My Life**
 - **Trust**
-- **Communication**
+- **Sync Engine**
 
 If it does not improve one of these, **do not build it.**
 
@@ -30,7 +30,7 @@ The value of Sync should **increase as more life is captured**. The goal is unde
 
 ## Intelligence pipeline
 
-**Memory → Understanding → Consequence → Decision → Communication**
+**Capture → Memory → Understanding → Consequence → Decision → Sync Engine → UI**
 
 | Layer | Question | Primary modules | Status |
 |-------|----------|-----------------|--------|
@@ -38,9 +38,9 @@ The value of Sync should **increase as more life is captured**. The goal is unde
 | Understanding | Why does it matter? | `meaning-engine.ts`, `memory-understanding.ts`, `importance-scoring.ts` | Implemented |
 | Consequence | What changes? | `consequence-engine.ts`, `sync-consequences.ts` | Implemented |
 | Decision | What matters today? | `decision-engine.ts`, `build-home-priorities.ts` adapter | V1.5 implemented |
-| Communication | How should Sync say this? | Sync copy, briefing, and future shared communication rules | Next refinement |
+| Sync Engine | How should Sync help the user understand this moment? | `sync-engine.ts` target, `SYNC_PRINCIPLES.md`, `SYNC_VOICE.md`, shared narrative/explainability rules | Next refinement |
 
-Decision Engine v1.5 is profile-aware, returns ranked candidate metadata, and has basic intelligence validation scripts. Today UI consumes the shared engine; Daily Brief and Pulse consolidation remain later work.
+Decision Engine v1.5 is profile-aware, returns ranked candidate metadata, and has basic intelligence validation scripts. Decision decides what matters and must own ranking. The Sync Engine decides how Sync helps the user understand those decisions; it must preserve Decision ordering, avoid inventing facts, support continuity across days and weeks, and know when silence is better than saying more. Today UI consumes the shared Decision Engine today; Daily Brief, Pulse, and Sync Engine consolidation remain later work.
 
 **Next major intelligence milestone:** Phase 1.75 Intelligence Refinement — improve the brain of Sync before adding new pages or integrations.
 
@@ -48,7 +48,7 @@ Phase 1.75 focuses on:
 
 - **Decision Quality:** reliably choose the 1–3 memories/consequences that matter most today from many possible inputs.
 - **Universal Understanding:** recognize events, tasks, worries, goals, relationships, preferences, routines, money details, health signals, family context, ideas, emotions, commitments, vague life notes, and non-calendar captures.
-- **Communication Engine:** decide how Sync should say things clearly, specifically, respectfully, positively, calmly, and without vague/robotic/judgmental language.
+- **Sync Engine:** translate Sync's intelligence into human understanding through voice, tone, confidence language, communication intent, surfacing reasons, explainability, narrative continuity, respectful coaching, silence/noise control, evidence-based personalization, and story arc.
 - **Trust and Explainability:** explain why something surfaced, why it was remembered, why it faded, why it was not shown, and confidence when unsure.
 - **Stress Testing:** validate messy real-life sets with 100+ memories, duplicates, vague notes, emotional entries, quiet weeks, overloaded weeks, cross-domain conflicts, ambiguous captures, and lightweight memories that should not surface.
 
@@ -89,7 +89,7 @@ Users should not manage categories. Sync determines them.
 
 Deprioritize: goals, productivity systems, streaks, analytics, advanced settings, additional life areas.
 
-Focus: Capture, Memory, Understanding, Consequences, **Decision**, and **Communication**.
+Focus: Capture, Memory, Understanding, Consequences, **Decision**, and **Sync Engine**.
 
 ## Definition of done
 
