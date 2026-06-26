@@ -40,11 +40,64 @@ Every change must improve at least one of:
 - Trust
 - Sync Engine
 
-## The intelligence layers
+## Core intelligence pipeline
 
-Current pipeline: **Capture → Memory → Understanding → Consequence → Decision → Sync Engine → UI**
+All surfaces share one pipeline. Do not fork it.
+
+```
+Capture
+  ↓
+Memory
+  ↓
+Understanding
+  ↓
+Consequences
+  ↓
+Decision Engine
+  ↓
+Sync Engine
+  ↓
+UI
+```
 
 Money, Health, Family, Work, and Relationships are **categories**, not agents.
+
+### Decision Engine — decides WHAT matters
+
+- Owns **ranking**, **prioritization**, **scoring**, and **selection**
+- Today: 1 primary + 2 supporting via `decideTodayPriorities()` in `decision-engine.ts`
+- Daily Brief: ranking consolidation in progress — `briefing-composer.ts` must consume shared ranking, not duplicate it
+- Returns ranked candidate metadata and score breakdowns for downstream consumers
+
+### Sync Engine — decides HOW Sync communicates
+
+- Owns **voice**, **tone**, **confidence**, **explanation**, **continuity**, **narrative**, and **trust metadata**
+- Translates Decision Engine output into human-readable understanding via `runSyncEngine()` in `sync-engine.ts`
+- **Preserves Decision Engine ordering** — never reranks priorities
+- **Never invents facts** — personalize only from memory, consequence, profile, timing, or pattern evidence
+- Knows when silence is better than saying more
+- Follow `SYNC_PRINCIPLES.md`, `SYNC_VOICE.md`, and this file
+
+The Sync Engine does **not** own memory storage, memory classification, consequence generation, priority ranking, duplicate filtering, UI layout, or domain-specific agents.
+
+### UI — renders only
+
+- Displays information; **never ranks**, **never interprets**, **never owns business logic**
+- Adapters (`build-home-priorities.ts`, `build-today-view.ts`, `build-daily-brief.ts`) stay thin: wire pipeline output to view models
+- Components consume prepared copy and metadata — they do not score, filter consequences, or rewrite Sync voice
+
+## Engineering rules
+
+- **Reuse intelligence** — search `lib/intelligence/*` and `lib/sync-capture/*` before adding logic
+- **Never duplicate ranking** — all prioritization belongs in `decision-engine.ts`
+- **Never create another communication layer** — user-facing language flows through Sync Engine + `SYNC_VOICE.md`
+- **Never invent facts** — evidence-based interpretation only
+- **Preserve visible behavior during migrations** whenever possible — lock output with tests before changing internals
+- **Prefer metadata-first migrations** — attach richer `scoreBreakdown`, intent, and explainability before changing visible copy
+- **Keep adapters thin** — selection, scoring, and voice stay in shared intelligence, not page components or mobile-only helpers
+- **Strengthen the single shared pipeline** — every change should reduce duplication, not add a parallel brain
+
+## The intelligence layers
 
 ### 1. Memory Agent
 
@@ -98,24 +151,29 @@ Responsibilities:
 - Runtime briefing engine: `sync-consequences.ts` (`buildAllConsequences`, `deriveConsequencesFromMemory`)
 - Support: `consequence-timing.ts`, `consequence-link.ts`, `sync-foresight.ts`, `life-load.ts`
 
-### 4. Decision Agent
+### 4. Decision Engine
 
-Question: What should the user do next?
+Question: What matters?
 
 Responsibilities:
 
-- Rank what matters most today.
-- Pick the top 1 to 3 useful items.
-- Prefer specific time-sensitive items over vague summaries.
-- Prefer important people, deadlines, money, health, work, and commitments over light memories.
-- Do not overwhelm the user.
+- Rank what matters most — for Today, Daily Brief, and future surfaces
+- Pick the top 1 to 3 useful items for Today; provide ordered pools for longer briefings
+- Prefer specific time-sensitive items over vague summaries
+- Prefer important people, deadlines, money, health, work, and commitments over light memories
+- Do not overwhelm the user
 
 **Implemented today** (`lib/intelligence/decision-engine.ts`):
 
-- Profile-aware Today ranking
+- Profile-aware Today ranking via `decideTodayPriorities()`
 - Normal 1 primary + 2 supporting output
 - Ranked candidate metadata and score breakdowns
 - Basic intelligence validation through `npm run test:intelligence` and `npm run check`
+
+**Consolidation in progress:**
+
+- Daily Brief still ranks in `briefing-composer.ts` — migrate to shared `rankBriefConsequences()` (or equivalent) in `decision-engine.ts`
+- `build-home-priorities.ts` already delegates Today selection to the Decision Engine, then runs Sync Engine
 
 **Next major intelligence milestone:** Phase 1.75 Intelligence Refinement — improve decision quality, universal understanding, Sync Engine quality, trust/explainability, and messy real-life stress tests before adding new pages or integrations.
 
@@ -123,17 +181,13 @@ Responsibilities:
 
 Question: How should Sync help the user understand this moment?
 
-Responsibilities:
+**Implemented today** (`lib/intelligence/sync-engine.ts`):
 
-- Translate selected decisions into human understanding.
-- Preserve Decision Engine ordering; never rerank priorities.
-- Use Sync's voice: calm, specific, respectful, useful, and evidence-based.
-- Attach confidence language, communication intent, surfacing reasons, and explainability.
-- Support continuity across days and weeks so Sync does not feel like it wakes up with amnesia.
-- Know when silence is better than saying more.
-- Follow `SYNC_PRINCIPLES.md`, `SYNC_VOICE.md`, and this file.
+- `runSyncEngine()` — intent, confidence, surfacing reasons, explainability, continuity, arc
+- Quality checks: preserves visible copy and Decision Engine ordering
+- Consumed by `build-home-priorities.ts` and `build-daily-brief.ts` (metadata layer)
 
-The Sync Engine does **not** own memory storage, memory classification, consequence generation, priority ranking, duplicate filtering, UI layout, or domain-specific agents.
+See **Sync Engine** under Core intelligence pipeline for permanent ownership rules.
 
 ## Design rules
 
@@ -159,8 +213,10 @@ Before adding new code, inspect:
 - memory storage & profiling (`lib/captured-items.tsx`, `memory-profile.ts`, `memory-aging.ts`)
 - meaning engine (`meaning-engine.ts`, `memory-understanding.ts`)
 - consequence engine (`sync-consequences.ts`, `consequence-engine.ts`)
-- decision/ranking (`briefing-composer.ts`, `build-home-priorities.ts` — migrate toward `decision-engine.ts`)
-- Sync Engine / communication (`sync-engine.ts` when present, `SYNC_VOICE.md`, `SYNC_PRINCIPLES.md`)
+- Decision Engine (`decision-engine.ts`) — all ranking and selection
+- Daily Brief presentation (`briefing-composer.ts`) — sectioning and caps only; ranking migrates to Decision Engine
+- Today adapter (`build-home-priorities.ts`, `build-today-view.ts`) — thin wiring only
+- Sync Engine / communication (`sync-engine.ts`, `SYNC_VOICE.md`, `SYNC_PRINCIPLES.md`)
 - timeline & calendar forecast (`calendar-day-events.ts`, `buildCalendarPulse`)
 
 Add messy real-life tests when changing intelligence.
