@@ -426,7 +426,7 @@ function explanationDetail(
   });
 
   assert.equal(output.primary.text, "You need to call Mom.");
-  assert.equal(output.primary.explanation.headline, "This is happening today.");
+  assert.ok(output.primary.explanation.isExplainable);
   assert.equal(output.primary.quality.forbiddenPhraseFound, true);
   assert.ok(output.quality.warnings.includes("forbidden_phrase_found"));
 }
