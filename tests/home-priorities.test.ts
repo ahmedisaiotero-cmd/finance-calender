@@ -79,6 +79,32 @@ function assertNoBannedVisible(view: ReturnType<typeof homeAt>) {
   assert.equal(view.forecastLabel, null);
 }
 
+function assertSyncEngineMetadata(view: ReturnType<typeof homeAt>) {
+  assert.equal(view.syncEngine.primary.text, view.primaryPriority.text);
+  assert.deepEqual(
+    view.syncEngine.supporting.map((line) => line.text),
+    view.supportingPriorities.map((line) => line.text),
+  );
+  assert.equal(view.syncEngine.quality.preservesVisibleCopy, true);
+  assert.equal(view.syncEngine.quality.preservesDecisionOrdering, true);
+
+  const selectedLines = [
+    view.syncEngine.primary,
+    ...view.syncEngine.supporting,
+  ];
+
+  for (const line of selectedLines) {
+    assert.ok(line.intent, `missing intent for ${line.text}`);
+    assert.ok(line.confidence, `missing confidence for ${line.text}`);
+    assert.ok(line.reasons.length > 0, `missing reasons for ${line.text}`);
+    assert.ok(line.evidence.length > 0, `missing evidence for ${line.text}`);
+    assert.equal(line.quality.hasIntent, true);
+    assert.equal(line.quality.hasConfidence, true);
+    assert.equal(line.quality.hasReason, true);
+    assert.equal(line.quality.hasEvidence, true);
+  }
+}
+
 // Test 1: sync ongoing at 9:30 PM — primary is sync wrap, not tomorrow summary
 {
   const reference = new Date("2026-06-14T21:30:00");
@@ -96,6 +122,7 @@ function assertNoBannedVisible(view: ReturnType<typeof homeAt>) {
   assert.ok(view.supportingPriorities.some((line) => /payday/i.test(line.text)));
   assert.ok(view.supportingPriorities.some((line) => /flight/i.test(line.text)));
   assertNoBannedVisible(view);
+  assertSyncEngineMetadata(view);
 }
 
 // Test 2: same inputs at 10:30 PM — primary is next specific item, not tomorrow summary
@@ -116,6 +143,7 @@ function assertNoBannedVisible(view: ReturnType<typeof homeAt>) {
     `expected payday or flight primary, got: ${view.primaryPriority.text}`,
   );
   assertNoBannedVisible(view);
+  assertSyncEngineMetadata(view);
 }
 
 // Test 3: workout at 7:30 PM
@@ -128,6 +156,7 @@ function assertNoBannedVisible(view: ReturnType<typeof homeAt>) {
   assert.ok(view.supportingPriorities.some((line) => /payday/i.test(line.text)));
   assert.ok(view.supportingPriorities.some((line) => /flight/i.test(line.text)));
   assertNoBannedVisible(view);
+  assertSyncEngineMetadata(view);
 }
 
 // Test 4: payday + rent — connection appears once, not duplicated
@@ -147,6 +176,7 @@ function assertNoBannedVisible(view: ReturnType<typeof homeAt>) {
   );
   assertNoDuplicatePaydayRent(view);
   assertNoBannedVisible(view);
+  assertSyncEngineMetadata(view);
 }
 
 // Test 5: light items do not dominate when nothing important exists
@@ -167,6 +197,7 @@ function assertNoBannedVisible(view: ReturnType<typeof homeAt>) {
 
   assert.ok(!/coffee|mcdonald/i.test(priorityText), "light items should not lead Home");
   assertNoBannedVisible(view);
+  assertSyncEngineMetadata(view);
 }
 
 // Test 6: quiet state when no meaningful upcoming data
@@ -188,6 +219,11 @@ function assertNoBannedVisible(view: ReturnType<typeof homeAt>) {
   assert.match(view.primaryPriority.text, /tell sync|on your mind/i);
   assert.equal(view.sectionLabel, null);
   assert.equal(view.forecastLabel, null);
+  assert.equal(view.syncEngine.primary.text, view.primaryPriority.text);
+  assert.equal(view.syncEngine.isEmpty, true);
+  assert.deepEqual(view.syncEngine.supporting, []);
+  assert.deepEqual(view.syncEngine.rankedLines, []);
+  assertSyncEngineMetadata(view);
 }
 
 // Scenario D: flight + work tomorrow late evening — specific items lead
@@ -205,6 +241,7 @@ function assertNoBannedVisible(view: ReturnType<typeof homeAt>) {
       view.futureContext?.text.match(/tomorrow starts early|tight morning/i),
   );
   assertNoBannedVisible(view);
+  assertSyncEngineMetadata(view);
 }
 
 console.log("home-priorities tests passed");

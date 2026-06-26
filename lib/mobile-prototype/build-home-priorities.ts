@@ -6,7 +6,12 @@ import {
   decideTodayPriorities,
   isTomorrowSummaryText,
   type DecisionCandidate,
+  type TodayDecision,
 } from "@/lib/intelligence/decision-engine";
+import {
+  runSyncEngine,
+  type SyncEngineOutput,
+} from "@/lib/intelligence/sync-engine";
 import {
   buildDrilldownForConsequence,
   buildDrilldownForInsight,
@@ -34,6 +39,7 @@ export type HomePrioritiesView = {
   primaryPriority: HomePriorityLine;
   supportingPriorities: HomePriorityLine[];
   futureContext: HomePriorityLine | null;
+  syncEngine: SyncEngineOutput;
   isEmpty: boolean;
   /** @deprecated use primaryPriority */
   headline: HomePriorityLine;
@@ -191,12 +197,14 @@ function resolveReflection(
 function toView(
   primary: DecisionCandidate,
   supporting: DecisionCandidate[],
+  rankedCandidates: DecisionCandidate[],
   futureContext: HomePriorityLine | null,
   reflection: HomePriorityLine | null,
   items: CapturedSyncItem[],
   consequences: SyncConsequence[],
   reference: Date,
   isEmpty: boolean,
+  isQuiet: boolean,
 ): HomePrioritiesView {
   const primaryPriority = linkFromText(
     primary.text,
@@ -214,12 +222,29 @@ function toView(
       reference,
     ),
   );
+  const visiblePrimary = {
+    ...primary,
+    text: primaryPriority.text,
+  };
+  const visibleSupporting = supporting.map((candidate, index) => ({
+    ...candidate,
+    text: supportingPriorities[index]?.text ?? candidate.text,
+  }));
+  const visibleDecision: TodayDecision = {
+    primary: visiblePrimary,
+    supporting: visibleSupporting,
+    rankedCandidates,
+    isEmpty,
+    isQuiet,
+  };
+  const syncEngine = runSyncEngine({ decision: visibleDecision, reference });
 
   return {
     reflection,
     primaryPriority,
     supportingPriorities,
     futureContext,
+    syncEngine,
     isEmpty,
     headline: primaryPriority,
     details: supportingPriorities,
@@ -256,6 +281,7 @@ export function buildHomePriorities(input: {
     return toView(
       { text: homeEmptyHeadline(), score: 0, consequence: null, source: "empty" },
       [],
+      [],
       emptyForecast
         ? { text: emptyForecast, drilldown: null }
         : null,
@@ -264,6 +290,7 @@ export function buildHomePriorities(input: {
       consequences,
       reference,
       true,
+      false,
     );
   }
 
@@ -304,16 +331,18 @@ export function buildHomePriorities(input: {
         source: "quiet",
       },
       [],
+      [],
       null,
       reflection,
       items,
       consequences,
       reference,
       false,
+      true,
     );
   }
 
-  const { primary, supporting } = decision;
+  const { primary, supporting, rankedCandidates } = decision;
 
   const priorityTexts = [
     primary.text,
@@ -346,11 +375,13 @@ export function buildHomePriorities(input: {
   return toView(
     primary,
     supporting,
+    rankedCandidates,
     futureContext,
     reflection,
     items,
     consequences,
     reference,
+    false,
     false,
   );
 }
