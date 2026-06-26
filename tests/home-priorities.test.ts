@@ -87,6 +87,8 @@ function assertSyncEngineMetadata(view: ReturnType<typeof homeAt>) {
   );
   assert.equal(view.syncEngine.quality.preservesVisibleCopy, true);
   assert.equal(view.syncEngine.quality.preservesDecisionOrdering, true);
+  assert.ok(view.syncEngine.continuity);
+  assert.equal(view.syncEngine.continuity.window.days, 7);
 
   const selectedLines = [
     view.syncEngine.primary,

@@ -7,6 +7,7 @@ import type {
 } from "@/lib/intelligence/decision-engine";
 import {
   runSyncEngine,
+  type SyncEngineOutput,
   type SyncEngineLine,
   type SyncSurfacingReason,
 } from "@/lib/intelligence/sync-engine";
@@ -146,11 +147,20 @@ function explanationDetail(
   return line.explanation.details.find((detail) => detail.reason === reason);
 }
 
+function signal(
+  output: SyncEngineOutput,
+  kind: SyncEngineOutput["continuity"]["signals"][number]["kind"],
+) {
+  return output.continuity.signals.find((item) => item.kind === kind);
+}
+
 {
   const input = decision();
   const output = runSyncEngine({ decision: input });
 
   assert.equal(output.primary.text, input.primary.text);
+  assert.ok(output.continuity);
+  assert.equal(output.continuity.window.days, 7);
   assert.deepEqual(
     output.supporting.map((line) => line.text),
     input.supporting.map((line) => line.text),
@@ -167,6 +177,17 @@ function explanationDetail(
   );
   assert.equal(output.quality.preservesDecisionOrdering, true);
   assert.equal(output.quality.preservesVisibleCopy, true);
+}
+
+{
+  const output = runSyncEngine({ decision: decision() });
+  const repeated = signal(output, "repeated_area");
+  const dominant = signal(output, "dominant_weekly_theme");
+
+  assert.equal(repeated?.area, "finance");
+  assert.ok((repeated?.count ?? 0) >= 2);
+  assert.equal(dominant?.area, "finance");
+  assert.equal(output.continuity.dominantTheme?.theme, "money");
 }
 
 {
@@ -259,6 +280,121 @@ function explanationDetail(
   assert.ok(
     output.primary.explanation.details.some((detail) =>
       ["tomorrow", "life_load"].includes(detail.reason),
+    ),
+  );
+}
+
+{
+  const quietCandidate = candidate({
+    text: "Today is quiet.",
+    score: 0,
+    consequence: null,
+    source: "quiet",
+    area: undefined,
+    daysUntil: undefined,
+    dateKey: undefined,
+    sortMinutes: undefined,
+    isSpecific: false,
+    isContext: false,
+    scoreBreakdown: breakdown({ base: 0 }),
+  });
+  const quietOutput = runSyncEngine({
+    decision: {
+      primary: quietCandidate,
+      supporting: [],
+      rankedCandidates: [],
+      isEmpty: false,
+      isQuiet: true,
+    },
+  });
+  const output = runSyncEngine({
+    decision: {
+      primary: quietCandidate,
+      supporting: [],
+      rankedCandidates: [],
+      isEmpty: false,
+      isQuiet: true,
+    },
+    recentOutputs: [quietOutput],
+  });
+
+  assert.equal(output.continuity.isQuietWeek, true);
+  assert.equal(signal(output, "quiet_week")?.kind, "quiet_week");
+}
+
+{
+  const tomorrowWork = candidate({
+    text: "Work starts tomorrow at 11.",
+    source: "consequence",
+    area: "work",
+    daysUntil: 1,
+    dateKey: "2026-06-27",
+    sortMinutes: 11 * 60,
+    consequence: consequence({
+      id: "work",
+      kind: "work_start",
+      surfaceText: "Work starts tomorrow at 11.",
+      daysUntil: 1,
+      dateKey: "2026-06-27",
+      area: "work",
+      sortMinutes: 11 * 60,
+    }),
+  });
+  const base = decision();
+  const output = runSyncEngine({
+    decision: decision({
+      supporting: [...base.supporting, tomorrowWork],
+      rankedCandidates: [base.primary, ...base.supporting, tomorrowWork],
+    }),
+  });
+
+  assert.equal(output.continuity.isBusyWeek, true);
+  assert.equal(signal(output, "busy_week")?.kind, "busy_week");
+}
+
+{
+  const recurring = candidate({
+    text: "Payday arrives tomorrow.",
+    source: "consequence",
+    area: "finance",
+    daysUntil: 1,
+    dateKey: "2026-06-27",
+    sortMinutes: null,
+    consequence: consequence({
+      id: "payday",
+      kind: "income",
+      surfaceText: "Payday arrives tomorrow.",
+      daysUntil: 1,
+      dateKey: "2026-06-27",
+      area: "finance",
+      sortMinutes: undefined,
+    }),
+  });
+  const recentOutput = runSyncEngine({
+    decision: decision({
+      primary: recurring,
+      supporting: [],
+      rankedCandidates: [recurring],
+    }),
+  });
+  const newToday = candidate({
+    text: "Workout starts at 6.",
+    consequence: consequence({ id: "workout" }),
+  });
+  const output = runSyncEngine({
+    decision: decision({
+      primary: recurring,
+      supporting: [newToday],
+      rankedCandidates: [recurring, newToday],
+    }),
+    recentOutputs: [recentOutput],
+  });
+
+  assert.equal(signal(output, "recently_surfaced")?.kind, "recently_surfaced");
+  assert.equal(signal(output, "new_today")?.kind, "new_today");
+  assert.ok(
+    output.continuity.recentlySurfaced.some(
+      (line) => line.source.consequenceId === "payday",
     ),
   );
 }

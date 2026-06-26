@@ -111,6 +111,40 @@ export type SyncEngineArc = {
   evidence: SyncEvidence[];
 };
 
+export type SyncContinuityWindow = {
+  startDateKey: string;
+  endDateKey: string;
+  days: number;
+};
+
+export type SyncContinuitySignalKind =
+  | "repeated_area"
+  | "dominant_weekly_theme"
+  | "quiet_week"
+  | "busy_week"
+  | "recently_surfaced"
+  | "new_today";
+
+export type SyncContinuitySignal = {
+  kind: SyncContinuitySignalKind;
+  area?: string;
+  summary: string;
+  confidence: SyncConfidence;
+  count?: number;
+  dateKeys: string[];
+  evidence: SyncEvidence[];
+};
+
+export type SyncContinuityState = {
+  window: SyncContinuityWindow;
+  signals: SyncContinuitySignal[];
+  dominantTheme: SyncEngineArc | null;
+  isQuietWeek: boolean;
+  isBusyWeek: boolean;
+  recentlySurfaced: SyncEngineLine[];
+  surfacedToday: SyncEngineLine[];
+};
+
 export type SyncEngineQuality = {
   preservesDecisionOrdering: boolean;
   preservesVisibleCopy: boolean;
@@ -121,6 +155,10 @@ export type SyncEngineQuality = {
 export type SyncEngineInput = {
   decision: TodayDecision;
   reference?: Date;
+  recentOutputs?: Pick<
+    SyncEngineOutput,
+    "primary" | "supporting" | "rankedLines" | "isQuiet" | "isEmpty"
+  >[];
 };
 
 export type SyncEngineOutput = {
@@ -128,6 +166,7 @@ export type SyncEngineOutput = {
   supporting: SyncEngineLine[];
   rankedLines: SyncEngineLine[];
   arc: SyncEngineArc | null;
+  continuity: SyncContinuityState;
   quality: SyncEngineQuality;
   isEmpty: boolean;
   isQuiet: boolean;
@@ -527,6 +566,219 @@ function arcThemeForArea(area: string): SyncEngineArc["theme"] | null {
   }
 }
 
+function dateKeyFor(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function addDays(date: Date, amount: number) {
+  const next = new Date(date);
+  next.setDate(next.getDate() + amount);
+  return next;
+}
+
+function lineIdentity(line: SyncEngineLine) {
+  return (
+    line.source.consequenceId ??
+    line.source.memoryId ??
+    line.text.trim().toLowerCase()
+  );
+}
+
+function uniqueLines(lines: SyncEngineLine[]) {
+  const seen = new Set<string>();
+  const unique: SyncEngineLine[] = [];
+
+  for (const line of lines) {
+    const identity = lineIdentity(line);
+    if (seen.has(identity)) continue;
+    seen.add(identity);
+    unique.push(line);
+  }
+
+  return unique;
+}
+
+function dateKeysForLines(lines: SyncEngineLine[]) {
+  return [
+    ...new Set(
+      lines
+        .map((line) => line.source.dateKey)
+        .filter((dateKey): dateKey is string => Boolean(dateKey)),
+    ),
+  ];
+}
+
+function evidenceForLines(lines: SyncEngineLine[]) {
+  const seen = new Set<string>();
+  const evidence: SyncEvidence[] = [];
+
+  for (const line of lines) {
+    for (const item of line.evidence) {
+      const key = `${item.type}:${item.label}:${String(item.value)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      evidence.push(item);
+    }
+  }
+
+  return evidence;
+}
+
+function selectedLinesForOutput(
+  output: Pick<SyncEngineOutput, "primary" | "supporting">,
+) {
+  return [output.primary, ...output.supporting];
+}
+
+function lineLooksBusy(line: SyncEngineLine) {
+  return line.reasons.some((reason) =>
+    ["time_sensitive", "today", "tomorrow", "life_load"].includes(reason),
+  );
+}
+
+function inferContinuity(input: {
+  primary: SyncEngineLine;
+  supporting: SyncEngineLine[];
+  rankedLines: SyncEngineLine[];
+  recentOutputs?: SyncEngineInput["recentOutputs"];
+  reference: Date;
+  isEmpty: boolean;
+  isQuiet: boolean;
+}): SyncContinuityState {
+  const window: SyncContinuityWindow = {
+    startDateKey: dateKeyFor(addDays(input.reference, -6)),
+    endDateKey: dateKeyFor(input.reference),
+    days: 7,
+  };
+  const selectedToday = selectedLinesForOutput(input);
+  const recentOutputs = input.recentOutputs ?? [];
+  const recentSelected = recentOutputs.flatMap(selectedLinesForOutput);
+  const continuityLines = uniqueLines([
+    ...selectedToday,
+    ...input.rankedLines,
+    ...recentSelected,
+  ]);
+  const signals: SyncContinuitySignal[] = [];
+  const areaGroups = new Map<string, SyncEngineLine[]>();
+
+  for (const line of continuityLines) {
+    const area = line.source.area;
+    if (!area) continue;
+    const key = area.toLowerCase();
+    areaGroups.set(key, [...(areaGroups.get(key) ?? []), line]);
+  }
+
+  for (const [area, lines] of areaGroups) {
+    if (lines.length < 2) continue;
+    signals.push({
+      kind: "repeated_area",
+      area,
+      summary: `${area} appears more than once in the current continuity window.`,
+      confidence: "medium",
+      count: lines.length,
+      dateKeys: dateKeysForLines(lines),
+      evidence: evidenceForLines(lines),
+    });
+  }
+
+  const rankedAreas = [...areaGroups.entries()].sort(
+    (a, b) => b[1].length - a[1].length,
+  );
+  const topArea = rankedAreas[0];
+  const nextArea = rankedAreas[1];
+  let dominantTheme: SyncEngineArc | null = null;
+
+  if (topArea && topArea[1].length >= 2 && topArea[1].length > (nextArea?.[1].length ?? 0)) {
+    const theme = arcThemeForArea(topArea[0]) ?? "mixed";
+    dominantTheme = {
+      theme,
+      summary: `${theme} is the clearest continuity theme in the current window.`,
+      confidence: "medium",
+      evidence: evidenceForLines(topArea[1]),
+    };
+    signals.push({
+      kind: "dominant_weekly_theme",
+      area: topArea[0],
+      summary: `${topArea[0]} is the dominant area in the current continuity window.`,
+      confidence: "medium",
+      count: topArea[1].length,
+      dateKeys: dateKeysForLines(topArea[1]),
+      evidence: evidenceForLines(topArea[1]),
+    });
+  }
+
+  const quietCount =
+    (input.isQuiet || input.isEmpty ? 1 : 0) +
+    recentOutputs.filter((output) => output.isQuiet || output.isEmpty).length;
+  const totalObservedDays = 1 + recentOutputs.length;
+  const isQuietWeek = quietCount >= Math.max(2, Math.ceil(totalObservedDays * 0.6));
+  if (isQuietWeek) {
+    signals.push({
+      kind: "quiet_week",
+      summary: "Most observed days in this continuity window are quiet.",
+      confidence: recentOutputs.length > 0 ? "medium" : "low",
+      count: quietCount,
+      dateKeys: [],
+      evidence: [{ type: "source", label: "Quiet observed days", value: quietCount }],
+    });
+  }
+
+  const busyLines = continuityLines.filter(lineLooksBusy);
+  const isBusyWeek = busyLines.length >= 3;
+  if (isBusyWeek) {
+    signals.push({
+      kind: "busy_week",
+      summary: "Several time-sensitive or near-term items appear in this continuity window.",
+      confidence: "medium",
+      count: busyLines.length,
+      dateKeys: dateKeysForLines(busyLines),
+      evidence: evidenceForLines(busyLines),
+    });
+  }
+
+  const recentIdentities = new Set(recentSelected.map(lineIdentity));
+  const recentlySurfaced = selectedToday.filter((line) =>
+    recentIdentities.has(lineIdentity(line)),
+  );
+  for (const line of recentlySurfaced) {
+    signals.push({
+      kind: "recently_surfaced",
+      area: line.source.area?.toLowerCase(),
+      summary: "This item also appeared in recent Sync Engine output.",
+      confidence: "high",
+      count: 1,
+      dateKeys: dateKeysForLines([line]),
+      evidence: line.evidence,
+    });
+  }
+
+  for (const line of selectedToday) {
+    if (recentIdentities.has(lineIdentity(line))) continue;
+    signals.push({
+      kind: "new_today",
+      area: line.source.area?.toLowerCase(),
+      summary: "This item is new in today's selected Sync Engine output.",
+      confidence: recentOutputs.length > 0 ? "medium" : "low",
+      count: 1,
+      dateKeys: dateKeysForLines([line]),
+      evidence: line.evidence,
+    });
+  }
+
+  return {
+    window,
+    signals,
+    dominantTheme,
+    isQuietWeek,
+    isBusyWeek,
+    recentlySurfaced,
+    surfacedToday: selectedToday,
+  };
+}
+
 function inferArc(
   lines: SyncEngineLine[],
   decision: TodayDecision,
@@ -615,6 +867,15 @@ export function runSyncEngine(input: SyncEngineInput): SyncEngineOutput {
   const supporting = decision.supporting.map(narrateCandidate);
   const rankedLines = decision.rankedCandidates.map(narrateCandidate);
   const arc = inferArc([primary, ...supporting], decision);
+  const continuity = inferContinuity({
+    primary,
+    supporting,
+    rankedLines,
+    recentOutputs: input.recentOutputs,
+    reference: input.reference ?? new Date(),
+    isEmpty: decision.isEmpty,
+    isQuiet: decision.isQuiet,
+  });
   const quality = evaluateOutputQuality(
     decision,
     primary,
@@ -627,6 +888,7 @@ export function runSyncEngine(input: SyncEngineInput): SyncEngineOutput {
     supporting,
     rankedLines,
     arc,
+    continuity,
     quality,
     isEmpty: decision.isEmpty,
     isQuiet: decision.isQuiet,
