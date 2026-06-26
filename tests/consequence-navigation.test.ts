@@ -86,16 +86,28 @@ function timedItem(
     reference,
   });
 
-  assert.match(today.insight.text, /tomorrow starts early|tight morning|looks busy/i);
-  assert.ok(today.insight.drilldown, "insight should link to tomorrow drilldown");
-  assert.equal(today.insight.drilldown?.kind, "day");
+  assert.match(today.insight.text, /flight/i);
+  assert.ok(today.futureContext, "load headline should appear in futureContext");
+  assert.match(
+    today.futureContext!.text,
+    /tomorrow starts early|tight morning/i,
+  );
+  assert.ok(
+    today.futureContext!.drilldown,
+    "futureContext should attach a drilldown target",
+  );
 
   assert.ok(today.priorityDetails.length >= 1);
   assert.ok(!today.priorityDetails.some((line) => /coffee|mcdonald|sad today/i.test(line.text.toLowerCase())));
   assert.ok(today.priorityDetails.every((line) => line.drilldown));
 
-  const tomorrowTarget = buildDrilldownForInsight(today.insight.text, brief.consequences ?? [], reference);
+  const tomorrowTarget = buildDrilldownForInsight(
+    today.futureContext!.text,
+    brief.consequences ?? [],
+    reference,
+  );
   assert.ok(tomorrowTarget);
+  assert.equal(tomorrowTarget!.kind, "day");
   const tomorrowView = buildLifeDrilldownView(tomorrowTarget!, {
     items: store.items,
     consequences: brief.consequences ?? [],

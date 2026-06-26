@@ -71,17 +71,19 @@ import { buildTodayView } from "@/lib/mobile-prototype/build-today-view";
     },
     consequences,
     items: [],
+    reference: new Date("2026-06-14T18:00:00"),
   });
 
-  assert.match(view.headline.text, /tomorrow starts early|tight morning/i);
-  assert.ok(view.details.length >= 2);
-  assert.ok(view.details.length <= 4);
-  assert.ok(
-    view.details.some((line) => /flight/i.test(line.text)),
+  assert.match(view.headline.text, /flight at 6:00 AM/i);
+  assert.match(
+    view.futureContext?.text ?? "",
+    /tomorrow starts early|tight morning/i,
   );
-  assert.ok(
-    view.details.some((line) => /payday/i.test(line.text)),
-  );
+  assert.ok(view.details.length >= 1);
+  assert.ok(view.details.length <= 2);
+  assert.ok(view.details.some((line) => /payday/i.test(line.text)));
+  assert.ok(view.details.some((line) => /work/i.test(line.text)));
+  assert.ok(!view.details.some((line) => /flight/i.test(line.text)));
   assert.ok(!view.details.some((line) => /coffee/i.test(line.text)));
 }
 

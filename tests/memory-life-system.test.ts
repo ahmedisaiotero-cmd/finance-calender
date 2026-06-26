@@ -80,7 +80,7 @@ function item(
     "meaningful",
   );
   const insight = buildThreadPatternInsight(stressItems[0], stressItems, reference);
-  assert.match(insight ?? "", /mentioned stress often/i);
+  assert.match(insight ?? "", /mentioned stress (often|a few times recently)/i);
 }
 
 {
@@ -153,11 +153,17 @@ function item(
     },
     consequences,
     items: [],
+    reference,
   });
-  assert.match(view.insight.text, /tomorrow starts early|tight morning/i);
-  assert.equal(view.insight.drilldown?.kind, "day");
+  assert.match(view.insight.text, /flight at 6:00 AM/i);
+  assert.match(
+    view.futureContext?.text ?? "",
+    /tomorrow starts early|tight morning/i,
+  );
+  assert.equal(view.futureContext?.drilldown?.kind, "day");
   assert.ok(view.priorityDetails.length >= 1);
-  assert.match(view.priorityDetails[0]!.text, /flight|daughter|school/i);
+  assert.match(view.priorityDetails[0]!.text, /daughter|school/i);
+  assert.ok(!/flight/i.test(view.priorityDetails[0]!.text));
 }
 
 console.log("memory-life-system tests passed");
