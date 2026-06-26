@@ -29,6 +29,7 @@ import {
 import { buildTodayView } from "@/lib/mobile-prototype/build-today-view";
 import { loadLifeProfile } from "@/lib/mobile-prototype/life-profile";
 import type { TodayBriefLine } from "@/lib/mobile-prototype/build-today-view";
+import type { SyncEngineLine } from "@/lib/intelligence/sync-engine";
 import type { SyncCaptureInput } from "@/lib/sync-capture/capture-source";
 import {
   captureSourceMetadata,
@@ -88,6 +89,67 @@ function BriefingLink({
   );
 }
 
+function explanationDetailSummaries(line: SyncEngineLine) {
+  return line.explanation.details
+    .map((detail) => detail.summary)
+    .filter((summary) => summary !== line.explanation.headline)
+    .slice(0, 2);
+}
+
+function WhyDisclosure({
+  id,
+  line,
+  openWhy,
+  onToggle,
+}: {
+  id: string;
+  line: SyncEngineLine | undefined;
+  openWhy: string | null;
+  onToggle: (id: string) => void;
+}) {
+  if (!line?.explanation.isExplainable) return null;
+
+  const isOpen = openWhy === id;
+  const detailSummaries = explanationDetailSummaries(line);
+
+  return (
+    <>
+      <button
+        type="button"
+        className="sync-brief-why-toggle"
+        aria-expanded={isOpen}
+        aria-controls={`sync-brief-why-${id}`}
+        onClick={() => onToggle(id)}
+      >
+        Why?
+      </button>
+      {isOpen && (
+        <span
+          id={`sync-brief-why-${id}`}
+          className="sync-brief-why-panel"
+        >
+          <span className="sync-brief-why-headline">
+            {line.explanation.headline}
+          </span>
+          {detailSummaries.map((summary, index) => (
+            <span
+              key={`${summary}-${index}`}
+              className="sync-brief-why-detail"
+            >
+              {summary}
+            </span>
+          ))}
+          {line.confidence !== "high" && (
+            <span className="sync-brief-why-confidence">
+              Confidence: {line.confidence}
+            </span>
+          )}
+        </span>
+      )}
+    </>
+  );
+}
+
 export function TodayScreen({
   onOpenTarget,
 }: {
@@ -116,6 +178,7 @@ export function TodayScreen({
   const [pendingDuplicate, setPendingDuplicate] = useState<PendingDuplicate | null>(null);
   const [confirmation, setConfirmation] = useState<CaptureConfirmation | null>(null);
   const [captureNotice, setCaptureNotice] = useState<string | null>(null);
+  const [openWhy, setOpenWhy] = useState<string | null>(null);
 
   const reference = useMemo(() => new Date(), [mounted, activeItems.length]);
 
@@ -430,6 +493,10 @@ export function TodayScreen({
     }
   };
 
+  const toggleWhy = (id: string) => {
+    setOpenWhy((current) => (current === id ? null : id));
+  };
+
   return (
     <article className="sync-brief-screen sync-brief-screen--home mobile-prototype-pad-x">
       <div className="sync-brief-stack">
@@ -467,6 +534,12 @@ export function TodayScreen({
               line={todayView.primaryPriority}
               onOpen={onOpenTarget}
             />
+            <WhyDisclosure
+              id="primary"
+              line={todayView.syncEngine.primary}
+              openWhy={openWhy}
+              onToggle={toggleWhy}
+            />
           </p>
           {todayView.supportingPriorities.map((line, index) => (
             <p
@@ -474,6 +547,12 @@ export function TodayScreen({
               className="sync-brief-detail-line"
             >
               <BriefingLink line={line} onOpen={onOpenTarget} />
+              <WhyDisclosure
+                id={`supporting-${index}`}
+                line={todayView.syncEngine.supporting[index]}
+                openWhy={openWhy}
+                onToggle={toggleWhy}
+              />
             </p>
           ))}
           {todayView.futureContext && (
