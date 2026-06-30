@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 
 const PREVIEW_QUERY_PARAM = "sync-device-preview";
 const FRAME_QUERY_VALUE = "frame";
@@ -10,40 +10,39 @@ type DevDevicePreviewProps = {
   children: ReactNode;
 };
 
-type PreviewState =
-  | { mode: "loading" }
-  | { mode: "browser" }
-  | { mode: "device"; src: string };
+const subscribe = () => () => {};
+
+function getServerSnapshot() {
+  return "loading";
+}
+
+function getPreviewSnapshot() {
+  const url = new URL(window.location.href);
+  const previewMode = url.searchParams.get(PREVIEW_QUERY_PARAM);
+
+  if (
+    previewMode === FRAME_QUERY_VALUE ||
+    BROWSER_VIEW_VALUES.has(previewMode ?? "")
+  ) {
+    return "browser";
+  }
+
+  url.searchParams.set(PREVIEW_QUERY_PARAM, FRAME_QUERY_VALUE);
+  return `device:${url.pathname}${url.search}${url.hash}`;
+}
 
 export function DevDevicePreview({ children }: DevDevicePreviewProps) {
-  const [previewState, setPreviewState] = useState<PreviewState>({
-    mode: "loading",
-  });
+  const previewSnapshot = useSyncExternalStore(
+    subscribe,
+    getPreviewSnapshot,
+    getServerSnapshot,
+  );
 
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    const previewMode = url.searchParams.get(PREVIEW_QUERY_PARAM);
-
-    if (
-      previewMode === FRAME_QUERY_VALUE ||
-      BROWSER_VIEW_VALUES.has(previewMode ?? "")
-    ) {
-      setPreviewState({ mode: "browser" });
-      return;
-    }
-
-    url.searchParams.set(PREVIEW_QUERY_PARAM, FRAME_QUERY_VALUE);
-    setPreviewState({
-      mode: "device",
-      src: `${url.pathname}${url.search}${url.hash}`,
-    });
-  }, []);
-
-  if (process.env.NODE_ENV !== "development" || previewState.mode === "browser") {
+  if (process.env.NODE_ENV !== "development" || previewSnapshot === "browser") {
     return <>{children}</>;
   }
 
-  if (previewState.mode === "loading") {
+  if (previewSnapshot === "loading") {
     return null;
   }
 
@@ -53,7 +52,7 @@ export function DevDevicePreview({ children }: DevDevicePreviewProps) {
         <div className="dev-device-preview__screen">
           <iframe
             className="dev-device-preview__viewport"
-            src={previewState.src}
+            src={previewSnapshot.replace(/^device:/, "")}
             title="Sync mobile device preview"
           />
         </div>
