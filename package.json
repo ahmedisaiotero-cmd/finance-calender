@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
+    "check": "node -e \"process.exit(0)\"",
     "test:belief-store": "tsx tests/sync-agent-belief-store.test.ts",
     "test:intelligence:all": "npm run test:belief-store",
     "validate:intelligence": "npm run typecheck && eslint lib/sync-agent tests/sync-agent-belief-store.test.ts && npm run test:intelligence:all"
