@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test:belief-store": "tsx tests/sync-agent-belief-store.test.ts",
     "test:intelligence:all": "npm run test:belief-store",
-    "check": "npm run typecheck && eslint lib/sync-agent tests/sync-agent-belief-store.test.ts && npm run test:intelligence:all"
+    "validate:intelligence": "npm run typecheck && eslint lib/sync-agent tests/sync-agent-belief-store.test.ts && npm run test:intelligence:all"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
