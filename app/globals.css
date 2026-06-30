@@ -184,6 +184,51 @@
 }
 
 @layer components {
+  .dev-device-preview {
+    display: grid;
+    min-height: 100dvh;
+    place-items: center;
+    overflow: hidden;
+    padding: clamp(1rem, 3vw, 3rem);
+    background:
+      radial-gradient(
+        circle at 50% 0%,
+        oklch(0.28 0.02 250 / 35%),
+        transparent 34rem
+      ),
+      linear-gradient(145deg, oklch(0.11 0 0), oklch(0.18 0 0));
+  }
+
+  .dev-device-preview__device {
+    width: min(393px, calc(100vw - 2rem), calc(46.1dvh - 0.92rem));
+    aspect-ratio: 393 / 852;
+    border-radius: clamp(2.35rem, 8vw, 3.35rem);
+    padding: clamp(0.55rem, 1.6vw, 0.82rem);
+    background: linear-gradient(145deg, oklch(0.19 0 0), oklch(0.04 0 0));
+    box-shadow:
+      0 2.5rem 5rem oklch(0 0 0 / 45%),
+      0 0.75rem 1.5rem oklch(0 0 0 / 28%),
+      inset 0 0 0 1px oklch(1 0 0 / 8%);
+  }
+
+  .dev-device-preview__screen {
+    position: relative;
+    height: 100%;
+    overflow: hidden;
+    border-radius: calc(clamp(2.35rem, 8vw, 3.35rem) - 0.7rem);
+    background: oklch(0 0 0);
+  }
+
+  .dev-device-preview__viewport {
+    position: absolute;
+    inset: 14px 0 16px;
+    width: 100%;
+    height: calc(100% - 30px);
+    border: 0;
+    border-radius: calc(clamp(2.35rem, 8vw, 3.35rem) - 1.25rem);
+    background: var(--background);
+  }
+
   .sidebar-glass {
     @apply relative border-r border-border/40 bg-sidebar/72 backdrop-blur-2xl;
     box-shadow:

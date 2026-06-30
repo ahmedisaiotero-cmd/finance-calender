@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
+import { DevDevicePreview } from "@/components/dev-device-preview";
 import { ThemeColorsProvider } from "@/components/theme-colors-provider";
 import { TransactionsProvider } from "@/components/finance/transactions-provider";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -39,6 +40,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const app = (
+    <ThemeProvider>
+      <ThemeColorsProvider>
+        <TransactionsProvider>{children}</TransactionsProvider>
+      </ThemeColorsProvider>
+    </ThemeProvider>
+  );
+
   return (
     <html
       lang="en"
@@ -49,11 +58,11 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-full font-sans">
-        <ThemeProvider>
-          <ThemeColorsProvider>
-            <TransactionsProvider>{children}</TransactionsProvider>
-          </ThemeColorsProvider>
-        </ThemeProvider>
+        {process.env.NODE_ENV === "development" ? (
+          <DevDevicePreview>{app}</DevDevicePreview>
+        ) : (
+          app
+        )}
       </body>
     </html>
   );
