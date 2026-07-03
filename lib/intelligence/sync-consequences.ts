@@ -114,6 +114,24 @@ function isMinorLog(item: CapturedSyncItem) {
   return false;
 }
 
+function isLowValueDailyContext(item: CapturedSyncItem) {
+  const text = `${item.title} ${item.originalPrompt ?? item.prompt}`.toLowerCase();
+  const timelinePrioritySignal =
+    item.timeline?.timelineRole === "deadline" ||
+    item.timeline?.timelineRole === "schedule" ||
+    Boolean(item.timeline?.isTimed && item.timeline?.startTime);
+  const hasPrioritySignal =
+    /\b(rent|bill|due|deadline|flight|school|meeting|work|shift|payday|money|mom|dad|birthday|anniversary)\b/.test(
+      text,
+    ) || timelinePrioritySignal;
+  if (hasPrioritySignal) return false;
+
+  if (/\b(i am hungry|hungry|woke up|woke|tired|sleepy|low energy|random note)\b/.test(text)) {
+    return true;
+  }
+  return false;
+}
+
 function isPaydayItem(item: CapturedSyncItem) {
   const text = `${item.title} ${item.originalPrompt ?? item.prompt}`.toLowerCase();
   return (
@@ -357,6 +375,9 @@ export function deriveConsequencesFromMemory(
   const consequences: SyncConsequence[] = [];
 
   if (isMinorLog(item)) {
+    return [];
+  }
+  if (isLowValueDailyContext(item)) {
     return [];
   }
 

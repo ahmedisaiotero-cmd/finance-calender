@@ -1,14 +1,20 @@
-# SYNC: Product Vision & Design Principles
+# SYNC: Vision & Design Principles
 
-This document is the product constitution for Sync development. Read it alongside `.cursor/rules/sync-vision.mdc` and `.cursor/rules/sync-product-workflow.mdc`.
+This document defines Sync's voice, surfaces, and design stance. For mission and sequencing, read `SYNC_ENGINE_MANIFESTO.md` and `SYNC_ENGINE_ROADMAP.md` first.
+
+Also read: `SYNC_WORKFLOW.md`, `SYNC_REASONING_SPEC.md`, `SYNC_EVALUATION.md`, `AGENTS.md`, `.cursor/rules/sync-vision.mdc`, `.cursor/rules/sync-product-workflow.mdc`.
 
 ---
 
 ## What Sync Is
 
-Sync is a **personal life briefing and memory system**.
+Sync is a **personal reasoning engine**.
 
-Its purpose is to reduce mental load by helping people understand what matters **right now** — without making them organize, plan, or manage another app.
+It helps people make better day-to-day decisions by understanding context, consequences, memory, and timing.
+
+**The product is trust.**
+
+The UI exists to test, teach, and eventually expose the engine — not to compete with planners, dashboards, or domain apps.
 
 **Core question:** *What do I need to know right now?*
 
@@ -16,12 +22,12 @@ Its purpose is to reduce mental load by helping people understand what matters *
 
 1. Tell Sync what happened or what is coming.
 2. Sync understands it.
-3. Sync remembers it.
+3. Sync decides whether to remember, ask, surface later, or stay quiet.
 4. Sync organizes the consequences.
-5. Sync decides what matters now.
+5. Sync judges what deserves attention.
 6. Sync helps the user understand the moment clearly and calmly.
 
-The value of Sync is **understanding life**, not storing information.
+The value of Sync is **trustworthy judgment**, not storage or feature breadth.
 
 ---
 
@@ -37,47 +43,72 @@ Sync is **not**:
 - a calendar clone
 - a habit tracker
 - a finance app, fitness app, or collection of widgets
+- a motivational coach
 
 If a feature turns Sync into something on this list, stop and rethink it.
 
 ---
 
-## Canonical App Structure
+## Surfaces (Teaching & Output)
 
-Sync has three primary areas. Do not add new main tabs without explicit approval.
+### `/sync-lab` — teaching/evaluation surface
 
-### 1. Today
+The lab is where reasoning is inspected, corrected, and stress-tested. It is **not the product**.
 
-**What matters now.**
+Debug explainability belongs here — not in normal user replies.
 
-Today is a **life briefing**, not a reporting engine. It answers the core question with:
+### Mobile prototype — first engine client
 
-- a clear headline (load-aware when relevant)
-- curated consequences grouped by time (Tomorrow, This Week, Later)
-- specific, observant language — not generic insights or database dumps
+The mobile prototype is the **first consumer of the Sync Engine**. It renders judgment output through Today, Memory, and My Life. Do not delete it. Do not treat it as a feature playground — it validates trustworthy decisions in a minimal shell.
+
+### Today — briefing output of judgment
+
+**What matters now** — as decided by the Judgment stage (`decision-engine.ts`).
+
+Today is a **life briefing**, not a reporting engine or design canvas. It displays:
+
+- 1 primary + max 2 supporting lines (Judgment output)
+- load context when relevant (forecast, not a substitute for specific primaries)
+- curated consequences — not raw memory dumps
 
 Today shows **consequences**, not raw memories. It filters noise. It explains what events mean.
 
 **Bad:** twelve lines listing everything in the database.  
-**Good:** *Tomorrow looks busy.* → Flight at 6:00 AM → Take daughter to school → Your friend's birthday.
+**Good:** specific primary (*Flight at 6:00 AM.*) with load in context → supporting payday/work → drilldown on demand.
 
-### 2. Memory
+Brief lede (*Tomorrow looks busy.*) is Brief structure — not a license to override specific Judgment without reason.
+
+### Memory
 
 **What Sync remembers.**
 
-Memory is where captured life input lives. Each memory preserves:
+Each memory preserves:
 
 - **what the user said** (raw input)
 - **what Sync understood** (interpretation)
 - trust metadata the user can inspect and correct
 
-Sync remembers; the user does not need to file, tag, or organize manually.
+Sync remembers only what earns the right to be remembered.
 
-### 3. My Life
+### My Life
 
-**What Sync knows about the user.**
+**What Sync knows about the user** — text-first, calm, not a dashboard.
 
-Work schedule, priorities (Money, Health, Family, Work, etc.), typical week, and coming-up context. This profile **must affect Today** — priorities should change what ranks higher in the briefing.
+Work schedule, priorities (Money, Health, Family, Work, etc.), and profile context **influence Judgment** — they do not replace urgent specifics irresponsibly.
+
+---
+
+## Engine-first gate
+
+Before any change, ask:
+
+> **Does this improve the Sync Engine's ability to make trustworthy decisions?**
+
+Default prompt prefix:
+
+> **Improve the Sync Engine's ability to make trustworthy decisions by…**
+
+Product/UI expansion is **deferred until trust improves** — see `SYNC_ENGINE_ROADMAP.md`. **`SYNC_ENGINE_ROADMAP.md` supersedes `ROADMAP.md` for sequencing.**
 
 ---
 
@@ -85,27 +116,41 @@ Work schedule, priorities (Money, Health, Family, Work, etc.), typical week, and
 
 These override feature requests and implementation habits.
 
-1. **Intelligence before UI** — never build a surface before the shared brain exists.
-2. **Shared Sync brain before mobile-only logic** — reuse `meaning-engine`, `sync-consequences`, `briefing-composer`, `memory-understanding`, and related modules; do not fork intelligence into the mobile shell.
-3. **Consequences over raw memories** — Today interprets; it does not replay captures.
-4. **Specific briefings over generic insights** — prefer *Rent is due Friday* over *worth keeping in view*.
-5. **No new main tabs without approval** — Today, Memory, My Life are the structure.
-6. **Tests for messy real-life input** — typos, vague phrasing, overlapping commitments.
-7. **Useful before bigger** — intelligence quality beats new pages.
+1. **Trust before features** — judgment quality beats new surfaces.
+2. **Intelligence before UI** — never build a surface before the shared brain exists.
+3. **Shared Sync brain before client-only logic** — reuse `meaning-engine`, `sync-consequences`, `decision-engine`, `sync-engine`, and related modules; do not fork intelligence into shells.
+4. **Consequences over raw memories** — surfaces interpret; they do not replay captures.
+5. **Specific briefings over generic insights** — prefer *Rent is due Friday* over *worth keeping in view*.
+6. **No new main tabs without approval** — Today, Memory, My Life remain the mobile structure; no expansion until Phase 5.
+7. **Tests for messy real-life input** — typos, vague phrasing, overlapping commitments.
+8. **Failed decisions become tests** before production fixes when possible.
 
 **Build order:**
 
-1. Shared intelligence / domain layer  
+1. Shared intelligence / reasoning layer  
 2. Tests  
-3. Mobile shell integration  
+3. Lab + mobile client integration  
 4. Minimal UI  
-5. Polish  
+5. Polish (deferred until trust milestones)
+
+---
+
+## Reasoning Pipeline
+
+Every input follows:
+
+```
+Input → Understanding → Memory Decision → Consequence Reasoning
+  → Judgment → Response → Future Follow-up → Briefing Effect
+```
+
+Full spec: `SYNC_REASONING_SPEC.md`. Evaluation: `SYNC_EVALUATION.md`.
+
+Money, Health, Family, Work, and Relationships are **categories**, not agents or standalone products.
 
 ---
 
 ## Foundational Philosophy
-
-These ideas remain true regardless of surface area.
 
 ### Tell Sync what happened. Sync handles the details.
 
@@ -113,7 +158,7 @@ Users speak naturally. Sync normalizes typos, resolves time, assigns meaning, an
 
 ### Immediate value before integrations
 
-Sync must be useful with **manual capture alone**. Integrations are later — only after the core loop proves value.
+Sync must be useful with **manual capture alone**. Integrations are deferred — only after trustworthy judgment is proven.
 
 ### Memory before management
 
@@ -122,8 +167,6 @@ Sync is for **remembering and understanding**, not for the user to manage tasks,
 ### Clarity over clutter
 
 Default to what matters. Hide the rest until the user asks for it.
-
-**Information hierarchy:**
 
 | Level | Purpose |
 |-------|---------|
@@ -135,7 +178,7 @@ Never show Level 3 by default.
 
 ### User control and trust
 
-Users must be able to see why Sync remembered something, edit it, and delete it. Raw input stays preserved alongside Sync's interpretation. Trust is a product feature, not a settings afterthought.
+Users must inspect, correct, and delete what Sync thinks. Raw input stays preserved alongside Sync's interpretation. Trust is the product — not a settings afterthought.
 
 ### Progressive reveal
 
@@ -143,7 +186,7 @@ Start with the briefing. Offer detail on demand. Do not front-load metadata, sco
 
 ### Integrations later
 
-Sync **connects** to tools users trust — it does not replace them. Google Calendar, banks, Apple Health, and similar sources come **after** capture → understanding → consequence → briefing works on its own.
+Sync **connects** to tools users trust — it does not replace them. External sources come **after** the reasoning pipeline proves trustworthy on manual capture alone.
 
 **Interpretation over information. Clarity over completeness.**
 
@@ -153,8 +196,6 @@ Sync **connects** to tools users trust — it does not replace them. Google Cale
 
 Sync's job is not to repeat what was entered. It is to understand **what it means** and **what follows**.
 
-Examples:
-
 | Input | Sync understands | Consequence |
 |-------|------------------|-------------|
 | Flight tomorrow 6 AM | Early travel | Tomorrow starts early; load increases |
@@ -162,7 +203,7 @@ Examples:
 | Rent due Friday | Financial deadline | Surfaces in This Week, not as noise today |
 | Friend's birthday tomorrow | Relationship moment | *Your friend's birthday is tomorrow.* |
 
-**Life load** matters: a flight + school + work + birthday is a **busy tomorrow**, and the headline and phrasing should reflect that.
+**Life load** matters: flight + school + work + birthday is a busy tomorrow — load appears in context; specific timed items lead Judgment when both exist.
 
 ---
 
@@ -170,44 +211,20 @@ Examples:
 
 Sync should sound **calm, observant, concise, trustworthy**.
 
-The Sync Engine is the sixth shared intelligence layer:
+**Judgment** answers: *What deserves attention?* (`decision-engine.ts`)
 
-**Capture → Memory → Understanding → Consequence → Decision → Sync Engine → UI**
+**Response** answers: *How should Sync communicate it?* (`sync-engine.ts`, `SYNC_VOICE.md`)
 
-Decision answers: *What matters?*
-
-The Sync Engine answers: *How should Sync help the user understand this moment?*
-
-It should turn selected decisions into specific, useful, explainable human understanding instead of generic summaries. It owns voice, tone, confidence language, communication intent, surfacing reasons, explainability, narrative continuity, story arc, respectful coaching, silence/noise control, evidence-based personalization, and human-readable interpretation.
-
-The Sync Engine must preserve Decision ordering and must not invent facts. It does not own memory storage, memory classification, consequence generation, priority ranking, duplicate filtering, UI layout, or domain-specific agents.
+Response preserves Judgment ordering, avoids inventing facts, and knows when silence is better than saying more.
 
 **Prefer specific:**
 
 - Rent is due Friday.
-- Rent is coming up in three days. You're in a good position to handle it.
-- Workout is the next thing worth protecting today.
+- Flight at 6:00 AM.
 - Tomorrow starts early.
-- Tomorrow looks busy.
-- You're off tomorrow.
-- Your friend's birthday is tomorrow.
 - Work begins at 11:00 AM after a busy morning.
 
-**Avoid:**
-
-- corporate SaaS language (*worth keeping in view*, *looks important*)
-- productivity coaching (*stay on track*, *manage your tasks*)
-- motivational slogans
-- generic AI wording
-- vague summaries like *You have important items today*
-- shame-based or fear-based framing
-
-**Prefer over punitive:**
-
-| Avoid | Prefer |
-|-------|--------|
-| Failed · Missed · Bad · Behind | Needs attention · Here's what matters next |
-| You exceeded your budget | Spending is a little higher than planned |
+**Avoid:** corporate SaaS language, productivity coaching, motivational slogans, generic AI wording, shame-based framing.
 
 Users should leave Sync feeling **informed, supported, and capable** — never overwhelmed, never judged.
 
@@ -217,9 +234,9 @@ Users should leave Sync feeling **informed, supported, and capable** — never o
 
 Many people carry stress about money, health, work, and relationships. Sync acknowledges reality without adding anxiety.
 
-- The goal is not perfection. The goal is **progress**.
+- The goal is not perfection. The goal is **trustworthy clarity**.
 - Sync guides — it does not punish, score, or gamify.
-- No streaks, life scores, leaderboards, or habit-tracking systems unless explicitly approved (they conflict with this vision).
+- No streaks, life scores, leaderboards, or habit-tracking systems unless explicitly approved.
 
 Sync should feel like a **trusted guide** — not a strict manager, not a judge.
 
@@ -227,15 +244,15 @@ Sync should feel like a **trusted guide** — not a strict manager, not a judge.
 
 ## The Sync Test
 
-Before implementing any feature, ask:
+Before implementing any change:
 
-1. Does this reduce mental load?
-2. Can the user understand this in under five seconds?
-3. Does this help answer *What do I need to know right now?*
-4. Does this improve Today, Memory, My Life, Understanding, Consequences, or Trust?
+1. Does this improve trustworthy decisions?
+2. Does this reduce mental load?
+3. Can the user understand this in under five seconds?
+4. Does this improve Memory, Understanding, Consequences, Judgment, Briefing, Safety, or Trust?
 5. Is this the simplest possible version?
 
-If any answer is "no," rethink the implementation.
+If any answer is "no," do not implement it yet.
 
 ---
 
@@ -245,21 +262,20 @@ If any answer is "no," rethink the implementation.
 - dashboards, analytics, charts
 - productivity pages or task manager UI
 - full chatbot UI
-- standalone calendar, finance, or health pages
+- standalone calendar, finance, or health **products**
+- Sync Health, Sync Money, onboarding, themes
 - social features, gamification, streak systems
 - habit tracking systems
 - life scores or productivity scores
-
-If a proposal includes any of the above, explain why before building.
+- consumer UI polish ahead of trust milestones
 
 ---
 
 ## Definition of Done
 
-A feature is complete only when it:
+A change is complete only when it:
 
-- supports this vision
-- improves Today, Memory, My Life, Understanding, Consequences, or Trust
+- improves trustworthy decisions (see `SYNC_EVALUATION.md`)
 - reuses shared intelligence where possible
 - includes tests (especially messy real-life input)
 - reduces clutter
@@ -281,35 +297,35 @@ When design is needed: calm, minimal, intentional, human. Whitespace and simplic
 
 ## Current Priority
 
-Make Sync **useful** before making it bigger.
+Make Sync **trustworthy** before making it bigger.
 
 Focus:
 
-- intelligence quality
-- consequence ranking
-- life load detection
-- memory understanding
-- My Life model (priorities affecting Today)
-- Sync Engine quality
-- trust / edit / delete
-- real-life messy input testing
+- judgment quality and stress testing
+- memory decision quality (remember / ignore / update / ask)
+- consequence reasoning and life load detection
+- Sync Engine response quality
+- trust / edit / delete / weekly evaluation reviews
+- lab stability (`/sync-lab`)
+
+See `SYNC_ENGINE_ROADMAP.md` for phase gates.
 
 ---
 
 ## Engineering Principles
 
 - Prefer reusable shared modules; favor consistency over novelty
-- Do not redesign existing screens unless they violate this vision
+- Do not redesign existing screens unless explicitly requested
 - Avoid features because other apps have them
-- Build slowly and deliberately; ship before polishing endlessly
-- When uncertain, choose what makes life feel **calmer**
+- Build slowly and deliberately; ship reasoning improvements before polish
+- When uncertain, choose what increases **trust**
 
 ---
 
 ## The Sync Mission
 
-Sync exists to reduce mental load.
+Sync exists to help people know what matters — with clarity and confidence.
 
-Tell it what happened or what's coming. It understands, remembers, organizes the consequences, and tells you what matters — when it matters — so you can spend less time managing life and more time living it.
+Tell it what happened or what's coming. It understands, remembers, judges, and communicates — when it matters — so you spend less time managing life and more time living it.
 
-Whenever uncertain, choose the option that makes life feel **calmer**.
+Whenever uncertain, choose the option that makes life feel **calmer** and Sync feel **more trustworthy**.

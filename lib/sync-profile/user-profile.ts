@@ -1,11 +1,21 @@
 import type { SyncUserContext } from "@/lib/intelligence/sync-user-context";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
 
+export type DayStyle = "busy" | "calm" | "";
+export type CheckInTime = "morning" | "midday" | "evening" | "";
+export type Directness = "gentle" | "balanced" | "direct" | "";
+
 export type SyncUserProfile = {
   name: string;
   typicalWeek: string;
+  dayStyle: DayStyle;
   priorities: string[];
   awareness: string[];
+  currentStress: string;
+  workingToward: string;
+  checkInTime: CheckInTime;
+  directness: Directness;
+  protectedCalendar: string;
   comingUp: string;
   onboardingComplete: boolean;
   updatedAt: string;
@@ -33,11 +43,34 @@ export const AWARENESS_OPTIONS = [
   "Goals",
 ] as const;
 
+export const DAY_STYLE_OPTIONS = [
+  { id: "calm", label: "Calm with a few anchors" },
+  { id: "busy", label: "Busy and full" },
+] as const;
+
+export const CHECK_IN_OPTIONS = [
+  { id: "morning", label: "Morning" },
+  { id: "midday", label: "Midday" },
+  { id: "evening", label: "Evening" },
+] as const;
+
+export const DIRECTNESS_OPTIONS = [
+  { id: "gentle", label: "Gentle nudges" },
+  { id: "balanced", label: "Balanced" },
+  { id: "direct", label: "Just tell me what matters" },
+] as const;
+
 export const EMPTY_USER_PROFILE: SyncUserProfile = {
   name: "",
   typicalWeek: "",
+  dayStyle: "",
   priorities: [],
   awareness: [],
+  currentStress: "",
+  workingToward: "",
+  checkInTime: "",
+  directness: "",
+  protectedCalendar: "",
   comingUp: "",
   onboardingComplete: false,
   updatedAt: "",
@@ -149,6 +182,14 @@ export function profileToSyncUserContext(
   if (profile.priorities.includes("Money")) {
     goals.push({ id: "profile-money", title: "Money", area: "finance" });
   }
+  if (profile.workingToward.trim()) {
+    goals.push({
+      id: "profile-working-toward",
+      title: profile.workingToward.trim(),
+      area: "personal",
+    });
+  }
+
   if (goals.length > 0) {
     context.goals = goals;
   }
@@ -174,11 +215,23 @@ export function profileToSyncUserContext(
       area: "work",
     });
   }
+  if (profile.protectedCalendar.trim()) {
+    routines.push({
+      id: "profile-protected",
+      title: profile.protectedCalendar.trim(),
+      area: "personal",
+    });
+  }
+
   if (routines.length > 0) {
     context.routines = routines;
   }
 
   return context;
+}
+
+export function profileTone(profile: SyncUserProfile): Directness {
+  return profile.directness || "balanced";
 }
 
 /** @deprecated Use SyncUserProfile */

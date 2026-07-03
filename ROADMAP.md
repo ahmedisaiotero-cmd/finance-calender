@@ -1,212 +1,184 @@
 # SYNC Roadmap
 
-This roadmap translates [SYNC_VISION.md](./SYNC_VISION.md) into sequenced work. Every item should pass the **Sync Test** before shipping: reduce mental load, be understandable in under 10 seconds, help users decide what matters, and make them feel capable—not anxious.
+**Sequencing:** `SYNC_ENGINE_ROADMAP.md` **supersedes this document** for what to build next. This file records module status, completed milestones, and historical context.
 
-Build slowly. Ship incrementally. Choose calm over clever.
+Every item should pass the **Sync Test** in `SYNC_VISION.md` and the gate question in `SYNC_ENGINE_MANIFESTO.md`:
 
----
+> Does this improve the Sync Engine's ability to make trustworthy decisions?
 
-## Phase 1 — Believable MVP
+Default prompt prefix: **Improve the Sync Engine's ability to make trustworthy decisions by…**
 
-**Goal:** Create a believable, usable Sync MVP.
-
-### Definition of Done
-
-| Criterion | What it means |
-|-----------|---------------|
-| **30-second understanding** | A new user opens Home and knows what Sync is, what matters today, and where to go next—without a tutorial. |
-| **Cohesive pages** | Home, Calendar, Money, and Health share the same layout rhythm, copy tone, components, and visual language. |
-| **Timeline connects everything** | One unified timeline drives Home focus, Calendar views, Money upcoming, and Health rhythm—not parallel mock silos. |
-| **Data persists** | Transactions and timeline events survive refresh; database mode stores to Postgres; local mode uses localStorage. |
-
-### Done
-
-- [x] Four primary surfaces: Home, Calendar, Money, Health
-- [x] Compassionate copy foundation (`SYNC_VISION.md`, `lib/sync-pulse.ts`)
-- [x] Shared UI primitives (`components/sync/*`)
-- [x] Pulse on Home
-- [x] Prisma schema + seed for money data
-- [x] Transaction API with localStorage fallback
-- [x] Legacy `/budgets` and `/transactions` redirect to `/money`
-
-### Done (MVP infrastructure)
-
-- [x] Unified timeline hook (`useSyncTimeline`) consumed by Home, Calendar, Health, Money
-- [x] Timeline API (`/api/timeline`) for health/career events when database is configured
-- [x] Home Today's Focus from merged timeline (money + health + career)
-- [x] Health rhythm derived from timeline sessions, not isolated mock stats
-- [x] Money upcoming from live timeline when available
-- [x] User name from `/api/user` (demo workspace), with mock fallback
-- [x] Consistent page framing: SYNC eyebrow on Home, vision-aligned subtitles on all pages
-- [x] Life events seeded to Postgres (`seedLifeTimeline`)
-
-### Phase 1 exit checklist
-
-Before closing Phase 1, verify:
-
-1. Open Home → Pulse + Today's Focus reflect the same events visible on Calendar today.
-2. Add a transaction → it appears on Money, Calendar, and Home after refresh.
-3. Navigate Home → Calendar → Money → Health without layout or tone whiplash.
-4. A teammate can explain Sync in one sentence after 30 seconds on Home.
+Build slowly. Choose trust over features. Choose calm over clever.
 
 ---
 
-## Intelligence architecture
+## Active direction
 
-Sync intelligence follows six shared layers. Domains (Money, Health, Work, etc.) are categories — not separate agents.
+Sync is a **personal reasoning engine**. The product is **trust**.
 
-| Layer | Status | Key modules |
+| Surface | Role |
+|---|---|
+| **`/sync-lab`** | Teaching/evaluation — inspect reasoning, debug decisions |
+| **Mobile prototype** | First engine client — renders Judgment output (Today, Memory, My Life) |
+| **Legacy web routes** (Home, Calendar, Money, Health) | Historical MVP scaffolding — **not** current expansion targets |
+
+Product/UI expansion (consumer polish, domain apps, integrations) is **deferred** until `SYNC_ENGINE_ROADMAP.md` Phase 3 exit criteria are met.
+
+---
+
+## Reasoning pipeline
+
+Every input follows:
+
+```
+Input → Understanding → Memory Decision → Consequence Reasoning
+  → Judgment → Response → Future Follow-up → Briefing Effect
+```
+
+Full spec: `SYNC_REASONING_SPEC.md`.
+
+### Module status
+
+| Stage | Status | Key modules |
 |-------|--------|-------------|
-| **Memory** | Done | `lib/sync-capture/*`, `lib/captured-items.tsx`, `memory-profile.ts`, `memory-aging.ts` |
-| **Understanding** | Done | `meaning-engine.ts`, `memory-understanding.ts`, `importance-scoring.ts` |
-| **Consequence** | Done | `consequence-engine.ts`, `sync-consequences.ts` |
-| **Decision** | **V1.5 implemented** | `decision-engine.ts`; profile-aware ranking, ranked candidate metadata, Today adapter |
-| **Sync Engine** | **Next refinement** | `sync-engine.ts` target; voice, confidence, intent, reasons, explainability, continuity, story arc |
+| Input | Done | `lib/sync-capture/*`, `apply-capture-input.ts` |
+| Understanding | Done | `meaning-engine.ts`, `memory-understanding.ts`, `importance-scoring.ts` |
+| Memory Decision | Done | `memory-dedup.ts`, `memory-profile.ts`, `memory-aging.ts` |
+| Consequence Reasoning | Done | `consequence-engine.ts`, `sync-consequences.ts`, `life-load.ts` |
+| Judgment | **V1.5 implemented** | `decision-engine.ts` — `decideTodayPriorities`, `rankBriefConsequences` |
+| Response | Implemented | `sync-engine.ts`, `SYNC_VOICE.md` |
+| Future Follow-up | Partial | capture actions, `consequence-timing.ts` |
+| Briefing Effect | Implemented | `briefing-composer.ts`, Today adapters |
 
-Pipeline: **Capture → Memory → Understanding → Consequence → Decision → Sync Engine → UI**.
+Money, Health, Family, Work, and Relationships are **categories** — not agents or standalone products.
 
-`lib/intelligence/decision-engine.ts` now owns Today primary/supporting priority selection. It is profile-aware, returns ranked candidate metadata, and has basic intelligence validation scripts. `build-home-priorities.ts` delegates that selection to the shared engine; briefing and Pulse consolidation remain in progress.
-
-Decision decides what matters. The Sync Engine decides how Sync helps the user understand it. It must preserve Decision ordering, avoid inventing facts, support continuity across days and weeks, know when silence is better than saying more, and follow `SYNC_PRINCIPLES.md` plus `SYNC_VOICE.md`.
-
-**Next milestone:** Phase 1.75 Intelligence Refinement — improve decision quality, universal understanding, Sync Engine quality, trust/explainability, and stress testing before adding new pages or integrations.
+Judgment decides what matters. Response communicates it — preserving Judgment ordering, avoiding invented facts, knowing when silence is better.
 
 ---
 
-## Phase 1.5 — Decision Engine (intelligence)
+## Historical — Phase 1 Believable MVP (complete)
 
-*Goal: Today answers "what matters now" from consequences through a shared decision model.*
+*Legacy web scaffolding. Not the current product direction.*
 
-- [x] Add `lib/intelligence/decision-engine.ts` (shared ranking API)
-- [x] Today primary/supporting selection delegates to the Decision Engine through `build-home-priorities.ts`.
-- [x] Inputs: add user profile priorities to Decision Engine ranking.
-- [x] Enforce the stricter default: 1 primary + 2 supporting priorities.
-- [x] Add ranked candidate metadata and score breakdowns for future shared consumers.
-- [x] Add basic intelligence validation scripts: `npm run test:intelligence` and `npm run check`.
+Early work established shared UI primitives, timeline hooks, and demo data for Home, Calendar, Money, and Health. That infrastructure remains in the repo but is **not** the focus for new work.
+
+### Done (historical)
+
+- [x] Shared UI primitives (`components/sync/*`)
+- [x] Compassionate copy foundation (`SYNC_VISION.md`)
+- [x] Unified timeline hook and API
+- [x] Prisma schema + seed for demo data
+- [x] Legacy routes and redirects
+
+Do not expand Calendar, Money, or Health as MVP surfaces unless explicitly requested.
+
+---
+
+## Phase 1.5 — Judgment / Decision Engine (largely complete)
+
+*Goal: Today and Brief consume shared Judgment.*
+
+- [x] Add `lib/intelligence/decision-engine.ts`
+- [x] Today primary/supporting via `build-home-priorities.ts`
+- [x] Profile-aware ranking with 1 primary + 2 supporting
+- [x] Ranked candidate metadata and score breakdowns
+- [x] `npm run test:intelligence`, `test:intelligence:all`, `npm run check`
+- [x] Brief ranking via `rankBriefConsequences()` in Decision Engine
+- [x] `build-today-view.ts` wired through Decision Engine
+- [x] 100-memory stress corpus (`tests/decision-stress.test.ts`)
 
 ### Remaining consolidation
 
-- [ ] Consolidate briefing ranking so `briefing-composer.ts` follows the shared Decision Engine.
-- [ ] Derive Pulse state inputs from the shared Decision Engine rather than separate `sync-pulse.ts` precedence.
-- [x] Wire `build-today-view.ts` / Today screen through decision engine
-- [ ] Expand stress tests: 100+ memories, duplicate vague/specific events, urgent family/money/work/health conflicts, emotional entries, quiet weeks, overloaded weeks, and ambiguous captures.
+- [ ] Derive Pulse state from shared Judgment + Response — not separate precedence in `sync-pulse.ts`
+- [ ] Expand weekly Trustworthy Decision Rate reviews per `SYNC_EVALUATION.md`
 
 ---
 
-## Phase 1.75 — Intelligence Refinement
+## Phase 1.75 — Intelligence Refinement (in progress)
 
-*Goal: refine Sync's brain before adding new pages, category sprawl, or integrations.*
+*Goal: improve trustworthy decision rate before any product expansion.*
 
-### 1. Decision Quality
+See `SYNC_ENGINE_ROADMAP.md` Phases 1–3 for active sequencing.
 
-- [ ] Reliably filter many memories/consequences down to the 1–3 that matter most today.
-- [ ] Prefer specific, time-sensitive, profile-relevant consequences over vague summaries.
-- [ ] Keep Today calm: normal output remains 1 primary + 2 supporting items.
+### 1. Judgment quality
 
-### 2. Universal Understanding
+- [x] 100+ memory stress test with cap, light exclusion, profile vs urgency
+- [ ] Track Trustworthy Decision Rate weekly on reviewed corpus
+- [ ] Convert failed review items to tests before production fixes
 
-- [ ] Recognize events, tasks, worries, goals, relationships, preferences, routines, money details, health signals, family context, ideas, emotions, commitments, vague life notes, and things that are not calendar events.
-- [ ] Separate light memories from meaningful life context without forcing users to categorize inputs.
+### 2. Universal understanding
 
-### 3. Sync Engine
+- [ ] Vague vs specific disambiguation under stress
+- [ ] Sensitive domain handling (health, money, relationships, identity)
 
-- [ ] Add a shared Sync Engine layer: **Capture → Memory → Understanding → Consequence → Decision → Sync Engine → UI**.
-- [ ] Answer: "How should Sync help the user understand this moment?"
-- [ ] Preserve Decision Engine ordering; never rerank priorities.
-- [ ] Avoid inventing facts; personalize only from memory, consequence, profile, timing, or pattern evidence.
-- [ ] Prefer clear, specific, respectful, positive, lightly coach-like, calm language.
-- [ ] Avoid vague, overly motivational, robotic, or judgmental copy.
-- [ ] Attach confidence language, communication intent, surfacing reasons, explainability, narrative continuity, story arc, respectful coaching, silence/noise control, and human-readable interpretation.
-- [ ] Replace generic lines like "You have important items today" with useful specifics like "Rent is coming up in three days. You're in a good position to handle it."
+### 3. Response (Sync Engine)
 
-### 4. Trust and Explainability
+- [x] `runSyncEngine()` — metadata, voice preservation, ordering checks
+- [ ] Gate explainability to lab/dev only consistently
+- [ ] Voice cleanup for legacy compliance violations
 
-- [ ] Explain why something surfaced today.
-- [ ] Explain why something was remembered, faded, or not shown.
-- [ ] Show confidence when Sync is unsure.
+### 4. Trust and explainability
 
-### 5. Stress Testing
+- [ ] Weekly review process running (`SYNC_EVALUATION.md`)
+- [ ] Inspect / correct / delete flows validated in lab + mobile client
 
-- [ ] Add messy real-life tests for 100+ memories, duplicate events, vague notes, emotional entries, quiet weeks, overloaded weeks, family/money/work/health conflicts, ambiguous captures, and lightweight memories that should not surface.
+### 5. Stress testing
+
+- [x] 100-memory messy corpus
+- [x] Quiet/stale and overloaded tomorrow scenarios
+- [x] 20-file `test:intelligence:all` safety net
 
 ---
 
-## Phase 2 — Identity & real accounts
+## Deferred — Product expansion
 
-*Goal: Sync knows who you are; data is scoped to your workspace.*
+The following phases are **frozen** until `SYNC_ENGINE_ROADMAP.md` Phase 3 trust exit criteria are met. Do not start unless explicitly requested.
 
-- [ ] Supabase Auth: sign-in, session, protected routes
-- [ ] User profile from session (replace demo user)
-- [ ] Workspace scoping with row-level security
-- [ ] Recurring rules engine generates upcoming items automatically
-- [ ] Budget limits from database, not static mock
+### Phase 2 — Identity & real accounts
 
----
+- Supabase Auth, workspace scoping, RLS
+- Recurring rules engine
+- Budget limits from database
 
-## Phase 3 — Category expansion
+### Phase 3 — Category expansion (legacy plan)
 
-*Goal: The full life timeline—without dashboard bloat.*
+*Superseded by engine-first direction.* Categories remain reasoning domains — not nav expansion targets.
 
-Categories in vision: **Health · Money · Career · Relationships · Personal**
+~~Enable Career sidebar, calendar lenses, Home category snapshot rows~~ → deferred
 
-| Category | Nav | Calendar lens | Dedicated surface |
-|----------|-----|---------------|-------------------|
-| Money | ✅ | ✅ | `/money` |
-| Health | ✅ | ✅ | `/fitness` |
-| Career | Soon | — | — |
-| Relationships | Soon | — | — |
-| Personal | Soon | — | — |
+### Phase 4 — Settings & personalization
 
-- [ ] Enable Career in sidebar with a focused surface
-- [ ] Calendar lenses for Career, Relationships, Personal
-- [ ] Home category snapshot rows only when a category has signal
+- Settings page, focus preferences → deferred
 
----
+### Phase 5 — Integrations
 
-## Phase 4 — Settings & personalization
+- Bank import, calendar sync, health platform read → deferred until manual capture judgment is trustworthy
 
-*Goal: Users can tune Sync without breaking simplicity.*
-
-- [ ] Settings page (timezone, name, default calendar lens)
-- [ ] Home focus preferences (which categories surface first)
-- [ ] Budget category visibility
-
----
-
-## Phase 5 — Thoughtful integrations
-
-*Goal: Pull life data in automatically—only where it clearly reduces manual work.*
-
-- [ ] Bank / card import for transactions
-- [ ] External calendar sync (Google, Apple)
-- [ ] Health platform read (Apple Health, etc.)
-- [ ] Bill reminders as recurring money events
-
-Each integration ships with clear source labeling, calm error states, and no shame language on sync failures.
+Each future integration must ship with clear source labeling, calm error states, and no shame language.
 
 ---
 
 ## Engineering hygiene
 
 - [ ] Retire unused dashboard widgets and duplicate content components
-- [ ] Expand `lib/sync-copy.ts` as the single source for user-facing strings
-- [ ] Compassionate empty/loading states everywhere data can be absent
-- [ ] Performance: timeline queries indexed by `workspaceId` + date
+- [ ] Expand voice compliance coverage
+- [ ] Compassionate empty/loading states where surfaces remain
+- [ ] Performance: indexed timeline queries where database mode is used
 
 ---
 
 ## How to use this document
 
-1. Read `SYNC_VISION.md` before starting any item.
-2. **Phase 1 must pass all four Definition of Done criteria** before starting Phase 2.
-3. Prefer **Phase 1.5 (Decision Engine)** before broad Phase 2 UI or integration work.
-4. For each feature, run the **Sync Test** from the vision doc.
-5. Update checkboxes here when work ships.
+1. Read `SYNC_ENGINE_MANIFESTO.md` and `SYNC_ENGINE_ROADMAP.md` for **what to build next**.
+2. Use **this file** for module status and completed milestone checkboxes.
+3. Run `npm run check` before merging intelligence changes.
+4. Add failed real-life examples to tests before fixing production logic when possible.
+5. Update checkboxes when work ships.
 
 ---
 
 ## North star
 
-Sync exists to reduce mental load. It synchronizes the parts of life that matter most and presents them with clarity, simplicity, and compassion so people spend less time managing life and more time living it.
+Sync exists to make **trustworthy decisions** about what matters in a person's life.
 
-When uncertain, choose the option that makes life feel **calmer**.
+When uncertain, choose the option that increases **trust** and makes life feel **calmer**.

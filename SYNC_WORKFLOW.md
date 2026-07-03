@@ -98,3 +98,30 @@ Focus: Capture, Memory, Understanding, Consequences, **Decision**, and **Sync En
 - Includes tests
 - Reduces clutter
 - Does not turn Sync into a dashboard
+
+---
+
+## Sync Engine Direction
+
+Sync is now primarily a **personal reasoning engine** — not an app, planner, dashboard, or productivity tool. The product is trust. The UI exists to test, teach, and eventually expose the engine.
+
+All future Sync work must prioritize improving the Sync Engine’s ability to make **trustworthy decisions**.
+
+Before implementing any change, ask:
+
+> “Does this improve Memory, Understanding, Consequences, Judgment, Briefing, Safety, or Trust?”
+
+If not, do not implement it yet.
+
+Future prompts should begin with:
+
+> “Improve the Sync Engine’s ability to make trustworthy decisions by…”
+
+Do not build features for their own sake.
+
+**Source of truth for this direction:**
+
+- `SYNC_ENGINE_MANIFESTO.md` — mission, constitution, philosophy
+- `SYNC_REASONING_SPEC.md` — required reasoning pipeline per input
+- `SYNC_EVALUATION.md` — trust metrics and weekly review
+- `SYNC_ENGINE_ROADMAP.md` — phased engine-first roadmap

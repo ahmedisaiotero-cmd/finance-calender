@@ -1,15 +1,17 @@
 ---
-description: Sync product vision — what Sync is and is not; required before any design or implementation
+description: Sync engine vision — personal reasoning engine; required before any design or implementation
 alwaysApply: true
 ---
 
 # Sync Vision (required reading)
 
-Also read `SYNC_VISION.md` in the project root for extended compassion, language, and UX principles.
+Read `SYNC_VISION.md`, `SYNC_ENGINE_MANIFESTO.md`, and `AGENTS.md` for full guidance.
 
 ## What Sync is
 
-Sync is a **personal life briefing and memory system**.
+Sync is a **personal reasoning engine**. The product is **trust**.
+
+The UI exists to test, teach, and eventually expose the engine.
 
 ## What Sync is not
 
@@ -20,6 +22,17 @@ Sync is a **personal life briefing and memory system**.
 - a chatbot
 - a calendar clone
 - a habit tracker
+- a finance app, health app, or widget collection
+
+## Gate question
+
+Before any change:
+
+> **Does this improve the Sync Engine's ability to make trustworthy decisions?**
+
+Default prompt prefix:
+
+> **Improve the Sync Engine's ability to make trustworthy decisions by…**
 
 ## Core question
 
@@ -29,24 +42,27 @@ Sync is a **personal life briefing and memory system**.
 
 1. Tell Sync what happened or what is coming.
 2. Sync understands it.
-3. Sync remembers it.
+3. Sync decides whether to remember, ask, surface later, or stay quiet.
 4. Sync organizes the consequences.
-5. Sync surfaces what matters when it matters.
+5. Sync judges what deserves attention.
+6. Sync communicates calmly when it matters.
 
-## Primary areas
+## Surfaces
 
-| Area | Purpose |
-|------|---------|
-| **Today** | What matters now |
-| **Memory** | What Sync remembers |
-| **My Life** | What Sync knows about the user |
+| Surface | Role |
+|---|---|
+| **`/sync-lab`** | Teaching/evaluation — not the product |
+| **Mobile prototype** | First engine client — do not delete |
+| **Today** | Briefing output of Judgment — not a feature playground |
+| **Memory** | What Sync remembers (with trust metadata) |
+| **My Life** | What Sync knows — text-first, not a dashboard |
+
+Product/UI expansion is **deferred** until trust improves. See `SYNC_ENGINE_ROADMAP.md` (supersedes `ROADMAP.md` for sequencing).
 
 ## Product truth
 
-The value of Sync is **reducing mental load**.
-
-Sync should **understand life** — not simply store information.
+Sync should **understand life and judge trustworthy** — not simply store information or accumulate features.
 
 ## When requests conflict with this vision
 
-Do not silently comply. Explain the conflict using these principles, then propose a simpler alternative that aligns with Sync.
+Do not silently comply. Explain the conflict using these principles, then propose a simpler alternative that aligns with the Sync Engine direction.

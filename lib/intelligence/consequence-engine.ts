@@ -176,6 +176,16 @@ function isRelationshipRelated(
   );
 }
 
+function isEmotionalDistress(text: string, category: string, destinations: string[]) {
+  return (
+    category === "mood" ||
+    /\b(overwhelmed|stressed|stress|anxious|anxiety|exhausted|burned out|burnt out)\b/.test(
+      text,
+    ) ||
+    destinations.includes("Health")
+  );
+}
+
 export function analyzeConsequences(
   input: AnalyzeConsequencesInput,
 ): ConsequenceAnalysis {
@@ -258,6 +268,21 @@ export function analyzeConsequences(
     if (negative) addAction(suggestedActions, "health", "Reset workout plan", "adjust_plan");
   }
 
+  if (isEmotionalDistress(text, input.category, input.destinations)) {
+    addAffected(
+      affectedAreas,
+      "health",
+      "negative",
+      "Emotional strain may affect focus, energy, and decisions.",
+    );
+    addInsight(
+      insights,
+      "health",
+      "Emotional strain noted — keep this as context, not a task.",
+      "notice",
+    );
+  }
+
   if (isRelationshipRelated(text, input.category, input.destinations)) {
     addAffected(
       affectedAreas,
@@ -295,7 +320,7 @@ export function analyzeConsequences(
   const summary =
     insights[0]?.message ??
     (affectedAreas.length > 0
-      ? "This may affect a few areas of your life."
+      ? "This is light context for now."
       : "No major ripple effects detected.");
 
   return {

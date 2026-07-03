@@ -34,12 +34,31 @@ enum RecurringRuleType {
 }
 
 model User {
-  id         String      @id @default(uuid())
-  email      String      @unique
-  name       String?
-  timezone   String      @default("UTC")
-  createdAt  DateTime    @default(now())
-  workspaces Workspace[]
+  id          String       @id @default(uuid())
+  email       String       @unique
+  name        String?
+  timezone    String       @default("UTC")
+  createdAt   DateTime     @default(now())
+  workspaces  Workspace[]
+  syncProfile SyncProfile?
+}
+
+model SyncProfile {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  data      Json
+  updatedAt DateTime @updatedAt
+}
+
+model SyncChatMessage {
+  id        String   @id @default(uuid())
+  userId    String
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 enum TimelineItemStatus {

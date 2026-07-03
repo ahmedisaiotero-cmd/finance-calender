@@ -8,13 +8,24 @@ export type AppShellRouteConfig = {
   description?: string;
 };
 
+const BRIEF_HOME: AppShellRouteConfig = {
+  layout: "home",
+  title: "Brief",
+};
+
 const WORKSPACE_LAYOUT: AppShellRouteConfig = {
   layout: "workspace",
   title: SYNC_PRODUCT.name,
 };
 
 export const APP_SHELL_ROUTES: Record<string, AppShellRouteConfig> = {
-  "/": { layout: "home", title: "Today" },
+  "/": BRIEF_HOME,
+  "/chat": { layout: "default", title: "Chat", description: "Curious, not pushy." },
+  "/life": {
+    layout: "default",
+    title: "Life",
+    description: "Calendar, money, and health when you want more context.",
+  },
   "/calendar": WORKSPACE_LAYOUT,
   "/finance": WORKSPACE_LAYOUT,
   "/health": WORKSPACE_LAYOUT,

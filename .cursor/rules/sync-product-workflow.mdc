@@ -1,20 +1,38 @@
 ---
-description: Sync build workflow — how to evaluate, implement, and ship features without drifting from the vision
+description: Sync build workflow — engine-first evaluation before any implementation
 alwaysApply: true
 ---
 
 # Sync Product Workflow
 
-## Before implementing any feature
+Read `SYNC_WORKFLOW.md`, `SYNC_ENGINE_MANIFESTO.md`, `SYNC_REASONING_SPEC.md`, and `AGENTS.md` before implementing.
 
-### 1. Identify which area it improves
+## Gate question
 
-- Today
-- Memory
-- My Life
+Every change must begin from:
+
+> **Does this improve the Sync Engine's ability to make trustworthy decisions?**
+
+Default prompt prefix:
+
+> **Improve the Sync Engine's ability to make trustworthy decisions by…**
+
+If the answer is no, do not implement it yet.
+
+## Before implementing any change
+
+### 1. Identify which reasoning stage it improves
+
+- Memory (Memory Decision)
 - Understanding
-- Consequences
+- Consequences (Consequence Reasoning)
+- Judgment
+- Response
+- Briefing (Briefing Effect)
+- Safety / Privacy
 - Trust
+
+Legacy surfaces (Today, Memory, My Life) **display** engine output — improve them only when trust work requires it or when explicitly requested.
 
 ### 2. Search for existing shared Sync logic first
 
@@ -22,6 +40,8 @@ Prefer reusing:
 
 - `meaning-engine`
 - `sync-consequences`
+- `decision-engine`
+- `sync-engine`
 - `importance-scoring`
 - `resolve-timeline`
 - `sync-time-blocks`
@@ -32,93 +52,90 @@ Prefer reusing:
 - ambiguity detection
 - duplicate detection
 
-**Do not** create duplicate mobile-only intelligence if shared logic exists.
+**Do not** create duplicate client-only intelligence if shared logic exists.
 
-### 3. Evaluate the feature
+### 3. Evaluate the change
 
 Answer:
 
-- How does this help answer **"What do I need to know right now?"**
+- Does this improve trustworthy decisions?
 - How does this reduce mental load?
 - What real-life behavior becomes easier?
-- Does this improve Today, Memory, My Life, Understanding, Consequences, or Trust?
+- Does this improve Memory, Understanding, Consequences, Judgment, Briefing, Safety, or Trust?
 
 **If none apply: do not build it.**
 
 ### 4. Add tests
 
-Prefer messy real-life input.
+Prefer messy real-life input. Failed decisions should become test cases **before** production fixes whenever possible. See `SYNC_EVALUATION.md`.
 
 ### 5. Preserve Sync voice
 
 Sync should sound: **calm, observant, concise, trustworthy.**
 
-Avoid:
-
-- corporate SaaS language
-- productivity coaching
-- motivational slogans
-- generic AI wording
+Avoid: corporate SaaS language, productivity coaching, motivational slogans, generic AI wording.
 
 Prefer specific phrases:
 
 - Rent is due Friday.
+- Flight at 6:00 AM.
 - Tomorrow starts early.
-- You're off tomorrow.
-- Your friend's birthday is tomorrow.
 - Work begins at 11:00 AM after a busy morning.
+
+## Reasoning pipeline
+
+Do not fork this pipeline:
+
+```
+Input → Understanding → Memory Decision → Consequence Reasoning
+  → Judgment → Response → Future Follow-up → Briefing Effect
+```
 
 ## Build order
 
-1. Shared intelligence / domain layer
+1. Shared intelligence / reasoning layer
 2. Tests
-3. Mobile shell integration
+3. Lab + mobile client integration
 4. Minimal UI
-5. Polish
+5. Polish (deferred until trust milestones)
 
 Never build UI first if the intelligence does not exist.
+
+## Surfaces
+
+- **`/sync-lab`** — teaching/evaluation surface, not the product
+- **Mobile prototype** — first engine client; keep it, do not delete
+- **Today** — briefing output of Judgment, not a feature playground
+
+Product/UI work is **lower priority** until trust is proven. `SYNC_ENGINE_ROADMAP.md` supersedes `ROADMAP.md` for sequencing.
 
 ## Do not build unless explicitly approved
 
 - new main tabs
-- dashboards
-- analytics
-- charts
-- productivity pages
-- task manager UI
+- dashboards, analytics, charts
+- productivity pages, task manager UI
 - full chatbot UI
-- standalone calendar page
-- standalone finance page
-- standalone health page
-- social features
-- gamification
-- streak systems
+- standalone calendar, finance, or health **products**
+- Sync Health, Sync Money, onboarding, themes
+- integrations (calendar sync, bank sync, health APIs)
+- social features, gamification, streak systems
+- consumer UI polish ahead of trust milestones
 
 ## Red flag list
 
-If a proposed feature includes any of the following, **stop and explain why it is being proposed** before implementation:
+If a proposed change includes any of the following, **stop and explain why** before implementation:
 
-- dashboards
-- analytics
-- charts
-- productivity scores
-- life scores
-- streak systems
-- habit tracking systems
-- leaderboards
-- social feeds
-- gamification
-- finance dashboard pages
-- health dashboard pages
-- calendar dashboard pages
+- dashboards, analytics, charts, productivity scores, life scores
+- streak systems, habit tracking, leaderboards, social feeds, gamification
+- finance/health/calendar **dashboard pages** as product expansion
 - chatbot-first experiences
+- Today redesign or feature playground work without explicit request
 
 ## Definition of done
 
-A feature is **not complete** unless:
+A change is **not complete** unless:
 
-- it supports the Sync vision
-- it improves Today, Memory, My Life, Understanding, Consequences, or Trust
+- it improves trustworthy decisions
 - it reuses shared intelligence where possible
 - it includes tests
 - it reduces clutter
@@ -126,8 +143,8 @@ A feature is **not complete** unless:
 
 ## Current priority
 
-Make Sync **useful** before making it bigger.
+Make Sync **trustworthy** before making it bigger.
 
-Focus: intelligence quality, consequence ranking, life load detection, memory understanding, My Life model, trust/edit/delete, messy real-life input testing.
+Focus: judgment quality, memory decision quality, consequence reasoning, Sync Engine response, trust/edit/delete, weekly evaluation reviews, lab stability, messy real-life stress testing.
 
-Design is currently good enough. **Do not redesign** unless fixing clarity.
+Design is currently good enough. **Do not redesign** unless fixing clarity or explicitly requested.
