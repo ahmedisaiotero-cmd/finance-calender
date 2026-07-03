@@ -22,15 +22,28 @@ If it does not improve one of these, **do not build it.**
 
 ## Core promise
 
-**Tell Sync what happened. Sync understands what it means.**
+**Tell Sync what happened. Sync Intelligence understands what it means.**
 
-Sync is a life understanding system — not a planner, journal, notes app, productivity tool, or database.
+Sync is a personal intelligence engine for life.
+The Sync app is the first product surface powered by that engine, presenting understanding as a calm daily life briefing.
+Sync is not a planner, journal, notes app, productivity tool, or database.
 
 The value of Sync should **increase as more life is captured**. The goal is understanding, not storage.
 
 ## Intelligence pipeline
 
 **Capture → Memory → Understanding → Consequence → Decision → Sync Engine → UI**
+
+## Layered architecture (direction)
+
+| Layer | Owns | Notes |
+|-------|------|-------|
+| Sync Intelligence | memory, life graph, reasoning, consequence detection, pattern intelligence, prioritization, narrative context | Core reusable product layer |
+| Adapters | translation for Home, Life Timeline, My Life, Capture, area views, and future outputs (chat/voice/domain) | Keep thin and explicit |
+| Surfaces | web app, mobile app, iOS shell, future dedicated apps | Present intelligence; do not re-rank |
+| Integrations | optional external connectors (calendar, finance, health, email/messages), auth/permissions, privacy boundaries | User-approved plugins/sources only |
+
+Integration rule: external sources are optional. Sync must remain useful through manual capture alone.
 
 | Layer | Question | Primary modules | Status |
 |-------|----------|-----------------|--------|
@@ -63,11 +76,13 @@ Phase 1.75 focuses on:
 
 Every feature should support this loop.
 
-## Canonical structure
+## Canonical app structure
 
-1. **Today** — greeting, one insight, one short briefing, capture
-2. **Memory** — what Sync remembers (interpreted, connected, aged)
-3. **My Life** — what Sync knows about the user
+1. **Home** — what matters now
+2. **My Life** — what Sync knows
+3. **Life Timeline** — when it matters
+4. **Capture** — how Sync learns
+5. **Area views** — category-specific perspective from shared intelligence
 
 ## Build order
 
@@ -103,7 +118,7 @@ Focus: Capture, Memory, Understanding, Consequences, **Decision**, and **Sync En
 
 ## Sync Engine Direction
 
-Sync is now primarily a **personal reasoning engine** — not an app, planner, dashboard, or productivity tool. The product is trust. The UI exists to test, teach, and eventually expose the engine.
+Sync is now primarily a **personal intelligence engine for life**. The reusable intelligence layer is the long-term product; the Sync app is the first and most important proving ground.
 
 All future Sync work must prioritize improving the Sync Engine’s ability to make **trustworthy decisions**.
 
@@ -118,6 +133,8 @@ Future prompts should begin with:
 > “Improve the Sync Engine’s ability to make trustworthy decisions by…”
 
 Do not build features for their own sake.
+
+Do not rebuild around an abstract platform at the cost of shipping the app.
 
 **Source of truth for this direction:**
 

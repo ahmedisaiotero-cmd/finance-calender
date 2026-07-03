@@ -1,6 +1,8 @@
 # Sync Intelligence System
 
-Sync is a **personal reasoning engine** — not primarily an app, planner, dashboard, or productivity tool. The product is **trust**. The UI exists to test, teach, and eventually expose the engine.
+Sync is a **personal intelligence engine for life** — not primarily an app, planner, dashboard, or productivity tool.
+The long-term product is the reusable intelligence layer and the trust it earns.
+The Sync app is the **first product surface** powered by that engine. It remains the proving ground for shipping trustworthy decisions.
 
 Before making changes, read:
 
@@ -35,6 +37,7 @@ Then specify the reasoning stage, a messy real-life example, and the test that p
 - **Trust before features** — judgment quality beats new surfaces
 - **Product/UI work is lower priority** until trust is proven (see `SYNC_ENGINE_ROADMAP.md` Phase 3 exit criteria)
 - **`/sync-lab` is the teaching/evaluation surface**, not the product
+- **The Sync app is the first product surface** — improve it by strengthening shared intelligence, not by adding page-local brains
 - **Today is a briefing output of judgment**, not a feature playground — do not redesign or expand it unless explicitly requested
 - **Failed decisions become evaluation/test cases before production fixes** whenever possible (see `SYNC_EVALUATION.md`)
 
@@ -50,9 +53,23 @@ Sync is not:
 
 Sync is:
 
-- a personal reasoning engine that understands context, consequences, memory, and timing
+- a personal intelligence engine that captures life input, builds memory, understands meaning, reasons about consequences, detects patterns, and produces outputs
 - a system that decides what deserves attention — and when to stay quiet
 - a consequence engine with trustworthy judgment at its core
+
+## Layered architecture (current direction)
+
+1. **Sync Intelligence** — memory, life graph, reasoning, consequence detection, pattern intelligence, prioritization, narrative context
+2. **Adapters** — translate intelligence into outputs for Home, My Life, Life Timeline, Capture, area views, and future chat/voice/domain outputs
+3. **Surfaces** — web app, mobile app, iOS shell, and future dedicated apps that present outputs and handle interaction
+4. **Integrations** — optional external connectors (calendar, finance, health, email/messages) with explicit user consent, authentication, and privacy boundaries
+
+Rules:
+
+- Intelligence should not be trapped inside UI components.
+- App pages consume intelligence; they do not create their own brains.
+- Integrations enrich Sync only after user approval.
+- No hidden external data usage and no forced account connections.
 
 ## Core rule
 
@@ -290,11 +307,12 @@ Good tests include:
 
 Do not unless **explicitly requested**:
 
-- add dashboards, tabs, integrations, or domain products (Sync Health, Sync Money, etc.)
+- add dashboards, tabs, or domain products (Sync Health, Sync Money, etc.)
 - add onboarding, themes, analytics, charts, streaks, or gamification
 - redesign `/sync-lab`, Today, or Daily Brief
 - polish consumer UI ahead of trust milestones
 - create finance/calendar/health agents as separate intelligence layers
+- force integrations by default or assume external data access without clear user consent
 - turn Sync into a dashboard
 - turn capture into a chatbot
 - bury Today under widgets

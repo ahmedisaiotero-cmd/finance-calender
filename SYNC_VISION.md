@@ -8,13 +8,15 @@ Also read: `SYNC_WORKFLOW.md`, `SYNC_REASONING_SPEC.md`, `SYNC_EVALUATION.md`, `
 
 ## What Sync Is
 
-Sync is a **personal reasoning engine**.
+Sync is a **personal intelligence engine for life**.
 
 It helps people make better day-to-day decisions by understanding context, consequences, memory, and timing.
 
 **The product is trust.**
 
-The UI exists to test, teach, and eventually expose the engine — not to compete with planners, dashboards, or domain apps.
+The reusable intelligence layer is the long-term product.
+The Sync app is the first product surface powered by that layer, presenting understanding as a calm daily life briefing.
+UI work should ship that intelligence clearly — not compete with planners, dashboards, or domain apps.
 
 **Core question:** *What do I need to know right now?*
 
@@ -51,15 +53,25 @@ If a feature turns Sync into something on this list, stop and rethink it.
 
 ## Surfaces (Teaching & Output)
 
+### Sync app — first product surface
+
+The current app is the primary proving ground for Sync Intelligence. Its core surfaces are:
+
+- **Home** — what matters now
+- **My Life** — what Sync knows
+- **Life Timeline** — when it matters
+- **Capture** — how Sync learns
+- **Area views** — focused views powered by shared intelligence
+
 ### `/sync-lab` — teaching/evaluation surface
 
 The lab is where reasoning is inspected, corrected, and stress-tested. It is **not the product**.
 
 Debug explainability belongs here — not in normal user replies.
 
-### Mobile prototype — first engine client
+### Mobile prototype — current app client shell
 
-The mobile prototype is the **first consumer of the Sync Engine**. It renders judgment output through Today, Memory, and My Life. Do not delete it. Do not treat it as a feature playground — it validates trustworthy decisions in a minimal shell.
+The mobile prototype is a current shell for the first app surface. Do not delete it. Do not treat it as a feature playground — it validates trustworthy decisions in a minimal shell.
 
 ### Today — briefing output of judgment
 
@@ -187,6 +199,24 @@ Start with the briefing. Offer detail on demand. Do not front-load metadata, sco
 ### Integrations later
 
 Sync **connects** to tools users trust — it does not replace them. External sources come **after** the reasoning pipeline proves trustworthy on manual capture alone.
+Integrations are optional, user-approved plugins/sources (calendar, finance, health, email/messages, and future connectors), never forced defaults.
+No hidden external data usage and no privacy-invasive assumptions.
+
+---
+
+## Layered architecture
+
+1. **Layer 1: Sync Intelligence** — memory, life graph, reasoning, consequence detection, pattern intelligence, prioritization, narrative context
+2. **Layer 2: Adapters** — translate intelligence into outputs for Home, Timeline, My Life, Chat, Voice, Calendar, Finance, Health
+3. **Layer 3: Surfaces** — UI and interaction for web app, mobile app, iOS shell, and future dedicated apps
+4. **Layer 4: Integrations** — optional external connectors, authentication/permissions, and privacy boundaries
+
+Rules:
+
+- Intelligence should not be trapped inside UI components.
+- App pages consume intelligence; they do not create their own brains.
+- Do not rebuild around an abstract platform at the cost of shipping the app.
+- No dashboard creep.
 
 **Interpretation over information. Clarity over completeness.**
 

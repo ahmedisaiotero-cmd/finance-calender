@@ -33,6 +33,7 @@ If the answer is no, do not implement it yet.
 - Trust
 
 Legacy surfaces (Today, Memory, My Life) **display** engine output — improve them only when trust work requires it or when explicitly requested.
+The Sync app is the first product surface; keep shipping it as the proving ground for shared intelligence.
 
 ### 2. Search for existing shared Sync logic first
 
@@ -104,8 +105,11 @@ Never build UI first if the intelligence does not exist.
 ## Surfaces
 
 - **`/sync-lab`** — teaching/evaluation surface, not the product
-- **Mobile prototype** — first engine client; keep it, do not delete
-- **Today** — briefing output of Judgment, not a feature playground
+- **Home** — what matters now
+- **My Life** — what Sync knows
+- **Life Timeline** — when it matters
+- **Capture** — how Sync learns
+- **Area views** — focused outputs from shared intelligence
 
 Product/UI work is **lower priority** until trust is proven. `SYNC_ENGINE_ROADMAP.md` supersedes `ROADMAP.md` for sequencing.
 
@@ -148,3 +152,8 @@ Make Sync **trustworthy** before making it bigger.
 Focus: judgment quality, memory decision quality, consequence reasoning, Sync Engine response, trust/edit/delete, weekly evaluation reviews, lab stability, messy real-life stress testing.
 
 Design is currently good enough. **Do not redesign** unless fixing clarity or explicitly requested.
+
+## Integration rule
+
+Integrations are optional user-approved plugins/sources that feed Sync Intelligence.
+Do not force account connections, and do not assume hidden external data access.

@@ -6,20 +6,35 @@ Repository layout and file ownership map: `SYNC_REPOSITORY.md`.
 
 Sync exists to make trustworthy attention decisions from real life evidence over time.  
 The product is trust, not feature volume.  
+The reusable intelligence layer is Sync's long-term product.
+The Sync app is the first product surface and proving ground for this intelligence.
 The core question remains: what does this mean in the context of the user's life over time?
 
 ## 2. Core architecture
 
-Life  
--> Observations  
--> Knowledge Engine  
--> Life Graph / persistent knowledge  
--> Learning Engine  
--> Decision Engine  
--> Narrative Engine  
--> Surfaces
+Life input  
+-> Sync Intelligence (Observations, Knowledge, Life Graph, Learning, Decision, Narrative)  
+-> Adapters  
+-> Surfaces (Home, My Life, Life Timeline, Capture, Area views)  
+-> Optional Integrations as user-approved sources/plugins
 
 ## 3. Layer responsibilities
+
+- Sync Intelligence (Layer 1)
+  - Owns memory, life graph, reasoning, consequence detection, pattern intelligence, prioritization, and narrative context.
+  - Must remain reusable across surfaces.
+
+- Adapters (Layer 2)
+  - Translate intelligence outputs for Home, Timeline, My Life, Capture, area views, and future outputs such as chat/voice/domain views.
+  - Do not own ranking, reasoning, or hidden business rules.
+
+- Surfaces (Layer 3)
+  - Own UI and interaction in web app, mobile app, iOS shell, and future dedicated apps.
+  - Consume prepared intelligence rather than implementing their own intelligence.
+
+- Integrations (Layer 4)
+  - Own optional external connectors (calendar, finance, health, email/messages), auth/permissions, and privacy boundaries.
+  - Must be user-approved and never forced defaults.
 
 - Observation  
   - Capture raw reality with source, timestamp, and content fidelity.
@@ -119,6 +134,7 @@ Life
 - Decision Engine ranks attention.
 - Narrative Engine shapes language.
 - Surfaces display prepared intelligence.
+- Integrations enrich intelligence only after explicit user consent.
 
 Decision and Narrative boundaries are strict:
 - Decision remains ranking owner.

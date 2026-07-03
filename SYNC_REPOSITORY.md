@@ -10,6 +10,20 @@ For mission, trust rules, and sequencing, read:
 - `SYNC_ENGINE_MANIFESTO.md`
 - `SYNC_ENGINE_ROADMAP.md`
 
+## 0. Architecture framing (current naming preserved)
+
+Sync is a personal intelligence engine for life.
+The Sync app is the first product surface powered by that engine and remains the proving ground.
+
+Current repository organization should be read through four layers:
+
+1. **Sync Intelligence** (`lib/intelligence/*`, `lib/sync-capture/*`)
+2. **Adapters** (`lib/mobile-prototype/*`, surface view-model builders, bridge modules)
+3. **Surfaces** (`app/*`, `components/*`, `sync-ios/*`)
+4. **Integrations** (optional external data connectors; user-approved only; no forced defaults)
+
+This is a direction-alignment guide only. Do not move folders or rename modules by default.
+
 ## 1. Major folder structure
 
 - `app/`
@@ -28,7 +42,8 @@ For mission, trust rules, and sequencing, read:
 - `lib/sync-capture/`
   - Capture parsing/normalization/input handling.
 - `lib/mobile-prototype/`
-  - Shared adapters for Today/Brief/mobile shell consumption.
+  - Shared adapters for Home/brief/timeline/mobile shell consumption.
+  - Name retained for stability; acts as adapter layer in current architecture.
 - `sync-ios/`
   - Mobile client shell and thin re-exports to shared logic.
 - `tests/`
@@ -110,6 +125,7 @@ Surface constraint:
 
 - Surfaces render prepared intelligence.
 - Surfaces do not own ranking/continuity/belief logic.
+- Surfaces do not implement hidden intelligence forks.
 
 ## 5. Core vs adapter/presentation files
 
@@ -155,3 +171,8 @@ If uncertain, mark as legacy in docs rather than deleting.
 5. Only after trust checks pass, wire to production adapters/surfaces.
 
 Do not skip directly to UI changes.
+
+Integration rule:
+
+- External sources (calendar, finance, health, email/messages) are optional plugins/sources.
+- Require explicit user consent, clear permissions, and privacy boundaries before use.
