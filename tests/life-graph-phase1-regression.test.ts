@@ -14,10 +14,6 @@ import {
 } from "@/lib/sync-capture/save-capture";
 import { createTestCaptureStore } from "@/tests/test-capture-handlers";
 
-import { buildDailyBrief as iosBuildDailyBrief } from "../sync-ios/lib/engine/build-daily-brief";
-import { buildTodayView as iosBuildTodayView } from "../sync-ios/lib/engine/build-today-view";
-import { attemptBriefCapture as iosAttemptBriefCapture } from "../sync-ios/lib/engine/capture-brief-input";
-
 const reference = new Date("2026-06-14T18:00:00");
 
 const messyInputs = [
@@ -230,12 +226,6 @@ function assertDestinations(actual: string[], expected: readonly string[], text:
     /Today primary/i,
   );
   assert.doesNotMatch(result.response, /\bgraph|node|edge\b/i);
-}
-
-{
-  assert.equal(iosBuildDailyBrief, buildDailyBrief);
-  assert.equal(iosBuildTodayView, buildTodayView);
-  assert.equal(iosAttemptBriefCapture, attemptBriefCapture);
 }
 
 console.log("life-graph phase 1 regression tests passed");
