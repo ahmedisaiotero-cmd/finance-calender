@@ -1,44 +1,32 @@
 "use client";
 
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 
-import { LifeAreaScreen } from "@/components/mobile-prototype/life-area-screen";
-import { LifeTimelineScreen } from "@/components/mobile-prototype/life-timeline-screen";
-import { SyncHomeFooter } from "@/components/mobile-prototype/sync-home-footer";
-import { MyLifeScreen } from "@/components/mobile-prototype/my-life-screen";
+import { ConversationScreen } from "@/components/mobile-prototype/conversation-screen";
 import { OnboardingFlow } from "@/components/mobile-prototype/onboarding-flow";
+import { SettingsScreen } from "@/components/mobile-prototype/settings-screen";
 import { SyncBrandMark } from "@/components/mobile-prototype/sync-ui";
-import { TodayScreen } from "@/components/mobile-prototype/today-screen";
-import { useCapturedItems } from "@/lib/captured-items";
-import type { LifeDrilldownTarget } from "@/lib/intelligence/consequence-link";
-import { buildDailyBrief } from "@/lib/mobile-prototype/build-daily-brief";
-import { buildLifeDrilldownView } from "@/lib/mobile-prototype/build-life-drilldown";
-import { buildLifeTimelineView } from "@/lib/mobile-prototype/build-life-timeline";
-import { resolveLifeScreenForTarget } from "@/lib/mobile-prototype/build-my-life";
-import { isOnboardingComplete, loadLifeProfile } from "@/lib/mobile-prototype/life-profile";
-import {
-  DRILLDOWN_BACK,
-  LIFE_AREA_BACK,
-  LIFE_TIMELINE_BACK,
-  MY_LIFE_TITLE,
-} from "@/lib/mobile-prototype/sync-voice";
-import { loadActiveWorkSchedule } from "@/lib/user-timeline-context";
+import { UnderstandingScreen } from "@/components/mobile-prototype/understanding-screen";
+import { WorkspaceTodayScreen } from "@/components/mobile-prototype/workspace-today-screen";
+import { isOnboardingComplete } from "@/lib/mobile-prototype/life-profile";
 
 type AppView = "onboarding" | "app";
+type WorkspaceTab = "today" | "conversation" | "understanding" | "settings";
+type ThemeMode = "dark" | "light";
 
-type LifeRoute =
-  | { name: "today" }
-  | { name: "my-life" }
-  | {
-      name: "timeline";
-      target: LifeDrilldownTarget;
-      from: "today" | "my-life";
-    }
-  | {
-      name: "area";
-      target: LifeDrilldownTarget;
-      from: "today" | "my-life";
-    };
+const THEME_STORAGE_KEY = "sync.mobile.theme";
+
+function persistThemePreference(theme: ThemeMode) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+}
+
+function tabLabel(tab: WorkspaceTab) {
+  if (tab === "today") return "Today";
+  if (tab === "conversation") return "Conversation";
+  if (tab === "understanding") return "Understanding";
+  return "Settings";
+}
 
 export function SyncMobileApp() {
   const mounted = useSyncExternalStore(
@@ -50,31 +38,8 @@ export function SyncMobileApp() {
   const view =
     viewOverride ??
     (mounted ? (isOnboardingComplete() ? "app" : "onboarding") : "app");
-  const [route, setRoute] = useState<LifeRoute>({ name: "today" });
-  const { activeItems } = useCapturedItems();
-
-  const reference = useMemo(() => new Date(), [activeItems.length, route.name]);
-
-  const brief = useMemo(() => {
-    if (!mounted) return { consequences: [] as NonNullable<ReturnType<typeof buildDailyBrief>["consequences"]> };
-    return buildDailyBrief({
-      items: activeItems,
-      workSchedule: loadActiveWorkSchedule() ?? null,
-      lifeProfile: loadLifeProfile(),
-      reference,
-    });
-  }, [mounted, activeItems, reference]);
-
-  const consequences = brief.consequences ?? [];
-
-  const openTarget = (target: LifeDrilldownTarget, from: "today" | "my-life") => {
-    const screen = resolveLifeScreenForTarget(target);
-    if (screen === "timeline") {
-      setRoute({ name: "timeline", target, from });
-      return;
-    }
-    setRoute({ name: "area", target, from });
-  };
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>("today");
+  const [theme, setTheme] = useState<ThemeMode>("dark");
 
   if (!mounted) {
     return (
@@ -88,100 +53,48 @@ export function SyncMobileApp() {
 
   if (view === "onboarding") {
     return (
-      <div className="mobile-prototype sync-app sync-app--onboarding" data-theme="dark">
+      <div className="mobile-prototype sync-app sync-app--onboarding" data-theme={theme}>
         <div className="mobile-prototype-shell">
           <OnboardingFlow onComplete={() => setViewOverride("app")} />
         </div>
       </div>
     );
   }
-
-  if (route.name === "my-life") {
-    return (
-      <div className="mobile-prototype sync-app" data-theme="dark">
-        <div className="mobile-prototype-shell">
-          <div className="sync-app-screen">
-            <MyLifeScreen
-              onBack={() => setRoute({ name: "today" })}
-              onOpenTarget={(target) => openTarget(target, "my-life")}
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (route.name === "timeline") {
-    const timelineView = buildLifeTimelineView({
-      consequences,
-      items: activeItems,
-      reference,
-      focusDayOffset: route.target.kind === "day" ? route.target.dayOffset : null,
-      focusDateKey: route.target.dateKey,
-    });
-
-    return (
-      <div className="mobile-prototype sync-app" data-theme="dark">
-        <div className="mobile-prototype-shell">
-          <div className="sync-app-screen">
-            <LifeTimelineScreen
-              view={timelineView}
-              backLabel={route.from === "today" ? DRILLDOWN_BACK : LIFE_TIMELINE_BACK}
-              onBack={() =>
-                setRoute(route.from === "today" ? { name: "today" } : { name: "my-life" })
-              }
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (route.name === "area") {
-    const areaView = buildLifeDrilldownView(route.target, {
-      items: activeItems,
-      consequences,
-      reference,
-      backLabel: route.from === "today" ? DRILLDOWN_BACK : LIFE_AREA_BACK,
-    });
-
-    return (
-      <div className="mobile-prototype sync-app" data-theme="dark">
-        <div className="mobile-prototype-shell">
-          <div className="sync-app-screen">
-            <LifeAreaScreen
-              view={areaView}
-              onBack={() =>
-                setRoute(route.from === "today" ? { name: "today" } : { name: "my-life" })
-              }
-            />
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const updateTheme = (nextTheme: ThemeMode) => {
+    setTheme(nextTheme);
+    persistThemePreference(nextTheme);
+  };
 
   return (
-    <div className="mobile-prototype sync-app" data-theme="dark" data-tab="today">
+    <div className="mobile-prototype sync-app" data-theme={theme} data-tab={activeTab}>
       <div className="mobile-prototype-shell">
-        <header className="sync-app-header mobile-prototype-pad-x" data-brief="true">
+        <header className="sync-ws-topbar">
           <SyncBrandMark size="sm" />
-          <button
-            type="button"
-            onClick={() => setRoute({ name: "my-life" })}
-            className="sync-life-link"
-          >
-            {MY_LIFE_TITLE}
-          </button>
+          <p className="sync-ws-topbar-label">{tabLabel(activeTab)}</p>
         </header>
 
-        <div className="sync-app-screen">
-          <main className="sync-app-main">
-            <TodayScreen onOpenTarget={(target) => openTarget(target, "today")} />
-          </main>
+        <main className="sync-ws-main">
+          {activeTab === "today" && <WorkspaceTodayScreen />}
+          {activeTab === "conversation" && <ConversationScreen />}
+          {activeTab === "understanding" && <UnderstandingScreen />}
+          {activeTab === "settings" && (
+            <SettingsScreen theme={theme} onThemeChange={updateTheme} />
+          )}
+        </main>
 
-          <SyncHomeFooter />
-        </div>
+        <footer className="sync-ws-nav">
+          {(["today", "conversation", "understanding", "settings"] as WorkspaceTab[]).map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              className="sync-ws-nav-item"
+              data-active={activeTab === tab}
+              onClick={() => setActiveTab(tab)}
+            >
+              {tabLabel(tab)}
+            </button>
+          ))}
+        </footer>
       </div>
     </div>
   );

@@ -8,7 +8,6 @@ import { isOnboardingComplete } from "../lib/engine/user-profile";
 
 export default function Index() {
   const [ready, setReady] = useState(isStorageReady());
-  const [onboarded, setOnboarded] = useState(false);
 
   useEffect(() => {
     if (!ready) {
@@ -20,8 +19,6 @@ export default function Index() {
       }, 50);
       return () => clearInterval(timer);
     }
-
-    setOnboarded(isOnboardingComplete());
   }, [ready]);
 
   if (!ready) {
@@ -32,7 +29,7 @@ export default function Index() {
     );
   }
 
-  if (!onboarded) {
+  if (!isOnboardingComplete()) {
     return <Redirect href="/onboarding" />;
   }
 

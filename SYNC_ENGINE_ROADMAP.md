@@ -12,7 +12,24 @@ Read alongside `SYNC_ENGINE_MANIFESTO.md`, `SYNC_REASONING_SPEC.md`, and `SYNC_E
 
 **Trustworthy Decision Rate** — see `SYNC_EVALUATION.md`.
 
-The UI is a lab until Phase 5. Do not expand tabs, dashboards, or domain apps before then.
+The UI is a lab until the trust gates are met. Do not expand tabs, dashboards, or domain apps before then.
+
+---
+
+## Approved Build Sequence
+
+This sequence is authoritative. The goal-directed loop comes only after Life Graph continuity and Decision stabilization, so goals do not steer intelligence that has not earned trust yet.
+
+1. **Regression tests and current-behavior lock**
+2. **Life Graph projection**
+3. **Connections, identity resolution, continuity, and beliefs**
+4. **Stabilize Consequences and Decision ranking**
+5. **Goal-directed loop**
+6. **Messy real-life testing and trust corrections**
+7. **Integrations**
+8. **Beta**
+
+The goal-directed loop must reuse the single reasoning pipeline and shared Judgment. It must not become a planner, a separate goal agent, page-local ranking, or a reason to expand the UI. Integrations remain optional, consent-based inputs and wait until the goal loop and trust corrections are stable.
 
 ---
 
@@ -124,7 +141,9 @@ Do not revisit Phase 5 until Phase 3 exit criteria are met.
 | Phase 4: Private Alpha | Not started |
 | Phase 5: Product Surface | Deferred |
 
-**Immediate focus:** Phase 1 + Phase 2 — lab stability, decision quality, failed-example → test loop.
+**Approved sequence position:** Steps 1–4 are the active foundation. Step 5 (goal-directed loop) waits for Life Graph continuity and Consequence/Decision stabilization. Steps 7–8 (integrations and beta) remain deferred.
+
+**Immediate focus:** lock current behavior, finish Life Graph continuity, stabilize consequence and Decision quality, and convert failed real-life examples into tests before production fixes.
 
 ---
 
