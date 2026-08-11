@@ -11,21 +11,14 @@ import { buildTodayView } from "@/lib/mobile-prototype/build-today-view";
 import { buildDrilldownForConsequence } from "@/lib/intelligence/consequence-link";
 import { captureFromBriefInput } from "@/lib/mobile-prototype/capture-brief-input";
 import { createTestCaptureStore } from "@/tests/test-capture-handlers";
+import {
+  createTestTimelineResolution,
+  createTestWorkSchedule,
+} from "@/tests/test-fixtures";
 
 const reference = new Date("2026-06-14T18:00:00");
 
-const workSchedule = {
-  days: ["SU", "MO", "TU", "WE"],
-  startTime: "11:00",
-  endTime: "21:00",
-  recurrence: {
-    frequency: "weekly" as const,
-    interval: 1 as const,
-    startsOn: "2026-06-01",
-    endsOn: null,
-  },
-  status: "active" as const,
-};
+const workSchedule = createTestWorkSchedule();
 
 function timedItem(
   partial: Partial<CapturedSyncItem> & Pick<CapturedSyncItem, "id" | "title" | "prompt">,
@@ -70,11 +63,11 @@ function timedItem(
       originalPrompt: "i work sunday through wednesday 11 to 9",
       category: "workday",
       destinations: ["Work"],
-      timeline: {
+      timeline: createTestTimelineResolution({
         timelineRole: "event",
         startDate: "2026-06-15",
         label: "Tomorrow",
-      },
+      }),
     }),
   );
 

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 
 import type { CapturedSyncItem } from "@/lib/captured-items";
 import { buildDailyBrief, formatProfileDisplayName } from "@/lib/mobile-prototype/build-daily-brief";
+import { createTestTimelineResolution } from "@/tests/test-fixtures";
 
 const reference = new Date("2026-06-14T18:00:00");
 
@@ -97,12 +98,12 @@ function syncEngineEvidenceValues(brief: ReturnType<typeof buildDailyBrief>) {
       category: "reminder",
       destinations: ["Finance", "Calendar"],
       dateLabel: "Next Friday",
-      timeline: {
+      timeline: createTestTimelineResolution({
         timelineRole: "deadline",
         deadlineDate: "2026-06-20",
         startDate: "2026-06-20",
         label: "Next Friday",
-      },
+      }),
       prompt: "rent is due next friday",
     }),
     capture({
@@ -110,13 +111,13 @@ function syncEngineEvidenceValues(brief: ReturnType<typeof buildDailyBrief>) {
       title: "Mom's Birthday",
       destinations: ["Family", "Relationships", "Calendar"],
       dateLabel: "In 8 days",
-      timeline: {
+      timeline: createTestTimelineResolution({
         timelineRole: "event",
         kind: "recurring",
         startDate: "2026-06-22",
         recurrence: { frequency: "yearly", month: 5, dayOfMonth: 22 },
         label: "In 8 days",
-      },
+      }),
       meaning: {
         importance: "high",
         meaningLabel: "Family commitment",
@@ -135,11 +136,11 @@ function syncEngineEvidenceValues(brief: ReturnType<typeof buildDailyBrief>) {
       category: "workout",
       destinations: ["Health", "Calendar"],
       dateLabel: "11 days ago",
-      timeline: {
+      timeline: createTestTimelineResolution({
         timelineRole: "log",
         startDate: "2026-06-03",
         label: "11 days ago",
-      },
+      }),
     }),
   ];
 
@@ -210,14 +211,14 @@ function syncEngineEvidenceValues(brief: ReturnType<typeof buildDailyBrief>) {
       destinations: ["Finance", "Calendar"],
       dateLabel: "Friday",
       prompt: "i get paid friday",
-      parsedInput: { moneyType: "income" },
-      timeline: {
+      moneyType: "income",
+      timeline: createTestTimelineResolution({
         timelineRole: "task",
         kind: "recurring",
         startDate: "2026-06-19",
         recurrence: { frequency: "weekly", days: ["Friday"] },
         label: "Friday",
-      },
+      }),
     }),
     capture({
       id: "rent",
@@ -225,12 +226,12 @@ function syncEngineEvidenceValues(brief: ReturnType<typeof buildDailyBrief>) {
       category: "reminder",
       destinations: ["Finance", "Calendar"],
       dateLabel: "Next Friday",
-      timeline: {
+      timeline: createTestTimelineResolution({
         timelineRole: "deadline",
         deadlineDate: "2026-06-20",
         startDate: "2026-06-20",
         label: "Next Friday",
-      },
+      }),
       prompt: "rent is due next friday",
     }),
   ];
@@ -264,13 +265,13 @@ function syncEngineEvidenceValues(brief: ReturnType<typeof buildDailyBrief>) {
         title: "Mom's Birthday",
         destinations: ["Family", "Calendar"],
         prompt: "my mom's birthday is december 14",
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "event",
           kind: "recurring",
           startDate: "2026-12-14",
           recurrence: { frequency: "yearly", month: 11, dayOfMonth: 14 },
           label: "December 14",
-        },
+        }),
       }),
     ],
     workSchedule,
@@ -290,12 +291,12 @@ function syncEngineEvidenceValues(brief: ReturnType<typeof buildDailyBrief>) {
         category: "reminder",
         destinations: ["Finance", "Calendar"],
         prompt: "rent is due tomorrow",
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "deadline",
           deadlineDate: "2026-06-15",
           startDate: "2026-06-15",
           label: "Tomorrow",
-        },
+        }),
       }),
     ],
     workSchedule: null,
@@ -315,12 +316,12 @@ function syncEngineEvidenceValues(brief: ReturnType<typeof buildDailyBrief>) {
         destinations: ["Work", "Calendar"],
         prompt: "I don't work tomorrow",
         workAvailability: "off",
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "event",
           startDate: "2026-06-15",
           label: "Tomorrow",
           tense: "future",
-        },
+        }),
       }),
     ],
     workSchedule,
@@ -340,12 +341,12 @@ function syncEngineEvidenceValues(brief: ReturnType<typeof buildDailyBrief>) {
         category: "general",
         destinations: ["Health"],
         prompt: "i showered today",
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "log",
           startDate: "2026-06-14",
           label: "Today",
           tense: "past",
-        },
+        }),
       }),
     ],
     workSchedule,
@@ -364,26 +365,26 @@ function syncEngineEvidenceValues(brief: ReturnType<typeof buildDailyBrief>) {
         title: "Anniversary",
         destinations: ["Relationships", "Calendar"],
         prompt: "anniversary is next week",
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "event",
           startDate: "2026-06-21",
           label: "Next week",
-        },
+        }),
       }),
       capture({
         id: "payday",
         title: "Payday",
         category: "expense",
         destinations: ["Finance", "Calendar"],
-        parsedInput: { moneyType: "income" },
+        moneyType: "income",
         prompt: "i get paid wednesday",
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "task",
           kind: "recurring",
           startDate: "2026-06-18",
           recurrence: { frequency: "weekly", days: ["Wednesday"] },
           label: "Wednesday",
-        },
+        }),
       }),
     ],
     workSchedule,

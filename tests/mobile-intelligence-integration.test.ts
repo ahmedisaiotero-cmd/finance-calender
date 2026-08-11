@@ -7,21 +7,14 @@ import { captureFromBriefInput } from "@/lib/mobile-prototype/capture-brief-inpu
 import { memoryFilterCategory } from "@/lib/mobile-prototype/memory-category";
 import { whySyncRemembers } from "@/lib/mobile-prototype/build-memory-detail";
 import { createTestCaptureStore } from "@/tests/test-capture-handlers";
+import {
+  createTestTimelineResolution,
+  createTestWorkSchedule,
+} from "@/tests/test-fixtures";
 
 const reference = new Date("2026-06-14T18:00:00");
 
-const workSchedule = {
-  days: ["SU", "MO", "TU", "WE"],
-  startTime: "11:00",
-  endTime: "21:00",
-  recurrence: {
-    frequency: "weekly" as const,
-    interval: 1 as const,
-    startsOn: "2026-06-01",
-    endsOn: null,
-  },
-  status: "active" as const,
-};
+const workSchedule = createTestWorkSchedule();
 
 function timedItem(
   partial: Partial<CapturedSyncItem> & Pick<CapturedSyncItem, "id" | "title" | "prompt">,
@@ -46,13 +39,13 @@ function timedItem(
       prompt: "Flight tomorrow at 6 AM",
       originalPrompt: "Flight tomorrow at 6 AM",
       destinations: ["Calendar", "Work"],
-      timeline: {
+      timeline: createTestTimelineResolution({
         timelineRole: "event",
         startDate: "2026-06-15",
         startTime: "06:00",
         isTimed: true,
         label: "Tomorrow",
-      },
+      }),
       meaning: {
         importance: "high",
         meaningLabel: "Travel commitment",
@@ -67,13 +60,13 @@ function timedItem(
       prompt: "Take daughter to school tomorrow at 7:30 AM",
       originalPrompt: "Take daughter to school tomorrow at 7:30 AM",
       destinations: ["Family", "School", "Calendar"],
-      timeline: {
+      timeline: createTestTimelineResolution({
         timelineRole: "event",
         startDate: "2026-06-15",
         startTime: "07:30",
         isTimed: true,
         label: "Tomorrow",
-      },
+      }),
       meaning: {
         importance: "high",
         meaningLabel: "Family commitment",
@@ -133,13 +126,13 @@ function timedItem(
         title: "Dinner with daughter",
         prompt: "Dinner with daughter tomorrow at 6 PM",
         destinations: ["Family", "Calendar"],
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "event",
           startDate: "2026-06-15",
           startTime: "18:00",
           isTimed: true,
           label: "Tomorrow",
-        },
+        }),
       }),
     ],
     reference,

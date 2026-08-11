@@ -15,7 +15,9 @@ import {
   SYNC_LAB_CONTEXT_DEFAULT,
   SYNC_LAB_MEMORY_VISIBILITY_DEFAULT,
   SYNC_LAB_REVIEW_VISIBLE_LIMIT,
+  type SyncLabMemoryVisibilityMap,
 } from "@/lib/sync-engine/tools/lab-state";
+import { createTestCapturedItem, createTestVisibilityMap } from "@/tests/test-fixtures";
 
 const reference = new Date("2026-06-24T12:00:00");
 
@@ -289,41 +291,41 @@ function reviewItemIds(groups: ReturnType<typeof buildSyncLabReviewGroups>) {
   });
   assert.ok(memories.length >= 1);
   const baseMemory = memories[0];
-  const reviewMemories = [
-    {
+  const reviewMemories: CapturedSyncItem[] = [
+    createTestCapturedItem({
       ...baseMemory,
       id: "review-health",
-      category: "workout" as const,
-      destinations: ["Health"] as const,
+      category: "workout",
+      destinations: ["Health"],
       title: "Skipped workout",
       prompt: "I skipped my workout again.",
       originalPrompt: "I skipped my workout again.",
-    },
-    {
+    }),
+    createTestCapturedItem({
       ...baseMemory,
       id: "review-money",
-      category: "expense" as const,
-      destinations: ["Finance"] as const,
+      category: "expense",
+      destinations: ["Finance"],
       title: "Eating out spending",
       prompt: "I spent too much eating out.",
       originalPrompt: "I spent too much eating out.",
-    },
-    {
+    }),
+    createTestCapturedItem({
       ...baseMemory,
       id: "review-family",
-      category: "date-night" as const,
-      destinations: ["Family"] as const,
+      category: "date-night",
+      destinations: ["Family"],
       title: "Mom's birthday",
       prompt: "Mom's birthday is tomorrow.",
       originalPrompt: "Mom's birthday is tomorrow.",
-    },
+    }),
   ];
 
   const groups = buildSyncLabReviewGroups({
     storedItems: [],
     testItems: reviewMemories,
-    visibility: Object.fromEntries(
-      reviewMemories.map((memory) => [memory.id, "visible"]),
+    visibility: createTestVisibilityMap(
+      reviewMemories.map((memory) => [memory.id, "visible"] as const),
     ),
   });
 
@@ -360,8 +362,8 @@ function reviewItemIds(groups: ReturnType<typeof buildSyncLabReviewGroups>) {
     originalPrompt: `I skipped my workout again ${index + 1}`,
     meaning: memory.meaning ? { ...memory.meaning, importance: "high" as const } : undefined,
   }));
-  const visibility = Object.fromEntries(
-    visibleHealthMemories.map((item) => [item.id, "visible"]),
+  const visibility: SyncLabMemoryVisibilityMap = Object.fromEntries(
+    visibleHealthMemories.map((item) => [item.id, "visible" as const]),
   );
   const groups = buildSyncLabReviewGroups({
     storedItems: [],
@@ -520,7 +522,7 @@ function reviewItemIds(groups: ReturnType<typeof buildSyncLabReviewGroups>) {
     prompt: "private lab note",
     originalPrompt: "private lab note",
     category: "general",
-    destinations: ["Other"],
+    destinations: ["Goals"],
   };
   const visibility = { [labInternal.id]: "internal" as const };
 

@@ -9,6 +9,7 @@ import {
 import { cleanMemoryTitle } from "@/lib/sync-capture/memory-title";
 import { captureFromBriefInput } from "@/lib/mobile-prototype/capture-brief-input";
 import { createTestCaptureStore } from "@/tests/test-capture-handlers";
+import { createTestTimelineResolution } from "@/tests/test-fixtures";
 
 const reference = new Date("2026-06-14T18:00:00");
 
@@ -36,11 +37,11 @@ function item(
         title: "Coffee",
         prompt: "coffee",
         originalPrompt: "coffee",
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "log",
           startDate: "2026-06-14",
           label: "Today",
-        },
+        }),
       }),
       reference,
     ),
@@ -57,11 +58,11 @@ function item(
         prompt: "i was sad today",
         originalPrompt: "i was sad today",
         destinations: ["Health"],
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "log",
           startDate: "2026-06-14",
           label: "Today",
-        },
+        }),
       }),
       reference,
     ),
@@ -78,12 +79,13 @@ function item(
       originalPrompt: "spent $9 at mcdonalds",
       category: "expense",
       destinations: ["Finance"],
-      parsedInput: { moneyType: "expense", amount: 9 },
-      timeline: {
+      moneyType: "expense",
+      amount: "9",
+      timeline: createTestTimelineResolution({
         timelineRole: "log",
         startDate: "2026-06-14",
         label: "Today",
-      },
+      }),
     }),
     reference,
   );
@@ -99,12 +101,13 @@ function item(
       originalPrompt: "spent $9 at mcdonalds",
       category: "expense",
       destinations: ["Finance"],
-      parsedInput: { moneyType: "expense", amount: 9 },
-      timeline: {
+      moneyType: "expense",
+      amount: "9",
+      timeline: createTestTimelineResolution({
         timelineRole: "log",
         startDate: "2026-06-14",
         label: "Today",
-      },
+      }),
     }),
     reference,
   );

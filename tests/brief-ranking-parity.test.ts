@@ -4,6 +4,7 @@ import type { CapturedSyncItem } from "@/lib/captured-items";
 import { rankBriefConsequences } from "@/lib/intelligence/decision-engine";
 import { buildAllConsequences } from "@/lib/intelligence/sync-consequences";
 import type { SyncConsequence } from "@/lib/intelligence/sync-consequences";
+import { createTestTimelineResolution } from "@/tests/test-fixtures";
 
 const reference = new Date("2026-06-14T18:00:00");
 
@@ -176,13 +177,13 @@ function assertRankParity(
         prompt: "Flight tomorrow at 6 AM",
         originalPrompt: "Flight tomorrow at 6 AM",
         destinations: ["Calendar", "Work"],
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "event",
           startDate: "2026-06-15",
           startTime: "06:00",
           isTimed: true,
           label: "Tomorrow",
-        },
+        }),
       }),
       timedItem({
         id: "school",
@@ -190,13 +191,13 @@ function assertRankParity(
         prompt: "Take daughter to school tomorrow at 7:30 AM",
         originalPrompt: "Take daughter to school tomorrow at 7:30 AM",
         destinations: ["Family", "School", "Calendar"],
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "event",
           startDate: "2026-06-15",
           startTime: "07:30",
           isTimed: true,
           label: "Tomorrow",
-        },
+        }),
       }),
       timedItem({
         id: "birthday",
@@ -204,11 +205,11 @@ function assertRankParity(
         prompt: "My friend's birthday is tomorrow",
         originalPrompt: "My friend's birthday is tomorrow",
         destinations: ["Relationships", "Calendar"],
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "event",
           startDate: "2026-06-15",
           label: "Tomorrow",
-        },
+        }),
       }),
     ],
     workSchedule,
@@ -226,14 +227,14 @@ function assertRankParity(
         title: "Payday",
         prompt: "Payday Thursday",
         destinations: ["Finance", "Calendar"],
-        parsedInput: { moneyType: "income" },
-        timeline: {
+        moneyType: "income",
+        timeline: createTestTimelineResolution({
           timelineRole: "task",
           kind: "recurring",
           startDate: "2026-06-19",
           recurrence: { frequency: "weekly", days: ["Thursday"] },
           label: "Thursday",
-        },
+        }),
       }),
       timedItem({
         id: "rent",
@@ -241,12 +242,12 @@ function assertRankParity(
         prompt: "rent is due friday",
         category: "reminder",
         destinations: ["Finance", "Calendar"],
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "deadline",
           deadlineDate: "2026-06-20",
           startDate: "2026-06-20",
           label: "Friday",
-        },
+        }),
       }),
     ],
     workSchedule,
@@ -264,26 +265,26 @@ function assertRankParity(
         title: "Anniversary",
         destinations: ["Relationships", "Calendar"],
         prompt: "anniversary is next week",
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "event",
           startDate: "2026-06-21",
           label: "Next week",
-        },
+        }),
       }),
       timedItem({
         id: "payday",
         title: "Payday",
         category: "expense",
         destinations: ["Finance", "Calendar"],
-        parsedInput: { moneyType: "income" },
+        moneyType: "income",
         prompt: "i get paid wednesday",
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "task",
           kind: "recurring",
           startDate: "2026-06-18",
           recurrence: { frequency: "weekly", days: ["Wednesday"] },
           label: "Wednesday",
-        },
+        }),
       }),
     ],
     workSchedule,

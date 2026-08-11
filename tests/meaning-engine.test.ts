@@ -8,21 +8,15 @@ import {
   detectSyncTimeBlockOverlaps,
   proposedSyncTimeBlocksFromPlan,
 } from "@/lib/sync-time-blocks";
+import { createTestWorkSchedule } from "@/tests/test-fixtures";
 
 const reference = new Date("2026-06-09T12:00:00");
 
-const morningWorkSchedule = {
+const morningWorkSchedule = createTestWorkSchedule({
   days: ["SU", "MO", "TU", "WE", "TH", "FR", "SA"],
   startTime: "07:00",
   endTime: "15:00",
-  recurrence: {
-    frequency: "weekly" as const,
-    interval: 1,
-    startsOn: "2026-06-01",
-    endsOn: null,
-  },
-  status: "active" as const,
-};
+});
 
 function plan(input: string) {
   return createPulsePlan(input, {

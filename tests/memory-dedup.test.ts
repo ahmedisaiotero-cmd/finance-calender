@@ -7,6 +7,7 @@ import {
   dedupeMemoryItems,
 } from "@/lib/sync-capture/memory-dedup";
 import { buildMemoryEntries } from "@/lib/mobile-prototype/format-memory-entry";
+import { createTestTimelineResolution } from "@/tests/test-fixtures";
 
 const reference = new Date("2026-06-14T18:00:00");
 
@@ -25,11 +26,11 @@ function birthdayItem(
     destinations: ["Relationships"],
     dateLabel: "June 15",
     timeLabel: "Flexible",
-    timeline: {
+    timeline: createTestTimelineResolution({
       timelineRole: "event",
       startDate: dateKey,
       label: "June 15",
-    },
+    }),
     status: "active",
     createdAt: "2026-06-01T00:00:00.000Z",
     updatedAt: "2026-06-01T00:00:00.000Z",

@@ -3,21 +3,14 @@ import assert from "node:assert/strict";
 import type { CapturedSyncItem } from "@/lib/captured-items";
 import { processSyncMessage } from "@/lib/sync-engine";
 import { memoryFromSyncEngineResult } from "@/lib/sync-engine/tools/lab-state";
+import {
+  createTestTimelineResolution,
+  createTestWorkSchedule,
+} from "@/tests/test-fixtures";
 
 const reference = new Date("2026-06-14T18:00:00");
 
-const workSchedule = {
-  days: ["SU", "MO", "TU", "WE"],
-  startTime: "11:00",
-  endTime: "21:00",
-  recurrence: {
-    frequency: "weekly" as const,
-    interval: 1 as const,
-    startsOn: "2026-06-01",
-    endsOn: null,
-  },
-  status: "active" as const,
-};
+const workSchedule = createTestWorkSchedule();
 
 function assertRuntimeShape(result: ReturnType<typeof processSyncMessage>) {
   assert.ok(result.runtime);
@@ -96,11 +89,11 @@ function assertRuntimeShape(result: ReturnType<typeof processSyncMessage>) {
       status: "active",
       createdAt: "2026-06-14T12:00:00.000Z",
       updatedAt: "2026-06-14T12:00:00.000Z",
-      timeline: {
+      timeline: createTestTimelineResolution({
         timelineRole: "log",
         startDate: "2026-06-14",
         label: "Today",
-      },
+      }),
     },
     {
       id: "e2",
@@ -114,11 +107,11 @@ function assertRuntimeShape(result: ReturnType<typeof processSyncMessage>) {
       status: "active",
       createdAt: "2026-06-10T12:00:00.000Z",
       updatedAt: "2026-06-10T12:00:00.000Z",
-      timeline: {
+      timeline: createTestTimelineResolution({
         timelineRole: "log",
         startDate: "2026-06-10",
         label: "Today",
-      },
+      }),
     },
     {
       id: "e3",
@@ -132,11 +125,11 @@ function assertRuntimeShape(result: ReturnType<typeof processSyncMessage>) {
       status: "active",
       createdAt: "2026-06-05T12:00:00.000Z",
       updatedAt: "2026-06-05T12:00:00.000Z",
-      timeline: {
+      timeline: createTestTimelineResolution({
         timelineRole: "log",
         startDate: "2026-06-05",
         label: "Today",
-      },
+      }),
     },
   ];
 

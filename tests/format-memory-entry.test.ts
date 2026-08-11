@@ -8,6 +8,7 @@ import {
   captureFromBriefInput,
 } from "@/lib/mobile-prototype/capture-brief-input";
 import { createTestCaptureStore } from "@/tests/test-capture-handlers";
+import { createTestTimelineResolution } from "@/tests/test-fixtures";
 
 const reference = new Date("2026-06-14T18:00:00");
 
@@ -29,13 +30,13 @@ function paydayItem(id: string, createdAt: string): CapturedSyncItem {
     dateLabel: "Friday",
     timeLabel: "Flexible",
     moneyType: "income",
-    timeline: {
+    timeline: createTestTimelineResolution({
       timelineRole: "task",
       kind: "recurring",
       startDate: "2026-06-19",
       recurrence: { frequency: "weekly", days: ["Friday"] },
       label: "Friday",
-    },
+    }),
     status: "active",
     createdAt,
     updatedAt: createdAt,

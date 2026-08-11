@@ -10,6 +10,7 @@ import { buildDailyBrief } from "@/lib/mobile-prototype/build-daily-brief";
 import { captureFromBriefInput } from "@/lib/mobile-prototype/capture-brief-input";
 import { buildSyncTimeBlocksForRange } from "@/lib/sync-time-blocks";
 import { createTestCaptureStore } from "@/tests/test-capture-handlers";
+import { createTestTimelineResolution } from "@/tests/test-fixtures";
 
 const workSchedule = {
   days: ["SU", "MO", "TU", "WE"],
@@ -300,11 +301,11 @@ function staleLogItem(
     status: "active",
     createdAt: `${startDate}T12:00:00.000Z`,
     updatedAt: `${startDate}T12:00:00.000Z`,
-    timeline: {
+    timeline: createTestTimelineResolution({
       timelineRole: "log",
       startDate,
       label: "Today",
-    },
+    }),
   };
 }
 

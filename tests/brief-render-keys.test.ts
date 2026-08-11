@@ -13,6 +13,7 @@ import {
   BRIEF_EMPTY_NO_CONTEXT,
   BRIEF_EMPTY_QUIET,
 } from "@/lib/mobile-prototype/sync-voice";
+import { createTestTimelineResolution } from "@/tests/test-fixtures";
 
 const reference = new Date("2026-06-14T18:00:00");
 
@@ -69,38 +70,38 @@ function timedItem(
         prompt: "Flight tomorrow at 6 AM",
         originalPrompt: "Flight tomorrow at 6 AM",
         destinations: ["Calendar", "Work"],
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "event",
           startDate: "2026-06-15",
           startTime: "06:00",
           isTimed: true,
           label: "Tomorrow",
-        },
+        }),
       }),
       timedItem({
         id: "payday",
         title: "Payday",
         prompt: "Payday Thursday",
         destinations: ["Finance", "Calendar"],
-        parsedInput: { moneyType: "income" },
-        timeline: {
+        moneyType: "income",
+        timeline: createTestTimelineResolution({
           timelineRole: "task",
           kind: "recurring",
           startDate: "2026-06-19",
           recurrence: { frequency: "weekly", days: ["Thursday"] },
           label: "Thursday",
-        },
+        }),
       }),
       timedItem({
         id: "send-money",
         title: "Send Money to Mom",
         prompt: "send mama money saturday",
         destinations: ["Family", "Finance"],
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "event",
           startDate: "2026-06-21",
           label: "Saturday",
-        },
+        }),
       }),
     ],
     workSchedule,
@@ -144,13 +145,13 @@ function timedItem(
         prompt: "Flight tomorrow at 6 AM",
         originalPrompt: "Flight tomorrow at 6 AM",
         destinations: ["Calendar", "Work"],
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "event",
           startDate: "2026-06-15",
           startTime: "06:00",
           isTimed: true,
           label: "Tomorrow",
-        },
+        }),
       }),
       timedItem({
         id: "rent",
@@ -158,12 +159,12 @@ function timedItem(
         prompt: "rent is due friday",
         category: "reminder",
         destinations: ["Finance", "Calendar"],
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "deadline",
           deadlineDate: "2026-06-20",
           startDate: "2026-06-20",
           label: "Friday",
-        },
+        }),
       }),
     ],
     workSchedule,

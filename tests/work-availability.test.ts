@@ -8,6 +8,7 @@ import {
   shouldSuppressWorkScheduleOnDate,
 } from "@/lib/sync-capture/work-availability";
 import type { CapturedSyncItem } from "@/lib/captured-items";
+import { createTestTimelineResolution } from "@/tests/test-fixtures";
 
 assert.equal(isWorkDayOffLanguage("I don't work tomorrow"), true);
 assert.equal(isWorkDayOffLanguage("i dont work tomorrow"), true);
@@ -40,11 +41,11 @@ assert.equal(
       destinations: ["Work", "Calendar"],
       dateLabel: "Tomorrow",
       timeLabel: "Flexible",
-      timeline: {
+      timeline: createTestTimelineResolution({
         timelineRole: "event",
         startDate: "2026-06-15",
         label: "Tomorrow",
-      },
+      }),
       status: "active",
       createdAt: "2026-06-14T00:00:00.000Z",
       updatedAt: "2026-06-14T00:00:00.000Z",

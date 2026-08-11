@@ -7,6 +7,7 @@ import {
   BRIEF_EMPTY_NO_CONTEXT,
   BRIEF_EMPTY_QUIET,
 } from "@/lib/mobile-prototype/sync-voice";
+import { createTestTimelineResolution } from "@/tests/test-fixtures";
 
 const reference = new Date("2026-06-14T18:00:00");
 
@@ -89,13 +90,13 @@ const GOLDEN_MONEY_PRIORITY = {
         prompt: "Flight tomorrow at 6 AM",
         originalPrompt: "Flight tomorrow at 6 AM",
         destinations: ["Calendar", "Work"],
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "event",
           startDate: "2026-06-15",
           startTime: "06:00",
           isTimed: true,
           label: "Tomorrow",
-        },
+        }),
       }),
       timedItem({
         id: "school",
@@ -103,13 +104,13 @@ const GOLDEN_MONEY_PRIORITY = {
         prompt: "Take daughter to school tomorrow at 7:30 AM",
         originalPrompt: "Take daughter to school tomorrow at 7:30 AM",
         destinations: ["Family", "School", "Calendar"],
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "event",
           startDate: "2026-06-15",
           startTime: "07:30",
           isTimed: true,
           label: "Tomorrow",
-        },
+        }),
       }),
       timedItem({
         id: "birthday",
@@ -117,11 +118,11 @@ const GOLDEN_MONEY_PRIORITY = {
         prompt: "My friend's birthday is tomorrow",
         originalPrompt: "My friend's birthday is tomorrow",
         destinations: ["Relationships", "Calendar"],
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "event",
           startDate: "2026-06-15",
           label: "Tomorrow",
-        },
+        }),
       }),
     ],
     workSchedule,
@@ -164,14 +165,14 @@ const GOLDEN_MONEY_PRIORITY = {
         title: "Payday",
         prompt: "Payday Thursday",
         destinations: ["Finance", "Calendar"],
-        parsedInput: { moneyType: "income" },
-        timeline: {
+        moneyType: "income",
+        timeline: createTestTimelineResolution({
           timelineRole: "task",
           kind: "recurring",
           startDate: "2026-06-19",
           recurrence: { frequency: "weekly", days: ["Thursday"] },
           label: "Thursday",
-        },
+        }),
       }),
       timedItem({
         id: "rent",
@@ -179,12 +180,12 @@ const GOLDEN_MONEY_PRIORITY = {
         prompt: "rent is due friday",
         category: "reminder",
         destinations: ["Finance", "Calendar"],
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "deadline",
           deadlineDate: "2026-06-20",
           startDate: "2026-06-20",
           label: "Friday",
-        },
+        }),
       }),
     ],
     workSchedule,

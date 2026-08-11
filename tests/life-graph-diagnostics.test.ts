@@ -100,7 +100,7 @@ function buildItems(texts: string[]) {
   });
   const todayBefore = buildTodayView({
     brief: briefBefore,
-    consequences: briefBefore.consequences,
+    consequences: briefBefore.consequences ?? [],
     items,
     reference,
   });
@@ -118,7 +118,7 @@ function buildItems(texts: string[]) {
   });
   const todayAfter = buildTodayView({
     brief: briefAfter,
-    consequences: briefAfter.consequences,
+    consequences: briefAfter.consequences ?? [],
     items,
     reference,
   });

@@ -4,12 +4,13 @@ import test from "node:test";
 import type { CapturedSyncItem } from "@/lib/captured-items";
 import { generateDailyBrief, maxBriefItemsForProfile } from "@/lib/brief/generate-daily-brief";
 import { EMPTY_USER_PROFILE } from "@/lib/sync-profile/user-profile";
+import { createTestTimelineResolution } from "@/tests/test-fixtures";
 
 function capture(
   partial: Partial<CapturedSyncItem> & Pick<CapturedSyncItem, "id" | "title">,
 ): CapturedSyncItem {
   return {
-    category: "money",
+    category: "expense",
     prompt: partial.title,
     destinations: ["Finance", "Calendar"],
     dateLabel: "Friday",
@@ -37,11 +38,13 @@ test("generateDailyBrief caps items and adds curious hook for goals", () => {
         title: "Rent due Friday",
         prompt: "Rent is due Friday",
         moneyType: "expense",
-        timeline: {
-          kind: "deadline",
+        timeline: createTestTimelineResolution({
+          timelineRole: "deadline",
+          kind: "single_date",
           deadlineDate: "2026-07-03",
           startDate: "2026-07-03",
-        },
+          label: "Friday",
+        }),
       }),
     ],
     reference,

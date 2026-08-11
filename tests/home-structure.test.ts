@@ -5,6 +5,7 @@ import { buildDailyBrief } from "@/lib/mobile-prototype/build-daily-brief";
 import { buildTodayView } from "@/lib/mobile-prototype/build-today-view";
 import { captureFromBriefInput } from "@/lib/mobile-prototype/capture-brief-input";
 import { createTestCaptureStore } from "@/tests/test-capture-handlers";
+import { createTestTimelineResolution } from "@/tests/test-fixtures";
 
 const reference = new Date("2026-06-14T18:00:00");
 
@@ -60,11 +61,11 @@ function timedItem(
       originalPrompt: "i worked sunday through wednesday 11 to 9",
       category: "workday",
       destinations: ["Work"],
-      timeline: {
+      timeline: createTestTimelineResolution({
         timelineRole: "event",
         startDate: "2026-06-15",
         label: "Tomorrow",
-      },
+      }),
     }),
   );
 

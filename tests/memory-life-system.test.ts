@@ -8,6 +8,7 @@ import {
 import { buildThreadPatternInsight } from "@/lib/intelligence/memory-thread";
 import { buildMemoryReflection } from "@/lib/mobile-prototype/build-memory-reflection";
 import { buildTodayView } from "@/lib/mobile-prototype/build-today-view";
+import { createTestTimelineResolution } from "@/tests/test-fixtures";
 
 const reference = new Date("2026-06-14T18:00:00");
 
@@ -34,7 +35,11 @@ function item(
       title: "Coffee",
       prompt: "had coffee",
       originalPrompt: "had coffee",
-      timeline: { timelineRole: "log", startDate: "2026-05-01", label: "Today" },
+      timeline: createTestTimelineResolution({
+        timelineRole: "log",
+        startDate: "2026-05-01",
+        label: "Today",
+      }),
     },
     "2026-05-01T12:00:00.000Z",
   );
@@ -49,7 +54,11 @@ function item(
         title: "Emotional Check-in",
         prompt: "i was sad today",
         originalPrompt: "i was sad today",
-        timeline: { timelineRole: "log", startDate: "2026-06-14", label: "Today" },
+        timeline: createTestTimelineResolution({
+          timelineRole: "log",
+          startDate: "2026-06-14",
+          label: "Today",
+        }),
       },
       "2026-06-14T12:00:00.000Z",
     ),
@@ -59,7 +68,11 @@ function item(
         title: "Emotional Check-in",
         prompt: "feeling stressed",
         originalPrompt: "feeling stressed",
-        timeline: { timelineRole: "log", startDate: "2026-06-10", label: "Today" },
+        timeline: createTestTimelineResolution({
+          timelineRole: "log",
+          startDate: "2026-06-10",
+          label: "Today",
+        }),
       },
       "2026-06-10T12:00:00.000Z",
     ),
@@ -69,7 +82,11 @@ function item(
         title: "Emotional Check-in",
         prompt: "anxious again",
         originalPrompt: "anxious again",
-        timeline: { timelineRole: "log", startDate: "2026-06-05", label: "Today" },
+        timeline: createTestTimelineResolution({
+          timelineRole: "log",
+          startDate: "2026-06-05",
+          label: "Today",
+        }),
       },
       "2026-06-05T12:00:00.000Z",
     ),
@@ -92,11 +109,11 @@ function item(
         prompt: "my mom's birthday is tomorrow",
         originalPrompt: "my mom's birthday is tomorrow",
         destinations: ["Family", "Calendar"],
-        timeline: {
+        timeline: createTestTimelineResolution({
           timelineRole: "event",
           startDate: "2026-06-15",
           label: "Tomorrow",
-        },
+        }),
       },
       "2026-06-01T00:00:00.000Z",
     ),

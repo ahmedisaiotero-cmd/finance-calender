@@ -16,21 +16,14 @@ import {
 import { buildDailyBrief } from "@/lib/mobile-prototype/build-daily-brief";
 import { generateAmbientInsightFromBlocks } from "@/lib/time-block-insights";
 import { summarizeWorkLensSchedule } from "@/lib/time-block-insights";
+import {
+  createTestTimelineResolution,
+  createTestWorkSchedule,
+} from "@/tests/test-fixtures";
 
 const reference = new Date("2026-06-09T12:00:00");
 
-const workSchedule = {
-  days: ["SU", "MO", "TU", "WE"],
-  startTime: "11:00",
-  endTime: "21:00",
-  recurrence: {
-    frequency: "weekly" as const,
-    interval: 1,
-    startsOn: "2026-06-01",
-    endsOn: null,
-  },
-  status: "active" as const,
-};
+const workSchedule = createTestWorkSchedule();
 
 function makeCapture(
   partial: Partial<CapturedSyncItem> & Pick<CapturedSyncItem, "id" | "title" | "timeline">,
@@ -193,12 +186,12 @@ function makeCapture(
     destinations: ["Work", "Calendar"],
     prompt: "I don't work tomorrow",
     workAvailability: "off",
-    timeline: {
+    timeline: createTestTimelineResolution({
       timelineRole: "event",
       startDate: mondayKey,
       label: "Tomorrow",
       tense: "future",
-    },
+    }),
   });
 
   const suppressedBlocks = buildSyncTimeBlocksForMonth({
@@ -239,7 +232,7 @@ function makeCapture(
     destinations: ["Work", "Calendar"],
     prompt: "I have overtime tomorrow",
     workAvailability: "overtime",
-    timeline: {
+    timeline: createTestTimelineResolution({
       timelineRole: "event",
       startDate: mondayKey,
       label: "Tomorrow",
@@ -247,7 +240,7 @@ function makeCapture(
       isTimed: true,
       startTime: "18:00",
       endTime: "22:00",
-    },
+    }),
   });
 
   const blocks = buildSyncTimeBlocksForMonth({
@@ -287,12 +280,12 @@ function makeCapture(
     destinations: ["Work", "Calendar"],
     prompt: "I don't work tomorrow",
     workAvailability: "off",
-    timeline: {
+    timeline: createTestTimelineResolution({
       timelineRole: "event",
       startDate: mondayKey,
       label: "Tomorrow",
       tense: "future",
-    },
+    }),
   });
 
   const rangeBlocks = buildSyncTimeBlocksForRange({

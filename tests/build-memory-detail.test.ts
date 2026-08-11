@@ -9,6 +9,10 @@ import {
   memoryPrimaryCategory,
 } from "@/lib/mobile-prototype/build-memory-detail";
 import { buildDailyBrief } from "@/lib/mobile-prototype/build-daily-brief";
+import {
+  createTestSyncUserProfile,
+  createTestTimelineResolution,
+} from "@/tests/test-fixtures";
 
 const reference = new Date("2026-06-14T18:00:00");
 
@@ -20,13 +24,13 @@ const momsBirthday: CapturedSyncItem = {
   destinations: ["Family", "Calendar"],
   dateLabel: "June 22",
   timeLabel: "Flexible",
-  timeline: {
+  timeline: createTestTimelineResolution({
     timelineRole: "event",
     kind: "recurring",
     startDate: "2026-06-22",
     recurrence: { frequency: "yearly", month: 5, dayOfMonth: 22 },
     label: "June 22",
-  },
+  }),
   meaning: {
     importance: "high",
     meaningLabel: "Family commitment",
@@ -51,12 +55,12 @@ const giftReminder: CapturedSyncItem = {
   destinations: ["Family", "Calendar"],
   dateLabel: "June 20",
   timeLabel: "Flexible",
-  timeline: {
+  timeline: createTestTimelineResolution({
     timelineRole: "deadline",
     deadlineDate: "2026-06-20",
     startDate: "2026-06-20",
     label: "June 20",
-  },
+  }),
   status: "active",
   createdAt: "2026-06-02T00:00:00.000Z",
   updatedAt: "2026-06-02T00:00:00.000Z",
@@ -70,13 +74,13 @@ const dinnerReservation: CapturedSyncItem = {
   destinations: ["Family", "Calendar"],
   dateLabel: "June 22",
   timeLabel: "7:00 PM",
-  timeline: {
+  timeline: createTestTimelineResolution({
     timelineRole: "event",
     startDate: "2026-06-22",
     startTime: "19:00",
     label: "June 22",
     isTimed: true,
-  },
+  }),
   status: "active",
   createdAt: "2026-06-03T00:00:00.000Z",
   updatedAt: "2026-06-03T00:00:00.000Z",
@@ -92,15 +96,12 @@ const brief = buildDailyBrief({
   items,
   workSchedule: null,
   reference,
-  lifeProfile: {
+  lifeProfile: createTestSyncUserProfile({
     name: "Ahmed",
-    typicalWeek: "",
     priorities: ["Family"],
-    awareness: [],
-    comingUp: "",
     onboardingComplete: true,
     updatedAt: reference.toISOString(),
-  },
+  }),
 });
 
 assert.equal(itemMentionedInBrief(momsBirthday, brief, reference), true);

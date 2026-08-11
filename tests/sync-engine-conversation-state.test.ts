@@ -15,7 +15,7 @@ function appendTurns(
   return [
     ...turns,
     {
-      role: "user",
+      role: "user" as const,
       text,
       intent: result.conversationIntent.type,
       memoryDecision: result.debug.memoryDecision,
@@ -25,7 +25,7 @@ function appendTurns(
       response: result.response,
     },
     {
-      role: "sync",
+      role: "sync" as const,
       text: result.response,
       intent: result.conversationIntent.type,
       memoryDecision: result.debug.memoryDecision,
