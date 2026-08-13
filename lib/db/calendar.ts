@@ -4,7 +4,6 @@ import { Domain, EventSource } from "@prisma/client";
 import { recurringToDateKey, transactionsToCalendarEvents } from "@/lib/build-calendar-events";
 import { toDateKey } from "@/lib/calendar-utils";
 import { dbTransactionToUi } from "@/lib/db/mappers";
-import { getDefaultWorkspace } from "@/lib/db/workspace";
 import { prisma } from "@/lib/prisma";
 import type { CalendarEvent } from "@/src/data/calendar-events";
 
@@ -38,14 +37,14 @@ function expandMonthlyRule(
 export async function getCalendarEventsForMonthFromDb(
   year: number,
   month: number,
+  workspaceId: string,
 ): Promise<CalendarEvent[]> {
-  const { workspace } = await getDefaultWorkspace();
   const { start, end } = monthRange(year, month);
 
   const [transactions, scheduledEvents, recurringRules] = await Promise.all([
     prisma.transaction.findMany({
       where: {
-        workspaceId: workspace.id,
+        workspaceId,
         deletedAt: null,
         occurredAt: { gte: start, lt: end },
       },
@@ -54,7 +53,7 @@ export async function getCalendarEventsForMonthFromDb(
     }),
     prisma.event.findMany({
       where: {
-        workspaceId: workspace.id,
+        workspaceId,
         domain: Domain.FINANCE,
         deletedAt: null,
         source: { in: [EventSource.MANUAL, EventSource.IMPORTED] },
@@ -66,7 +65,7 @@ export async function getCalendarEventsForMonthFromDb(
     }),
     prisma.recurringRule.findMany({
       where: {
-        workspaceId: workspace.id,
+        workspaceId,
         domain: Domain.FINANCE,
         active: true,
       },

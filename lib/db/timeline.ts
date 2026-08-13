@@ -6,6 +6,7 @@ import type { TimelineEvent } from "@/lib/timeline-events";
 export async function getTimelineForMonthFromDb(
   year: number,
   month: number,
+  workspaceId: string,
 ): Promise<TimelineEvent[]> {
-  return getTimelineItemsForMonthFromDb(year, month);
+  return getTimelineItemsForMonthFromDb(year, month, workspaceId);
 }

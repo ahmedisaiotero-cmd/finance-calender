@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { getSessionUser } from "@/lib/auth/session";
+import { ensureUserAndWorkspace } from "@/lib/db/workspace";
 import { isDatabaseConfigured } from "@/lib/prisma";
 import {
   EMPTY_USER_PROFILE,
@@ -27,6 +28,7 @@ export async function GET() {
   }
 
   try {
+    await ensureUserAndWorkspace(user);
     const profile = await loadRemoteProfile(user.id);
     return NextResponse.json({
       profile,
@@ -62,6 +64,8 @@ export async function PUT(request: Request) {
   }
 
   try {
+    // Profile ownership is always the authenticated session id — never body.userId.
+    await ensureUserAndWorkspace(user);
     const saved = await saveRemoteProfile(user.id, body);
     return NextResponse.json({
       profile: saved,

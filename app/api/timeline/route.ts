@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 
+import { loadRequestIdentity } from "@/lib/auth/load-request-identity";
 import { getTimelineForMonthFromDb } from "@/lib/db/timeline";
-import { isDatabaseConfigured } from "@/lib/prisma";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { getTimelineItemsFromSupabase } from "@/lib/supabase/timeline-items";
 
+/**
+ * Timeline API is identity-gated and Prisma workspace-scoped.
+ * Unscoped Supabase `timeline_items` reads are disabled here until that
+ * table has a reliable owner field + RLS.
+ */
 export async function GET(request: Request) {
+  const loaded = await loadRequestIdentity();
+  if (!loaded.ok) return loaded.response;
+
   try {
     const { searchParams } = new URL(request.url);
     const year = Number(searchParams.get("year"));
@@ -23,22 +29,15 @@ export async function GET(request: Request) {
       );
     }
 
-    if (isSupabaseConfigured()) {
-      try {
-        const events = await getTimelineItemsFromSupabase(year, month);
-        return NextResponse.json({ events, source: "supabase" });
-      } catch (error) {
-        console.error("GET /api/timeline supabase", error);
-        return NextResponse.json({ events: [], source: "supabase" });
-      }
-    }
-
-    if (isDatabaseConfigured()) {
-      const events = await getTimelineForMonthFromDb(year, month);
-      return NextResponse.json({ events, source: "prisma" });
-    }
-
-    return NextResponse.json({ events: [], source: "none" });
+    const events = await getTimelineForMonthFromDb(
+      year,
+      month,
+      loaded.identity.workspace.id,
+    );
+    return NextResponse.json({
+      events,
+      source: "prisma",
+    });
   } catch (error) {
     console.error("GET /api/timeline", error);
     return NextResponse.json(

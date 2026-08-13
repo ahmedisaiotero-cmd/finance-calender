@@ -2,14 +2,11 @@ import { Domain, EventSource } from "@prisma/client";
 
 import { getOrCreateCategory } from "@/lib/db/categories";
 import { dbTransactionToUi, dollarsToCents } from "@/lib/db/mappers";
-import { getDefaultWorkspace } from "@/lib/db/workspace";
 import { prisma } from "@/lib/prisma";
 
-export async function listTransactions() {
-  const { workspace } = await getDefaultWorkspace();
-
+export async function listTransactions(workspaceId: string) {
   const rows = await prisma.transaction.findMany({
-    where: { workspaceId: workspace.id, deletedAt: null },
+    where: { workspaceId, deletedAt: null },
     include: { category: true },
     orderBy: { occurredAt: "desc" },
   });
@@ -17,15 +14,17 @@ export async function listTransactions() {
   return rows.map(dbTransactionToUi);
 }
 
-export async function createTransaction(input: {
-  name: string;
-  category: string;
-  amount: number;
-  occurredAt: Date;
-}) {
-  const { workspace } = await getDefaultWorkspace();
+export async function createTransaction(
+  workspaceId: string,
+  input: {
+    name: string;
+    category: string;
+    amount: number;
+    occurredAt: Date;
+  },
+) {
   const category = await getOrCreateCategory(
-    workspace.id,
+    workspaceId,
     Domain.FINANCE,
     input.category,
   );
@@ -35,7 +34,7 @@ export async function createTransaction(input: {
   return prisma.$transaction(async (tx) => {
     const event = await tx.event.create({
       data: {
-        workspaceId: workspace.id,
+        workspaceId,
         domain: Domain.FINANCE,
         title: input.name,
         categoryId: category.id,
@@ -48,7 +47,7 @@ export async function createTransaction(input: {
 
     const transaction = await tx.transaction.create({
       data: {
-        workspaceId: workspace.id,
+        workspaceId,
         eventId: event.id,
         name: input.name,
         categoryId: category.id,

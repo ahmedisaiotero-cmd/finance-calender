@@ -1,7 +1,6 @@
 import type { TimelineItem as DbTimelineItem } from "@prisma/client";
 
 import { toDateKey } from "@/lib/calendar-utils";
-import { getDefaultWorkspace } from "@/lib/db/workspace";
 import { prisma } from "@/lib/prisma";
 import type { TimelineEvent } from "@/lib/timeline-events";
 
@@ -55,13 +54,13 @@ function monthRange(year: number, month: number) {
 export async function getTimelineItemsForMonthFromDb(
   year: number,
   month: number,
+  workspaceId: string,
 ): Promise<TimelineEvent[]> {
-  const { workspace } = await getDefaultWorkspace();
   const { start, end } = monthRange(year, month);
 
   const items = await prisma.timelineItem.findMany({
     where: {
-      workspaceId: workspace.id,
+      workspaceId,
       date: { gte: start, lt: end },
     },
     orderBy: [{ date: "asc" }, { createdAt: "asc" }],
@@ -72,13 +71,13 @@ export async function getTimelineItemsForMonthFromDb(
 
 export async function getTimelineItemsForDateFromDb(
   dateKey: string,
+  workspaceId: string,
 ): Promise<TimelineEvent[]> {
-  const { workspace } = await getDefaultWorkspace();
   const date = new Date(`${dateKey}T12:00:00`);
 
   const items = await prisma.timelineItem.findMany({
     where: {
-      workspaceId: workspace.id,
+      workspaceId,
       date,
     },
     orderBy: { createdAt: "asc" },

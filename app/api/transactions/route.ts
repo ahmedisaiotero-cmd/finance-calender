@@ -1,18 +1,15 @@
 import { NextResponse } from "next/server";
 
+import { loadRequestIdentity } from "@/lib/auth/load-request-identity";
+import { trustedWorkspaceId } from "@/lib/auth/ownership";
 import { listTransactions, createTransaction } from "@/lib/db/transactions";
-import { isDatabaseConfigured } from "@/lib/prisma";
 
 export async function GET() {
-  if (!isDatabaseConfigured()) {
-    return NextResponse.json(
-      { error: "DATABASE_URL is not configured" },
-      { status: 503 },
-    );
-  }
+  const loaded = await loadRequestIdentity();
+  if (!loaded.ok) return loaded.response;
 
   try {
-    const transactions = await listTransactions();
+    const transactions = await listTransactions(loaded.identity.workspace.id);
     return NextResponse.json({ transactions });
   } catch (error) {
     console.error("GET /api/transactions", error);
@@ -24,12 +21,8 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  if (!isDatabaseConfigured()) {
-    return NextResponse.json(
-      { error: "DATABASE_URL is not configured" },
-      { status: 503 },
-    );
-  }
+  const loaded = await loadRequestIdentity();
+  if (!loaded.ok) return loaded.response;
 
   try {
     const body = await request.json();
@@ -38,6 +31,9 @@ export async function POST(request: Request) {
       category?: string;
       amount?: number;
       dateISO?: string;
+      userId?: string;
+      ownerId?: string;
+      workspaceId?: string;
     };
 
     if (!name?.trim() || !category || typeof amount !== "number" || !dateISO) {
@@ -47,7 +43,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const transaction = await createTransaction({
+    const workspaceId = trustedWorkspaceId(loaded.identity, body);
+    const transaction = await createTransaction(workspaceId, {
       name: name.trim(),
       category,
       amount,

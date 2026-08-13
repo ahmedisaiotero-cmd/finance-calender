@@ -1,15 +1,11 @@
 import { NextResponse } from "next/server";
 
+import { loadRequestIdentity } from "@/lib/auth/load-request-identity";
 import { getCalendarEventsForMonthFromDb } from "@/lib/db/calendar";
-import { isDatabaseConfigured } from "@/lib/prisma";
 
 export async function GET(request: Request) {
-  if (!isDatabaseConfigured()) {
-    return NextResponse.json(
-      { error: "DATABASE_URL is not configured" },
-      { status: 503 },
-    );
-  }
+  const loaded = await loadRequestIdentity();
+  if (!loaded.ok) return loaded.response;
 
   try {
     const { searchParams } = new URL(request.url);
@@ -23,7 +19,11 @@ export async function GET(request: Request) {
       );
     }
 
-    const events = await getCalendarEventsForMonthFromDb(year, month);
+    const events = await getCalendarEventsForMonthFromDb(
+      year,
+      month,
+      loaded.identity.workspace.id,
+    );
     return NextResponse.json({ events });
   } catch (error) {
     console.error("GET /api/calendar", error);
