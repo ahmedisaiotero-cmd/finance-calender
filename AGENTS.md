@@ -32,6 +32,54 @@ Future work should be framed as:
 
 Then specify the reasoning stage, a messy real-life example, and the test that proves the improvement.
 
+## Cursor Agent workflow
+
+This is a **repository development workflow** only. Do not add agents to the Sync application runtime, install an AI SDK, call an external model API, add n8n, or add MCP servers as part of agent setup.
+
+The main Cursor Agent is the **only implementation owner**. Follow `.cursor/skills/sync-change/SKILL.md` for modification requests. Invoke `/sync-change` when the complete procedure should be loaded explicitly.
+
+Use at most two project subagents, and only when they help:
+
+| Subagent | Role | When |
+|---|---|---|
+| `sync-architect` | Read-only architecture and mission analysis | Before implementation, only if the change is cross-boundary, ownership-shifting, duplication-prone, ambiguous, or touches auth/privacy/sensitive data |
+| `sync-verifier` | Independent post-change validation | After every meaningful code change. If unavailable, the main agent must still perform equivalent independent verification |
+
+Do not invoke subagents merely because they exist. Do not let subagents edit files, and never let them edit the same files concurrently. Small, well-scoped changes stay on the main agent.
+
+### Operating rules
+
+- Read and follow `SYNC_WORKFLOW.md` and `SYNC_VISION.md` before meaningful product or architecture changes.
+- Treat Sync as a personal reasoning engine and daily briefing, not a planner, generic dashboard, or chatbot-first product.
+- Preserve the intelligence sequence **Memory → Understanding → Consequences → Decision/Judgment → Today**. The full pipeline in `SYNC_REASONING_SPEC.md` implements this sequence; do not fork it.
+- A requested product change must improve at least one of: **Memory, Understanding, Consequences, Today, My Life, Goals, Trust**. If none apply, pause and explain rather than forcing implementation. Goals remain a deferred product surface until `SYNC_ENGINE_ROADMAP.md` reaches that phase — do not build a Goals planner.
+- Reuse shared intelligence and adapters before creating surface-specific or mobile-only logic.
+- Keep UI minimal. Avoid dashboards, productivity-page sprawl, unnecessary category tabs, excessive debug panels, and disconnected demo logic.
+- Add or update messy real-life tests for behavior changes.
+- Never overwrite unrelated user changes.
+- Never commit, push, alter credentials, change production data, or add dependencies unless the user explicitly requests it.
+- Run appropriate validation before declaring work complete.
+- Clearly distinguish **functional**, **partial/demo**, and **deferred** work. Never claim completion merely because code was written.
+
+### Verified repository commands
+
+Commands below are from root `package.json` and `sync-ios/package.json`. Do not invent scripts.
+
+| Need | Command |
+|---|---|
+| Web validation | `npm run validate:web` |
+| iOS validation | `npm run validate:ios` |
+| Full web + iOS | `npm run validate` |
+| Targeted intelligence (decision-engine core) | `npm run test:intelligence` |
+| Full intelligence suite | `npm run test:intelligence:all` |
+| All tests | `npm run test:all` |
+| Lint + core intelligence | `npm run check` |
+| Typecheck (root; excludes `sync-ios`) | `npm run typecheck` |
+| Lint | `npm run lint` |
+| Build | `npm run build` |
+
+Focused Sync Engine suites also exist as `npm run test:sync-engine:*` (see root `package.json`). Run iOS validation only when the change affects iOS, shared wrappers, or cross-platform behavior. Documentation-only changes get a diff review and lightweight checks — not a full build.
+
 ## Engine-first priorities
 
 - **Trust before features** — judgment quality beats new surfaces
@@ -77,7 +125,7 @@ Prefer intelligence over UI.
 
 Do not add pages, dashboards, category sprawl, chatbot framing, or extra widgets unless **explicitly requested**.
 
-Every change must improve at least one of:
+Every change must improve at least one engine stage:
 
 - Memory
 - Understanding
@@ -87,7 +135,9 @@ Every change must improve at least one of:
 - Safety
 - Trust
 
-(Legacy surfaces Today and My Life consume engine output — improve them only when trust work requires it.)
+A requested **product** change must improve at least one of: Memory, Understanding, Consequences, Today, My Life, Goals, or Trust. Goals product expansion waits until the intelligence foundation is stable (`SYNC_ENGINE_ROADMAP.md`).
+
+Legacy surfaces Today and My Life consume engine output — improve them only when trust work requires it.
 
 ## Reasoning pipeline
 
