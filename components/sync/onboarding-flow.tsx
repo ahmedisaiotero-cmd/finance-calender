@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { applyLifeProfile } from "@/lib/mobile-prototype/apply-life-profile";
 import { useCapturedItems } from "@/lib/captured-items";
 import {
-  AWARENESS_OPTIONS,
   CHECK_IN_OPTIONS,
   DAY_STYLE_OPTIONS,
   DIRECTNESS_OPTIONS,

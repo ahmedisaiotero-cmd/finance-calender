@@ -70,8 +70,9 @@ function plan(input: string) {
     "School",
     "Calendar",
   ]);
+  // Project-work language (including Sync) routes to Work, not Goals.
   assert.deepEqual(resolveSyncDestinations(plan("work on Sync for 2 hours")), [
-    "Goals",
+    "Work",
     "Calendar",
   ]);
 }

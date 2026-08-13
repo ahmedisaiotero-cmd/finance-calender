@@ -1,0 +1,38 @@
+name: Validate
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  web:
+    name: Root web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run test:all
+      - run: npm run build
+        env:
+          # Build must not require live secrets; Prisma generate still needs a URL shape.
+          DATABASE_URL: postgresql://user:pass@localhost:5432/sync_ci
+
+  ios-boundary:
+    name: sync-ios boundary
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sync-ios
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm run validate

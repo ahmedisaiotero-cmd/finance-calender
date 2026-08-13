@@ -2,6 +2,12 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { generateText } from "ai";
 import { NextResponse } from "next/server";
 
+import {
+  clampChatText,
+  sanitizeChatHistory,
+  validateChatMessage,
+} from "@/lib/api/chat-request-guards";
+
 type ChatRequest = {
   message: string;
   profile?: {
@@ -15,8 +21,8 @@ type ChatRequest = {
 
 function fallbackReply(body: ChatRequest): string {
   const lower = body.message.toLowerCase();
-  const who = body.profile?.name?.trim() || "you";
-  const tone = body.profile?.tone ?? "balanced";
+  const who = clampChatText(body.profile?.name, 80) || "you";
+  const tone = clampChatText(body.profile?.tone, 40) || "balanced";
 
   if (/\b(skip|didn't|did not|forgot)\b/.test(lower)) {
     return "Got it — no judgment. Want to move it, or let it go this week?";
@@ -32,10 +38,10 @@ function fallbackReply(body: ChatRequest): string {
 }
 
 function systemPrompt(body: ChatRequest) {
-  const name = body.profile?.name?.trim() || "the user";
-  const tone = body.profile?.tone ?? "balanced";
-  const goals = body.profile?.workingToward?.trim();
-  const stress = body.profile?.currentStress?.trim();
+  const name = clampChatText(body.profile?.name, 80) || "the user";
+  const tone = clampChatText(body.profile?.tone, 40) || "balanced";
+  const goals = clampChatText(body.profile?.workingToward, 200);
+  const stress = clampChatText(body.profile?.currentStress, 200);
 
   return `You are Sync — a calm personal reasoning companion. Not a chatbot, not a coach.
 
@@ -58,9 +64,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  const message = body.message?.trim();
-  if (!message) {
-    return NextResponse.json({ error: "Message required" }, { status: 400 });
+  const validated = validateChatMessage(body.message);
+  if (!validated.ok) {
+    return NextResponse.json(
+      { error: validated.error },
+      { status: validated.status },
+    );
   }
 
   const apiKey = process.env.OPENAI_API_KEY?.trim();
@@ -70,7 +79,7 @@ export async function POST(request: Request) {
 
   try {
     const openai = createOpenAI({ apiKey });
-    const history = (body.history ?? []).slice(-6);
+    const history = sanitizeChatHistory(body.history);
 
     const { text } = await generateText({
       model: openai("gpt-4o-mini"),
@@ -80,7 +89,7 @@ export async function POST(request: Request) {
           role: entry.role,
           content: entry.content,
         })),
-        { role: "user" as const, content: message },
+        { role: "user" as const, content: validated.message },
       ],
       maxTokens: 180,
       temperature: 0.6,

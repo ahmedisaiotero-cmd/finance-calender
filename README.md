@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sync
 
-## Getting Started
+Sync is a **personal reasoning engine for daily life** — not a chatbot, dashboard, or planner.
 
-First, run the development server:
+Conceptual flow:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```text
+Capture → Memory → Understanding / Life Graph → Consequences → Decision Engine → Today briefing
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The Sync app (`/` mobile prototype, `/sync-lab`) is the first product surface. Shared intelligence lives in `lib/`. `sync-ios/` is a separate Expo client that re-exports shared modules.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Quick start
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+cp .env.example .env.local
+npm run dev
+```
 
-## Learn More
+Open [http://localhost:3000/mobile](http://localhost:3000/mobile) for the product shell and [http://localhost:3000/sync-lab](http://localhost:3000/sync-lab) for the teaching surface.
 
-To learn more about Next.js, take a look at the following resources:
+## Canonical validation
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Command | Scope |
+|---|---|
+| `npm run validate` | Root web + sync-ios boundary checks |
+| `npm run validate:web` | `typecheck` + `lint` + `test:all` + `build` |
+| `npm run validate:ios` | Thin engine-wrapper verification in `sync-ios` |
+| `npm run check` | Legacy lint + core intelligence suite (subset) |
+| `npm run typecheck` | Root TypeScript only (`sync-ios` excluded) |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Root TypeScript and ESLint intentionally exclude `sync-ios`. Do not add React Native packages to the root app to satisfy the web build.
 
-## Deploy on Vercel
+## Architecture boundaries
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Decision Engine** owns prioritization/ranking (`lib/intelligence/decision-engine.ts`).
+- **Life Graph** is a deterministic projection/context layer, not primary storage.
+- Vague / low-confidence input should clarify instead of becoming unreliable memory.
+- Surfaces consume shared intelligence; they do not invent ranking or Sync voice.
+- Goals product work waits until the intelligence foundation is stable (`SYNC_ENGINE_ROADMAP.md`).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Read before changing intelligence:
+
+- `AGENTS.md`
+- `SYNC_WORKFLOW.md`
+- `SYNC_ENGINE_MANIFESTO.md`
+- `SYNC_REASONING_SPEC.md`
+- `SYNC_ENGINE_ROADMAP.md`
+- `SYNC_STATUS.md`
+- `CHANGE_CHECKLIST.md`
+
+## iOS client
+
+```bash
+cd sync-ios
+npm install          # links ../lib as shared/
+npm run validate     # verifies engine wrappers stay thin re-exports
+npm run ios
+```
+
+## Environment
+
+See `.env.example` for placeholders only. Never commit real secrets. Never put service-role keys in `NEXT_PUBLIC_*` variables.

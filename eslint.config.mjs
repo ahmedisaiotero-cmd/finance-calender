@@ -12,9 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Separate Expo app — validate under sync-ios, not root web lint.
+    "sync-ios/**",
   ]),
   {
-    files: ["sync-ios/**/*.js"],
+    files: ["scripts/**/*.js"],
     rules: {
       "@typescript-eslint/no-require-imports": "off",
     },
