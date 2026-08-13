@@ -9,8 +9,14 @@ import type { SyncEngineTestCase } from "@/lib/sync-engine/testing/test-case";
 import type { SyncEngineTestSuite } from "@/lib/sync-engine/testing/test-suite";
 import type { SyncEnginePhilosophyRuleId } from "@/lib/sync-engine/testing/philosophy";
 import { ALL_SYNC_ENGINE_TEST_SUITES } from "@/lib/sync-engine/testing/fixtures";
+import {
+  classifySyncEngineCaseStatus,
+  summarizeSyncEngineOutcomes,
+  type SyncEngineOutcomeStatus,
+  type SyncEngineOutcomeSummary,
+} from "@/lib/sync-engine/testing/result-summary";
 
-export type SyncEngineTestStatus = "pass" | "fail" | "warn";
+export type SyncEngineTestStatus = SyncEngineOutcomeStatus;
 
 export type SyncEngineCaseRun = {
   suiteId: string;
@@ -35,15 +41,11 @@ export type SyncEngineSuiteRun = {
   passCount: number;
   failCount: number;
   warnCount: number;
+  knownGapCount: number;
   cases: SyncEngineCaseRun[];
 };
 
-export type SyncEngineTestRunSummary = {
-  total: number;
-  passed: number;
-  failed: number;
-  warned: number;
-};
+export type SyncEngineTestRunSummary = SyncEngineOutcomeSummary;
 
 export type SyncEngineTestRun = {
   suites: SyncEngineSuiteRun[];
@@ -200,8 +202,10 @@ function runCase(testCase: SyncEngineTestCase, suite: SyncEngineTestSuite): Sync
     revealsAllMemory: revealsAllMemory(output),
   };
   const mismatchReasons = compareExpected(testCase.expected, actual, output);
-  const status: SyncEngineTestStatus =
-    mismatchReasons.length === 0 ? "pass" : testCase.knownGap ? "warn" : "fail";
+  const status = classifySyncEngineCaseStatus({
+    mismatchCount: mismatchReasons.length,
+    hasKnownGap: Boolean(testCase.knownGap),
+  });
 
   return {
     suiteId: suite.id,
@@ -307,8 +311,17 @@ export function runSyncEngineTestSuite(suite: SyncEngineTestSuite): SyncEngineSu
   const passCount = cases.filter((testCase) => testCase.status === "pass").length;
   const failCount = cases.filter((testCase) => testCase.status === "fail").length;
   const warnCount = cases.filter((testCase) => testCase.status === "warn").length;
+  const knownGapCount = cases.filter(
+    (testCase) => testCase.status === "known_gap",
+  ).length;
   const status: SyncEngineTestStatus =
-    failCount > 0 ? "fail" : warnCount > 0 ? "warn" : "pass";
+    failCount > 0
+      ? "fail"
+      : knownGapCount > 0
+        ? "known_gap"
+        : warnCount > 0
+          ? "warn"
+          : "pass";
 
   return {
     suiteId: suite.id,
@@ -318,6 +331,7 @@ export function runSyncEngineTestSuite(suite: SyncEngineTestSuite): SyncEngineSu
     passCount,
     failCount,
     warnCount,
+    knownGapCount,
     cases,
   };
 }
@@ -326,14 +340,10 @@ export function runSyncEngineTestSuites(
   suites: readonly SyncEngineTestSuite[] = ALL_SYNC_ENGINE_TEST_SUITES,
 ): SyncEngineTestRun {
   const suiteRuns = suites.map(runSyncEngineTestSuite);
-  const summary = suiteRuns.reduce(
-    (current, suite) => ({
-      total: current.total + suite.cases.length,
-      passed: current.passed + suite.passCount,
-      failed: current.failed + suite.failCount,
-      warned: current.warned + suite.warnCount,
-    }),
-    { total: 0, passed: 0, failed: 0, warned: 0 },
+  const summary = summarizeSyncEngineOutcomes(
+    suiteRuns.flatMap((suite) =>
+      suite.cases.map((testCase) => ({ status: testCase.status })),
+    ),
   );
 
   return {
@@ -345,3 +355,8 @@ export function runSyncEngineTestSuites(
 export function runAllSyncEngineTestSuites() {
   return runSyncEngineTestSuites(ALL_SYNC_ENGINE_TEST_SUITES);
 }
+
+export {
+  formatSyncEngineOutcomeSummary,
+  summarizeSyncEngineOutcomes,
+} from "@/lib/sync-engine/testing/result-summary";

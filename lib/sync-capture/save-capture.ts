@@ -223,6 +223,7 @@ function buildPreviewContext(context: CapturePipelineContext) {
     workSchedule: context.workSchedule ?? undefined,
     excludeCaptureId: context.excludeCaptureId,
     targetTitle: context.targetTitle,
+    reference: context.reference ?? new Date(),
   };
 }
 

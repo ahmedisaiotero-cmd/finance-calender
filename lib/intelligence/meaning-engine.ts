@@ -51,6 +51,8 @@ type AnalyzeMeaningInput = {
   timeBlocks?: SyncTimeBlock[];
   overlaps?: SyncTimeBlockOverlap[];
   items?: CapturedSyncItem[];
+  /** Capture/evaluation "now" — importance is scored relative to this, not wall clock. */
+  reference?: Date;
 };
 
 const HIGH_IMPORTANCE_PATTERNS = [
@@ -375,6 +377,7 @@ export function analyzeMeaning(input: AnalyzeMeaningInput): MeaningAnalysis {
     input.normalizedText,
     input.destinations,
     input.timeline,
+    input.reference ?? new Date(),
   );
   const meaningLabel = buildMeaningLabel(
     importance,

@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 
+import {
+  formatSyncEngineOutcomeSummary,
+  runAllSyncEngineTestSuites,
+} from "@/lib/sync-engine/testing/test-runner";
 import { ALL_SYNC_ENGINE_TEST_SUITES } from "@/lib/sync-engine/testing/fixtures";
 import { SYNC_ENGINE_PHILOSOPHY_RULES } from "@/lib/sync-engine/testing/philosophy";
-import { runAllSyncEngineTestSuites } from "@/lib/sync-engine/testing/test-runner";
 
 const run = runAllSyncEngineTestSuites();
 
@@ -11,7 +14,10 @@ assert.ok(SYNC_ENGINE_PHILOSOPHY_RULES.length >= 10);
 assert.ok(run.summary.total >= 25);
 assert.equal(
   run.summary.total,
-  run.summary.passed + run.summary.failed + run.summary.warned,
+  run.summary.passed +
+    run.summary.failed +
+    run.summary.warned +
+    run.summary.knownGaps,
 );
 
 for (const suite of run.suites) {
@@ -26,11 +32,18 @@ for (const suite of run.suites) {
 const security = run.suites.find((suite) => suite.suiteId === "security");
 assert.ok(security);
 assert.ok(
-  security.cases.some((testCase) => testCase.status === "warn"),
+  security.cases.some((testCase) => testCase.status === "known_gap"),
   "security suite should expose known gaps instead of hiding them",
 );
 
-console.log("sync-engine-intelligence-suite tests passed");
-console.log(
-  `summary: ${run.summary.passed} pass, ${run.summary.warned} warn, ${run.summary.failed} fail`,
+const summaryLine = formatSyncEngineOutcomeSummary(run.summary);
+console.log(summaryLine);
+
+assert.equal(
+  run.summary.failed,
+  0,
+  `intelligence suite has real failures: ${summaryLine}`,
 );
+assert.equal(run.summary.shouldFailCommand, false);
+
+console.log("sync-engine-intelligence-suite tests passed");

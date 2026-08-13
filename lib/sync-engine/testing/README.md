@@ -32,7 +32,8 @@ You can also inspect the hidden lab page:
 5. Add the relevant philosophy rule IDs.
 6. If the current engine is known to fail, add `knownGap.reason`.
 
-Known gaps return `warn`, not `fail`. The point is visibility, not fake perfection.
+Known gaps return `known_gap`, not `fail`. The point is visibility, not fake perfection.
+Real failures (`fail`) must make `npm run test:sync-engine:intelligence` and `npm run test:all` exit nonzero.
 
 ## Philosophy Rules
 

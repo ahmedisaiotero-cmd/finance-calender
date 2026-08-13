@@ -93,6 +93,7 @@ type BuildSyncPreviewOptions = {
   calendarItems?: CapturedSyncItem[];
   workSchedule?: PersistedWorkSchedule | null;
   excludeCaptureId?: string;
+  reference?: Date;
 };
 
 function formatClock(value?: string) {
@@ -333,6 +334,7 @@ export function buildSyncPreviewViewModel(
     timeBlocks: proposedBlocks,
     overlaps: rawOverlap ? [rawOverlap] : undefined,
     items: options.calendarItems,
+    reference: options.reference,
   });
 
   const conflictItem = rawOverlap?.conflictSourceItemId

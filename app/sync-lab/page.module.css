@@ -698,6 +698,11 @@
   color: rgba(238, 202, 113, 0.94);
 }
 
+.testCase summary .status-known_gap {
+  border-color: rgba(228, 190, 91, 0.26);
+  color: rgba(238, 202, 113, 0.94);
+}
+
 .testCase summary .status-fail {
   border-color: rgba(244, 126, 126, 0.28);
   color: rgba(255, 174, 174, 0.94);

@@ -13,6 +13,7 @@ import styles from "../page.module.css";
 function statusLabel(status: SyncEngineTestStatus) {
   if (status === "pass") return "pass";
   if (status === "warn") return "warn";
+  if (status === "known_gap") return "known gap";
   return "fail";
 }
 
@@ -129,6 +130,7 @@ export default async function SyncLabTestsPage({
         <div className={styles.testSummary}>
           <span>{run.summary.passed} pass</span>
           <span>{run.summary.warned} warn</span>
+          <span>{run.summary.knownGaps} known gap</span>
           <span>{run.summary.failed} fail</span>
         </div>
       </section>

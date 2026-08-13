@@ -74,7 +74,8 @@ export const consequenceTests: SyncEngineTestSuite = {
       expected: {
         shouldRemember: true,
         affectedTimeframe: "tomorrow",
-        priorityImpact: "medium",
+        // Early near-term flights score critical → high briefing priority impact.
+        priorityImpact: "high",
         shouldSurfaceInBrief: true,
         surfaceLater: true,
       },
