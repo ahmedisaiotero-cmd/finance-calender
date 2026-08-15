@@ -22,6 +22,7 @@ Last reviewed from repository inspection on the current `main` branch.
 - Unscoped Supabase `timeline_items` reads are disabled on `/api/timeline` until owner field + RLS exist
 - Legacy money/calendar/health dashboard pages remain in `app/` and `src/data/*` mock data
 - `/api/chat` requires trusted identity + durable Prisma fixed-window rate limit (defaults 30/hour); OpenAI/fallback only after auth+limit; not Sync Engine pipeline
+- App shell is gated on a real Supabase session (`/login` email/password); local profile/onboarding no longer counts as authentication
 - Onboarding/profile remote sync exists when Supabase + DB are configured
 
 ## Placeholder / deferred

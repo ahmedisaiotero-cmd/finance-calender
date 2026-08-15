@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { decideAppAuthGate } from "@/lib/auth/app-auth-gate";
+import { isSyncDemoMode } from "@/lib/auth/demo-mode";
 import {
   getSupabaseAnonKey,
   getSupabaseUrl,
@@ -8,9 +10,9 @@ import {
 } from "@/lib/supabase/env";
 
 export async function middleware(request: NextRequest) {
-  if (!isSupabaseConfigured()) {
-    return NextResponse.next();
-  }
+  const pathname = request.nextUrl.pathname;
+  const supabaseConfigured = isSupabaseConfigured();
+  const demoMode = isSyncDemoMode();
 
   let response = NextResponse.next({
     request: {
@@ -18,28 +20,53 @@ export async function middleware(request: NextRequest) {
     },
   });
 
-  const supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
-    cookies: {
-      getAll() {
-        return request.cookies.getAll();
+  let hasTrustedSession = false;
+
+  if (supabaseConfigured) {
+    const supabase = createServerClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          for (const { name, value } of cookiesToSet) {
+            request.cookies.set(name, value);
+          }
+          response = NextResponse.next({
+            request: {
+              headers: request.headers,
+            },
+          });
+          for (const { name, value, options } of cookiesToSet) {
+            response.cookies.set(name, value, options);
+          }
+        },
       },
-      setAll(cookiesToSet) {
-        for (const { name, value } of cookiesToSet) {
-          request.cookies.set(name, value);
-        }
-        response = NextResponse.next({
-          request: {
-            headers: request.headers,
-          },
-        });
-        for (const { name, value, options } of cookiesToSet) {
-          response.cookies.set(name, value, options);
-        }
-      },
-    },
+    });
+
+    const { data } = await supabase.auth.getUser();
+    hasTrustedSession = Boolean(data.user?.id);
+  }
+
+  const decision = decideAppAuthGate({
+    pathname,
+    hasTrustedSession,
+    supabaseConfigured,
+    demoMode,
   });
 
-  await supabase.auth.getUser();
+  if (decision.action === "redirect") {
+    const url = request.nextUrl.clone();
+    url.pathname = decision.to;
+    url.search = "";
+    const redirect = NextResponse.redirect(url);
+    // Preserve any cookies written during getUser() refresh.
+    for (const cookie of response.cookies.getAll()) {
+      redirect.cookies.set(cookie);
+    }
+    return redirect;
+  }
+
   return response;
 }
 
