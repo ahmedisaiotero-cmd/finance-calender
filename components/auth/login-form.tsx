@@ -5,11 +5,12 @@ import { useRouter } from "next/navigation";
 
 import { SyncLogo } from "@/components/brand/sync-logo";
 import { Button } from "@/components/ui/button";
+import { PUBLIC_AUTH_ERROR } from "@/lib/auth/app-auth-gate";
 import {
   signInWithPassword,
   signUpWithPassword,
 } from "@/lib/auth/browser-auth";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { isSupabaseBrowserConfigured } from "@/lib/supabase/env";
 
 export function LoginForm({
   configMissing = false,
@@ -22,13 +23,17 @@ export function LoginForm({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  const configured = !configMissing && isSupabaseConfigured();
+  const configured = !configMissing && isSupabaseBrowserConfigured();
 
-  async function handleSubmit(mode: "signin" | "signup") {
+  async function handleSubmit(
+    event: { preventDefault?: () => void } | undefined,
+    mode: "signin" | "signup",
+  ) {
+    event?.preventDefault?.();
     setError(null);
 
     if (!configured) {
-      setError("Authentication is not configured for this environment.");
+      setError(PUBLIC_AUTH_ERROR.config);
       return;
     }
 
@@ -77,7 +82,10 @@ export function LoginForm({
           .
         </p>
       ) : (
-        <form className="flex flex-col gap-4">
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(event) => void handleSubmit(event, "signin")}
+        >
           <label className="flex flex-col gap-1.5 text-[13px]">
             <span className="text-muted-foreground">Email</span>
             <input
@@ -113,10 +121,10 @@ export function LoginForm({
 
           <div className="mt-2 flex flex-col gap-2 sm:flex-row">
             <Button
-              type="button"
+              type="submit"
               disabled={pending}
               className="sm:flex-1"
-              onClick={() => void handleSubmit("signin")}
+              onClick={(event) => void handleSubmit(event, "signin")}
             >
               {pending ? "Working…" : "Sign in"}
             </Button>
@@ -125,7 +133,7 @@ export function LoginForm({
               variant="outline"
               disabled={pending}
               className="sm:flex-1"
-              onClick={() => void handleSubmit("signup")}
+              onClick={(event) => void handleSubmit(event, "signup")}
             >
               Create account
             </Button>

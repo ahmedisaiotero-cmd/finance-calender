@@ -74,6 +74,20 @@ export function decideAppAuthGate(input: AppAuthGateInput): AppAuthGateDecision 
   return { action: "allow" };
 }
 
+export const PUBLIC_AUTH_ERROR = {
+  config: "Authentication is not configured for this environment.",
+  invalidCredentials: "Email or password is incorrect.",
+  accountMissing: "No account exists for that email.",
+  emailConfirm: "Confirm your email before signing in.",
+  alreadyRegistered: "An account with this email already exists. Sign in instead.",
+  signupDisabled: "Account creation is currently disabled.",
+  weakPassword: "Password must meet the minimum length required by Sync.",
+  rateLimited: "Too many attempts. Please wait and try again.",
+  network: "Could not reach authentication. Check your connection and try again.",
+  confirmEmail: "Check your email to confirm the account, then sign in.",
+  generic: "Unable to sign in. Please try again.",
+} as const;
+
 /** Map Supabase/auth failures to safe user-facing copy. */
 export function publicAuthErrorMessage(raw: unknown): string {
   const message =
@@ -86,26 +100,54 @@ export function publicAuthErrorMessage(raw: unknown): string {
   const lower = message.toLowerCase();
 
   if (!message.trim()) {
-    return "Something went wrong. Please try again.";
+    return PUBLIC_AUTH_ERROR.generic;
+  }
+  if (
+    lower.includes("not configured") ||
+    lower.includes("invalid api key") ||
+    lower.includes("invalid_api_key") ||
+    lower.includes("sb_secret") ||
+    lower.includes("your project's url and api key are required")
+  ) {
+    return PUBLIC_AUTH_ERROR.config;
   }
   if (lower.includes("invalid login") || lower.includes("invalid credentials")) {
-    return "Email or password is incorrect.";
+    return PUBLIC_AUTH_ERROR.invalidCredentials;
+  }
+  if (
+    lower.includes("user not found") ||
+    lower.includes("no user found") ||
+    lower.includes("user does not exist")
+  ) {
+    return PUBLIC_AUTH_ERROR.accountMissing;
   }
   if (lower.includes("email not confirmed")) {
-    return "Confirm your email before signing in.";
+    return PUBLIC_AUTH_ERROR.emailConfirm;
   }
   if (lower.includes("user already registered")) {
-    return "An account with this email already exists. Sign in instead.";
+    return PUBLIC_AUTH_ERROR.alreadyRegistered;
+  }
+  if (
+    lower.includes("signups not allowed") ||
+    lower.includes("signup is disabled") ||
+    lower.includes("sign up is disabled")
+  ) {
+    return PUBLIC_AUTH_ERROR.signupDisabled;
   }
   if (lower.includes("password") && lower.includes("least")) {
-    return "Password must meet the minimum length required by Sync.";
+    return PUBLIC_AUTH_ERROR.weakPassword;
   }
   if (lower.includes("rate") || lower.includes("too many")) {
-    return "Too many attempts. Please wait and try again.";
+    return PUBLIC_AUTH_ERROR.rateLimited;
   }
-  if (lower.includes("network") || lower.includes("fetch")) {
-    return "Network error. Check your connection and try again.";
+  if (
+    lower.includes("network") ||
+    lower.includes("fetch") ||
+    lower.includes("failed to fetch") ||
+    lower.includes("load failed")
+  ) {
+    return PUBLIC_AUTH_ERROR.network;
   }
 
-  return "Unable to sign in. Please try again.";
+  return PUBLIC_AUTH_ERROR.generic;
 }

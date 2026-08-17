@@ -4,6 +4,7 @@ import {
   decideAppAuthGate,
   isAuthPublicPath,
   localProfileImpliesAuthenticated,
+  PUBLIC_AUTH_ERROR,
   publicAuthErrorMessage,
 } from "@/lib/auth/app-auth-gate";
 import { isSyncDemoMode } from "@/lib/auth/demo-mode";
@@ -130,11 +131,15 @@ import { resolveIdentityAccess } from "@/lib/auth/request-identity";
 {
   assert.equal(
     publicAuthErrorMessage({ message: "Invalid login credentials" }),
-    "Email or password is incorrect.",
+    PUBLIC_AUTH_ERROR.invalidCredentials,
   );
   assert.equal(
     publicAuthErrorMessage({ message: "Email not confirmed" }),
-    "Confirm your email before signing in.",
+    PUBLIC_AUTH_ERROR.emailConfirm,
+  );
+  assert.equal(
+    publicAuthErrorMessage({ message: "Invalid API key" }),
+    PUBLIC_AUTH_ERROR.config,
   );
   const generic = publicAuthErrorMessage({
     message: "JWT eyJhbGciOi secret stack trace /Users/ahmed/...",

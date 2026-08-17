@@ -1,6 +1,9 @@
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { publicAuthErrorMessage } from "@/lib/auth/app-auth-gate";
+import { isSupabaseBrowserConfigured } from "@/lib/supabase/env";
+import {
+  PUBLIC_AUTH_ERROR,
+  publicAuthErrorMessage,
+} from "@/lib/auth/app-auth-gate";
 
 export type BrowserAuthUser = {
   id: string;
@@ -40,7 +43,7 @@ export type BrowserAuthDeps = {
 };
 
 const defaultDeps: Required<BrowserAuthDeps> = {
-  isConfigured: isSupabaseConfigured,
+  isConfigured: isSupabaseBrowserConfigured,
   createClient: () => createSupabaseBrowserClient() as unknown as BrowserAuthClient,
 };
 
@@ -71,7 +74,7 @@ export async function signInWithPassword(
   if (!isConfigured()) {
     return {
       ok: false,
-      error: "Authentication is not configured for this environment.",
+      error: PUBLIC_AUTH_ERROR.config,
     };
   }
 
@@ -106,7 +109,7 @@ export async function signUpWithPassword(
   if (!isConfigured()) {
     return {
       ok: false,
-      error: "Authentication is not configured for this environment.",
+      error: PUBLIC_AUTH_ERROR.config,
     };
   }
 
@@ -124,14 +127,14 @@ export async function signUpWithPassword(
     if (!data.user) {
       return {
         ok: false,
-        error: "Check your email to confirm the account, then sign in.",
+        error: PUBLIC_AUTH_ERROR.confirmEmail,
       };
     }
 
     if (!data.session) {
       return {
         ok: false,
-        error: "Check your email to confirm the account, then sign in.",
+        error: PUBLIC_AUTH_ERROR.confirmEmail,
       };
     }
 

@@ -1,6 +1,6 @@
 import { LoginForm } from "@/components/auth/login-form";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { isSupabaseBrowserConfigured } from "@/lib/supabase/env";
 
 export default function LoginPage() {
-  return <LoginForm configMissing={!isSupabaseConfigured()} />;
+  return <LoginForm configMissing={!isSupabaseBrowserConfigured()} />;
 }
