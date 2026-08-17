@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { attemptBriefCapture } from "@/lib/mobile-prototype/capture-brief-input";
 import { loadLifeProfile } from "@/lib/mobile-prototype/life-profile";
@@ -15,52 +15,14 @@ type ChatMessage = {
   text: string;
 };
 
-const CHAT_STORAGE_KEY = "sync.chatHistory";
-
-function loadChatHistory(): ChatMessage[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const raw = window.localStorage.getItem(CHAT_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as ChatMessage[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveChatHistory(messages: ChatMessage[]) {
-  if (typeof window === "undefined") return;
-  window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages.slice(-40)));
-}
-
-function fallbackReply(userText: string, name: string | null, tone: string): string {
-  const lower = userText.toLowerCase();
-  const who = name?.trim() || "you";
-  const gentle = tone === "gentle";
-  const direct = tone === "direct";
-
-  if (/\b(stress|anxious|overwhelm|tired|exhausted)\b/.test(lower)) {
-    return gentle
-      ? `That sounds like a lot, ${who}. Want to tell me what's weighing on you most — or should I keep today lighter in your briefing?`
-      : direct
-        ? `Noted. I'll keep the briefing lighter today.`
-        : `That's a lot, ${who}. I'll readjust your briefing — want to say more?`;
-  }
-
-  if (/\b(skip|didn't|did not|forgot)\b/.test(lower)) {
-    return "Got it — no judgment. Want to move it, or let it go this week?";
-  }
-
-  if (/\b(money|rent|bill|pay|budget|spent)\b/.test(lower)) {
-    return "I'll fold that into what matters financially — calm heads up, not alarms.";
-  }
-
-  if (/\b(family|mom|dad|partner|wife|husband|kids)\b/.test(lower)) {
-    return "People first. I'll remember this when choosing what deserves your attention.";
-  }
-
-  return "Thanks for telling me. I'll readjust your briefing around this.";
+function welcomeMessage(name: string | null): ChatMessage {
+  return {
+    id: "welcome",
+    role: "sync",
+    text: name
+      ? `Hi ${name}. What's on your mind — or what should I know better about your week?`
+      : "What's on your mind — or what should I know better about your week?",
+  };
 }
 
 export function ChatSurface() {
@@ -70,22 +32,40 @@ export function ChatSurface() {
   const tone = profileTone(profile);
 
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>(() => {
-    const stored = loadChatHistory();
-    if (stored.length > 0) return stored;
-    return [
-      {
-        id: "welcome",
-        role: "sync",
-        text: profile.name
-          ? `Hi ${profile.name}. What's on your mind — or what should I know better about your week?`
-          : "What's on your mind — or what should I know better about your week?",
-      },
-    ];
-  });
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
+    welcomeMessage(profile.name),
+  ]);
   const [pending, setPending] = useState(false);
 
   const reference = useMemo(() => new Date(), [messages.length]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      try {
+        const response = await fetch("/api/chat", {
+          method: "GET",
+          credentials: "include",
+        });
+        if (!response.ok) return;
+        const data = (await response.json()) as {
+          messages?: { id: string; role: "user" | "sync"; text: string }[];
+        };
+        if (cancelled || !Array.isArray(data.messages) || data.messages.length === 0) {
+          return;
+        }
+        setMessages(data.messages);
+      } catch {
+        // Keep the welcome line if history cannot load.
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const send = async () => {
     const trimmed = input.trim();
@@ -116,35 +96,27 @@ export function ChatSurface() {
     setInput("");
     setPending(true);
 
-    let reply = fallbackReply(trimmed, profile.name, tone);
+    let reply =
+      "Thanks for telling me. I'll readjust your briefing around this.";
 
     try {
       const response = await fetch("/api/chat", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: trimmed,
-          profile: {
-            name: profile.name,
-            tone,
-            workingToward: profile.workingToward,
-            currentStress: profile.currentStress,
-          },
-          history: nextMessages.slice(-6).map((m) => ({
-            role: m.role === "sync" ? "assistant" : "user",
-            content: m.text,
-          })),
         }),
       });
 
-      if (response.ok) {
-        const data = (await response.json()) as { reply?: string };
-        if (data.reply?.trim()) {
-          reply = data.reply.trim();
-        }
+      const data = (await response.json()) as { reply?: string; error?: string };
+      if (response.ok && data.reply?.trim()) {
+        reply = data.reply.trim();
+      } else if (data.error?.trim()) {
+        reply = data.error.trim();
       }
     } catch {
-      // use fallback
+      reply = "Could not reach chat. Check your connection and try again.";
     }
 
     const syncMessage: ChatMessage = {
@@ -153,9 +125,7 @@ export function ChatSurface() {
       text: reply,
     };
 
-    const finalMessages = [...nextMessages, syncMessage];
-    setMessages(finalMessages);
-    saveChatHistory(finalMessages);
+    setMessages([...nextMessages, syncMessage]);
     setPending(false);
   };
 

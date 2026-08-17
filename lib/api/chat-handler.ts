@@ -3,19 +3,32 @@ import { generateText } from "ai";
 import { NextResponse } from "next/server";
 
 import {
+  CHAT_MAX_HISTORY_ENTRIES,
   clampChatText,
   sanitizeChatHistory,
   validateChatMessage,
+  type ChatHistoryEntry,
 } from "@/lib/api/chat-request-guards";
-import {
-  chatRateLimitSubject,
-} from "@/lib/api/chat-rate-limit-config";
+import { chatRateLimitSubject } from "@/lib/api/chat-rate-limit-config";
 import {
   consumeChatRateLimit,
   type ChatRateLimitDecision,
 } from "@/lib/api/chat-rate-limit";
+import {
+  DEFAULT_OPENAI_CHAT_MODEL,
+  logChatDownstreamFailure,
+  publicOpenAIChatError,
+  resolveOpenAIApiKey,
+  resolveOpenAIChatModel,
+} from "@/lib/api/openai-chat-config";
 import { loadRequestIdentity } from "@/lib/auth/load-request-identity";
 import type { RequestIdentity } from "@/lib/auth/request-identity";
+import {
+  appendChatMessage,
+  loadChatHistory,
+  loadRemoteProfile,
+} from "@/lib/sync-profile/remote-profile";
+import type { SyncUserProfile } from "@/lib/sync-profile/user-profile";
 
 export type ChatRequestBody = {
   message: string;
@@ -29,6 +42,13 @@ export type ChatRequestBody = {
   userId?: string;
   ownerId?: string;
   workspaceId?: string;
+};
+
+export type ChatPromptContext = {
+  name: string;
+  tone: string;
+  workingToward: string;
+  currentStress: string;
 };
 
 export function fallbackReply(body: ChatRequestBody): string {
@@ -49,37 +69,76 @@ export function fallbackReply(body: ChatRequestBody): string {
   return "Thanks for telling me. I'll readjust your briefing around this.";
 }
 
-export function systemPrompt(body: ChatRequestBody) {
-  const name = clampChatText(body.profile?.name, 80) || "the user";
-  const tone = clampChatText(body.profile?.tone, 40) || "balanced";
-  const goals = clampChatText(body.profile?.workingToward, 200);
-  const stress = clampChatText(body.profile?.currentStress, 200);
+export function chatPromptContextFromIdentity(
+  identity: RequestIdentity,
+  profile: SyncUserProfile | null,
+): ChatPromptContext {
+  return {
+    name:
+      clampChatText(profile?.name, 80) ||
+      clampChatText(identity.user.name ?? "", 80) ||
+      "the user",
+    tone: clampChatText(profile?.directness, 40) || "balanced",
+    workingToward: clampChatText(profile?.workingToward, 200),
+    currentStress: clampChatText(profile?.currentStress, 200),
+  };
+}
 
+export function systemPromptFromContext(context: ChatPromptContext) {
   return `You are Sync — a calm personal reasoning companion. Not a chatbot, not a coach.
 
 Voice: curious, concise, compassionate. Never shame. Never say "failed", "missed", or "behind".
 Reply in 1-3 short sentences. Ask at most one curious follow-up when it helps.
-Tone setting: ${tone}.
-User name: ${name}.
-${goals ? `Working toward: ${goals}.` : ""}
-${stress ? `Current stress context: ${stress}.` : ""}
+Tone setting: ${context.tone}.
+User name: ${context.name}.
+${context.workingToward ? `Working toward: ${context.workingToward}.` : ""}
+${context.currentStress ? `Current stress context: ${context.currentStress}.` : ""}
 
 If the user shares life events, acknowledge and remember the shape of it — do not invent facts.`;
 }
 
-export type ChatDownstreamResult = {
-  reply: string;
-  source: "openai" | "fallback";
-};
+/** @deprecated Use systemPromptFromContext with server-loaded profile. */
+export function systemPrompt(body: ChatRequestBody) {
+  return systemPromptFromContext({
+    name: clampChatText(body.profile?.name, 80) || "the user",
+    tone: clampChatText(body.profile?.tone, 40) || "balanced",
+    workingToward: clampChatText(body.profile?.workingToward, 200),
+    currentStress: clampChatText(body.profile?.currentStress, 200),
+  });
+}
+
+export function storedHistoryToOpenAI(
+  rows: { role: string; text: string }[],
+): ChatHistoryEntry[] {
+  return sanitizeChatHistory(
+    rows.map((row) => ({
+      role: row.role === "sync" ? "assistant" : "user",
+      content: row.text,
+    })),
+  );
+}
+
+export type ChatDownstreamResult =
+  | { ok: true; reply: string; source: "openai" }
+  | { ok: false; status: 429 | 503; error: string };
 
 export type ChatHandlerDeps = {
   loadIdentity: () => ReturnType<typeof loadRequestIdentity>;
   consumeRateLimit: (input: {
     subjectId: string;
   }) => Promise<ChatRateLimitDecision>;
+  loadProfile?: (userId: string) => Promise<SyncUserProfile | null>;
+  loadHistory?: (userId: string) => Promise<{ role: string; text: string }[]>;
+  saveTurn?: (
+    userId: string,
+    userText: string,
+    reply: string,
+  ) => Promise<void>;
   callChatDownstream: (input: {
     body: ChatRequestBody;
     message: string;
+    history: ChatHistoryEntry[];
+    promptContext: ChatPromptContext;
   }) => Promise<ChatDownstreamResult>;
 };
 
@@ -94,21 +153,28 @@ function rateLimitHeaders(decision: Extract<ChatRateLimitDecision, { limit: numb
 export async function defaultCallChatDownstream(input: {
   body: ChatRequestBody;
   message: string;
+  history: ChatHistoryEntry[];
+  promptContext: ChatPromptContext;
+  env?: NodeJS.ProcessEnv | Record<string, string | undefined>;
 }): Promise<ChatDownstreamResult> {
-  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  const env = input.env ?? process.env;
+  const apiKey = resolveOpenAIApiKey(env);
   if (!apiKey) {
-    return { reply: fallbackReply(input.body), source: "fallback" };
+    return { ok: false, status: 503, error: "Chat is not configured" };
+  }
+
+  const model = resolveOpenAIChatModel(env);
+  if (!model.ok) {
+    return { ok: false, status: 503, error: "Chat model is unavailable" };
   }
 
   try {
     const openai = createOpenAI({ apiKey });
-    const history = sanitizeChatHistory(input.body.history);
-
     const { text } = await generateText({
-      model: openai("gpt-4o-mini"),
-      system: systemPrompt(input.body),
+      model: openai(model.model),
+      system: systemPromptFromContext(input.promptContext),
       messages: [
-        ...history.map((entry) => ({
+        ...input.history.map((entry) => ({
           role: entry.role,
           content: entry.content,
         })),
@@ -118,31 +184,59 @@ export async function defaultCallChatDownstream(input: {
       temperature: 0.6,
     });
 
-    return {
-      reply: text.trim() || fallbackReply(input.body),
-      source: "openai",
-    };
+    const reply = text.trim();
+    if (!reply) {
+      return { ok: false, status: 503, error: "Chat is temporarily unavailable" };
+    }
+
+    return { ok: true, reply, source: "openai" };
   } catch (error) {
-    console.error("POST /api/chat downstream", error);
-    return { reply: fallbackReply(input.body), source: "fallback" };
+    logChatDownstreamFailure(error);
+    return { ok: false, ...publicOpenAIChatError(error) };
   }
+}
+
+async function defaultSaveTurn(
+  userId: string,
+  userText: string,
+  reply: string,
+) {
+  await appendChatMessage(userId, "user", userText);
+  await appendChatMessage(userId, "sync", reply);
 }
 
 export const defaultChatHandlerDeps: ChatHandlerDeps = {
   loadIdentity: loadRequestIdentity,
   consumeRateLimit: ({ subjectId }) => consumeChatRateLimit({ subjectId }),
+  loadProfile: loadRemoteProfile,
+  loadHistory: (userId) => loadChatHistory(userId, CHAT_MAX_HISTORY_ENTRIES),
+  saveTurn: defaultSaveTurn,
   callChatDownstream: defaultCallChatDownstream,
 };
 
 /**
  * Authenticated, rate-limited chat handling.
- * Order: identity → payload validation → rate limit → downstream.
+ * Order: identity → payload validation → rate limit → context → downstream → save.
  */
 export async function handleChatPost(
   request: Request,
-  deps: ChatHandlerDeps = defaultChatHandlerDeps,
+  deps: Partial<ChatHandlerDeps> = {},
 ): Promise<NextResponse> {
-  const loaded = await deps.loadIdentity();
+  const {
+    loadIdentity,
+    consumeRateLimit,
+    loadProfile,
+    loadHistory,
+    saveTurn,
+    callChatDownstream,
+  } = { ...defaultChatHandlerDeps, ...deps };
+  const loadProfileFn = loadProfile ?? loadRemoteProfile;
+  const loadHistoryFn =
+    loadHistory ??
+    ((userId: string) => loadChatHistory(userId, CHAT_MAX_HISTORY_ENTRIES));
+  const saveTurnFn = saveTurn ?? defaultSaveTurn;
+
+  const loaded = await loadIdentity();
   if (!loaded.ok) return loaded.response;
 
   const identity: RequestIdentity = loaded.identity;
@@ -162,9 +256,8 @@ export async function handleChatPost(
     );
   }
 
-  // Ownership / subject never comes from the client body.
   const subjectId = chatRateLimitSubject(identity, body);
-  const limitDecision = await deps.consumeRateLimit({ subjectId });
+  const limitDecision = await consumeRateLimit({ subjectId });
 
   if (!limitDecision.ok && limitDecision.reason === "misconfigured") {
     return NextResponse.json(
@@ -200,13 +293,86 @@ export async function handleChatPost(
     );
   }
 
-  const result = await deps.callChatDownstream({
+  let profile;
+  let stored;
+  try {
+    profile = await loadProfileFn(identity.user.id);
+    stored = await loadHistoryFn(identity.user.id);
+  } catch (error) {
+    console.error("POST /api/chat context", {
+      name:
+        error && typeof error === "object" && "name" in error
+          ? String((error as { name?: unknown }).name ?? "Error")
+          : "Error",
+    });
+    return NextResponse.json(
+      { error: "Chat temporarily unavailable" },
+      { status: 503 },
+    );
+  }
+  const promptContext = chatPromptContextFromIdentity(identity, profile);
+
+  const result = await callChatDownstream({
     body: { ...body, message: validated.message },
     message: validated.message,
+    history: storedHistoryToOpenAI(stored),
+    promptContext,
   });
+
+  if (!result.ok) {
+    return NextResponse.json(
+      { error: result.error },
+      { status: result.status },
+    );
+  }
+
+  try {
+    await saveTurnFn(identity.user.id, validated.message, result.reply);
+  } catch (error) {
+    console.error("POST /api/chat persist", {
+      name:
+        error && typeof error === "object" && "name" in error
+          ? String((error as { name?: unknown }).name ?? "Error")
+          : "Error",
+    });
+    return NextResponse.json(
+      { error: "Chat temporarily unavailable" },
+      { status: 503 },
+    );
+  }
 
   return NextResponse.json(
     { reply: result.reply, source: result.source },
     { headers: rateLimitHeaders(limitDecision) },
   );
 }
+
+export async function handleChatGet(
+  _request: Request,
+  deps: Partial<Pick<ChatHandlerDeps, "loadIdentity" | "loadHistory">> = {},
+): Promise<NextResponse> {
+  const loadIdentity = deps.loadIdentity ?? defaultChatHandlerDeps.loadIdentity;
+  const loadHistory =
+    deps.loadHistory ?? ((userId: string) => loadChatHistory(userId, 40));
+
+  const loaded = await loadIdentity();
+  if (!loaded.ok) return loaded.response;
+
+  try {
+    const messages = await loadHistory(loaded.identity.user.id);
+    return NextResponse.json({ messages });
+  } catch (error) {
+    console.error("GET /api/chat history", {
+      name:
+        error && typeof error === "object" && "name" in error
+          ? String((error as { name?: unknown }).name ?? "Error")
+          : "Error",
+    });
+    return NextResponse.json(
+      { error: "Chat temporarily unavailable" },
+      { status: 503 },
+    );
+  }
+}
+
+export { DEFAULT_OPENAI_CHAT_MODEL };

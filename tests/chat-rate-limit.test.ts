@@ -305,8 +305,11 @@ async function runAsyncCases() {
       }),
     callChatDownstream: async () => {
       downstreamCalls += 1;
-      return { reply: "ok", source: "openai" as const };
+      return { ok: true as const, reply: "ok", source: "openai" as const };
     },
+    loadProfile: async () => null,
+    loadHistory: async () => [],
+    saveTurn: async () => undefined,
     ...overrides,
   });
 
