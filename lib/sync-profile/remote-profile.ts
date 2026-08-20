@@ -55,11 +55,11 @@ export async function loadChatHistory(userId: string, limit = 40) {
 
   const rows = await prisma.syncChatMessage.findMany({
     where: { userId },
-    orderBy: { createdAt: "asc" },
+    orderBy: { createdAt: "desc" },
     take: limit,
   });
 
-  return rows.map((row) => ({
+  return rows.reverse().map((row) => ({
     id: row.id,
     role: row.role as "user" | "sync",
     text: row.content,

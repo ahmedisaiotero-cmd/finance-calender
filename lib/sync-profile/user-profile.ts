@@ -4,6 +4,7 @@ import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
 export type DayStyle = "busy" | "calm" | "";
 export type CheckInTime = "morning" | "midday" | "evening" | "";
 export type Directness = "gentle" | "balanced" | "direct" | "";
+export type GoalTimeframe = "this-month" | "this-quarter" | "this-year" | "";
 
 export type SyncUserProfile = {
   name: string;
@@ -13,6 +14,8 @@ export type SyncUserProfile = {
   awareness: string[];
   currentStress: string;
   workingToward: string;
+  goalTimeframe: GoalTimeframe;
+  constraints: string[];
   checkInTime: CheckInTime;
   directness: Directness;
   protectedCalendar: string;
@@ -32,6 +35,26 @@ export const PRIORITY_OPTIONS = [
   "Work",
   "Goals",
   "Home",
+] as const;
+
+export const ONBOARDING_PRIORITY_OPTIONS = [
+  "Money",
+  "Health",
+  "Family",
+  "Work",
+] as const;
+
+export const CONSTRAINT_OPTIONS = [
+  "Time",
+  "Money",
+  "Energy",
+  "Uncertainty",
+] as const;
+
+export const GOAL_TIMEFRAME_OPTIONS = [
+  { id: "this-month", label: "This month" },
+  { id: "this-quarter", label: "The next few months" },
+  { id: "this-year", label: "This year" },
 ] as const;
 
 export const AWARENESS_OPTIONS = [
@@ -68,6 +91,8 @@ export const EMPTY_USER_PROFILE: SyncUserProfile = {
   awareness: [],
   currentStress: "",
   workingToward: "",
+  goalTimeframe: "",
+  constraints: [],
   checkInTime: "",
   directness: "",
   protectedCalendar: "",
@@ -176,17 +201,16 @@ export function profileToSyncUserContext(
   }
 
   const goals: NonNullable<SyncUserContext["goals"]> = [];
-  if (profile.priorities.includes("Goals")) {
-    goals.push({ id: "profile-goals", title: "Goals", area: "personal" });
-  }
-  if (profile.priorities.includes("Money")) {
-    goals.push({ id: "profile-money", title: "Money", area: "finance" });
-  }
   if (profile.workingToward.trim()) {
+    const timeframe = GOAL_TIMEFRAME_OPTIONS.find(
+      (option) => option.id === profile.goalTimeframe,
+    )?.label;
     goals.push({
       id: "profile-working-toward",
-      title: profile.workingToward.trim(),
-      area: "personal",
+      title: timeframe
+        ? `${profile.workingToward.trim()} — ${timeframe}`
+        : profile.workingToward.trim(),
+      area: profile.priorities.includes("Money") ? "finance" : "personal",
     });
   }
 
@@ -195,26 +219,6 @@ export function profileToSyncUserContext(
   }
 
   const routines: NonNullable<SyncUserContext["routines"]> = [];
-  if (
-    profile.priorities.includes("Health") ||
-    profile.awareness.includes("Health")
-  ) {
-    routines.push({
-      id: "profile-health",
-      title: "Health",
-      area: "health",
-    });
-  }
-  if (
-    profile.priorities.includes("Work") ||
-    profile.awareness.includes("Work")
-  ) {
-    routines.push({
-      id: "profile-work",
-      title: "Work",
-      area: "work",
-    });
-  }
   if (profile.protectedCalendar.trim()) {
     routines.push({
       id: "profile-protected",

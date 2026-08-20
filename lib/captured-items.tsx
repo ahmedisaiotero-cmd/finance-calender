@@ -79,6 +79,7 @@ export type CapturedSyncItem = {
 type CapturedItemsContextValue = {
   items: CapturedSyncItem[];
   activeItems: CapturedSyncItem[];
+  hydrated: boolean;
   addCapturedItem: (
     plan: PulsePlan,
     destinations: SyncDestination[],
@@ -343,6 +344,7 @@ export function CapturedItemsProvider({
     () => ({
       items,
       activeItems,
+      hydrated: loaded,
       addCapturedItem,
       updateCapturedItem,
       removeCapturedItem,
@@ -353,6 +355,7 @@ export function CapturedItemsProvider({
     [
       items,
       activeItems,
+      loaded,
       addCapturedItem,
       updateCapturedItem,
       removeCapturedItem,
