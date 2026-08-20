@@ -24,9 +24,9 @@ import {
 import { loadRequestIdentity } from "@/lib/auth/load-request-identity";
 import type { RequestIdentity } from "@/lib/auth/request-identity";
 import {
-  appendChatMessage,
   loadChatHistory,
   loadRemoteProfile,
+  saveChatTurn,
 } from "@/lib/sync-profile/remote-profile";
 import type { SyncUserProfile } from "@/lib/sync-profile/user-profile";
 
@@ -201,8 +201,7 @@ async function defaultSaveTurn(
   userText: string,
   reply: string,
 ) {
-  await appendChatMessage(userId, "user", userText);
-  await appendChatMessage(userId, "sync", reply);
+  await saveChatTurn(userId, userText, reply);
 }
 
 export const defaultChatHandlerDeps: ChatHandlerDeps = {

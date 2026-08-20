@@ -389,6 +389,8 @@ function buildGeneral(prompt: string): PulseTemplateResult {
       family_context: "Family Context",
       idea: "Idea",
       routine: /\bcoffee\b/i.test(prompt) ? "Coffee Routine" : "Routine",
+      financial_state: /\bdebt\b/i.test(prompt) ? "Debt Context" : "Money Context",
+      no_plan: /\bdebt\b/i.test(prompt) ? "No Debt Plan" : "No Current Plan",
     };
 
     const summaryByKind: Record<typeof lifeNote.kind, string> = {
@@ -399,6 +401,8 @@ function buildGeneral(prompt: string): PulseTemplateResult {
       family_context: "Family context saved.",
       idea: "An idea saved without turning it into a task.",
       routine: "A routine signal Sync can watch over time.",
+      financial_state: "A money state Sync can remember without treating it as an event.",
+      no_plan: "You do not currently have a plan for this.",
     };
 
     return {

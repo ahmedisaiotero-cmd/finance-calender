@@ -64,7 +64,7 @@ function isPayday(input: MemoryTitleInput, text: string) {
   return (
     input.parsedInput?.moneyType === "income" ||
     input.moneyType === "income" ||
-    /\b(get paid|getting paid|payday|paycheck|every other (?:monday|tuesday|wednesday|thursday|friday|saturday|sunday))\b/.test(
+    /\b(get paid|got paid|getting paid|payday|paycheck|every other (?:monday|tuesday|wednesday|thursday|friday|saturday|sunday))\b/.test(
       text,
     )
   );
@@ -94,7 +94,8 @@ function extractBirthdayRelation(prompt: string): string | null {
   return null;
 }
 
-function looksLikeRawCaptureTitle(title: string) {
+function looksLikeRawCaptureTitle(title: string | undefined) {
+  if (!title) return true;
   const normalized = title.trim().toLowerCase();
   if (!normalized) return false;
 

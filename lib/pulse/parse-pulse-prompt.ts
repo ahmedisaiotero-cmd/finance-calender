@@ -117,7 +117,7 @@ function detectMoneyType(
   category: PulsePlanCategory,
 ): PulseMoneyType {
   if (
-    /\b(get paid|getting paid|paid in|paycheck|payday|direct deposit|income|deposit|paid on|salary|wage)\b/.test(
+    /\b(get paid|got paid|getting paid|paid in|paycheck|payday|direct deposit|income|deposit|paid on|salary|wage)\b/.test(
       text,
     )
   ) {

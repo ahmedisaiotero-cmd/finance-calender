@@ -24,7 +24,7 @@ export function detectPulseCategory(
   if (isWorkDayOffLanguage(text)) return "workday";
 
   if (
-    /\b(get paid|getting paid|paid in|paycheck|payday|direct deposit|income|deposit|paid on|salary|wage)\b/.test(
+    /\b(get paid|got paid|getting paid|paid in|paycheck|payday|direct deposit|income|deposit|paid on|salary|wage)\b/.test(
       text,
     )
   ) {
@@ -63,7 +63,7 @@ export function detectPulseCategory(
     return "subscription";
   }
 
-  if (/\b(spent|bought|paid|purchase|purchased|cost|costs)\b/.test(text)) {
+  if (/\b(spent|bought|paid|purchase|purchased|cost|costs|overspend|overspending)\b/.test(text)) {
     return "expense";
   }
 

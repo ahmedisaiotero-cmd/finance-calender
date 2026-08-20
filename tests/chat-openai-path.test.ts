@@ -235,6 +235,33 @@ async function run() {
   const historyBody = await getOwned.json();
   assert.equal(historyBody.messages[0].text, "Rent is due Friday.");
 
+  const histories: Record<string, { role: string; text: string }[]> = {
+    "user-a": [{ role: "user", text: "A's secret rent." }],
+    "user-b": [{ role: "user", text: "B's secret debt." }],
+  };
+  const getA = await handleChatGet(new Request("http://localhost/api/chat"), {
+    loadIdentity: async () => ({
+      ok: true as const,
+      identity: identity("user-a"),
+    }),
+    loadHistory: async (userId) => histories[userId] ?? [],
+  });
+  const getB = await handleChatGet(new Request("http://localhost/api/chat"), {
+    loadIdentity: async () => ({
+      ok: true as const,
+      identity: identity("user-b"),
+    }),
+    loadHistory: async (userId) => histories[userId] ?? [],
+  });
+  const bodyA = await getA.json();
+  const bodyB = await getB.json();
+  assert.equal(bodyA.messages[0].text, "A's secret rent.");
+  assert.equal(bodyB.messages[0].text, "B's secret debt.");
+  assert.equal(
+    bodyA.messages.some((message: { text: string }) => /B's secret/.test(message.text)),
+    false,
+  );
+
   const mapped = storedHistoryToOpenAI([
     { role: "user", text: "Flight at 6:00 AM." },
     { role: "sync", text: "Tomorrow starts early." },

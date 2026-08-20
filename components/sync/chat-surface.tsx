@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { attemptBriefCapture } from "@/lib/mobile-prototype/capture-brief-input";
+import { applyChatTurn } from "@/lib/sync-capture/apply-chat-turn";
 import { loadLifeProfile } from "@/lib/mobile-prototype/life-profile";
 import { profileTone } from "@/lib/sync-profile/user-profile";
 import { useCapturedItems } from "@/lib/captured-items";
@@ -77,12 +77,16 @@ export function ChatSurface() {
       text: trimmed,
     };
 
-    attemptBriefCapture(
+    applyChatTurn(
       trimmed,
       {
         items: activeItems,
         workSchedule: loadActiveWorkSchedule() ?? null,
         reference,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        priorAssistantText: [...messages]
+          .reverse()
+          .find((message) => message.role === "sync")?.text,
       },
       {
         addCapturedItem,

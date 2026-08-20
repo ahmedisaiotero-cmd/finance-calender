@@ -8,6 +8,7 @@ import {
 } from "@/lib/intelligence/consequence-link";
 import { effectiveMemoryWeight } from "@/lib/intelligence/memory-aging";
 import { buildMemoryProfile } from "@/lib/intelligence/memory-profile";
+import { classifyLifeNote } from "@/lib/intelligence/life-note-classifier";
 import { memoryFilterCategory } from "@/lib/mobile-prototype/memory-category";
 import type { SyncConsequence } from "@/lib/intelligence/sync-consequences";
 import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
@@ -380,18 +381,34 @@ export function buildHomeReflection(input: {
   }).length;
 
   if (meaningfulToday.length + meaningfulBlockCount >= 3) {
-    candidates.push({
-      text: REFLECTION_FULL_TODAY,
-      weight: "important",
-      sourceIds: meaningfulToday.slice(0, 3).map((item) => item.id),
-      consequence: null,
-      priority: 50,
+    const evidenced = meaningfulToday.filter((item) => {
+      const role = item.timeline?.timelineRole;
+      return (
+        item.destinations.includes("Calendar") &&
+        (item.timeline?.isTimed ||
+          role === "deadline" ||
+          role === "event" ||
+          role === "log")
+      );
     });
+    if (evidenced.length + meaningfulBlockCount >= 3) {
+      candidates.push({
+        text: REFLECTION_FULL_TODAY,
+        weight: "important",
+        sourceIds: evidenced.slice(0, 3).map((item) => item.id),
+        consequence: null,
+        priority: 50,
+      });
+    }
   }
 
   const moneyToday = meaningfulToday.filter((item) => {
     if (memoryFilterCategory(item) !== "Money") return false;
     const text = `${item.title} ${item.originalPrompt ?? item.prompt}`;
+    const note = classifyLifeNote(text);
+    if (note?.kind === "financial_state" || note?.kind === "no_plan") {
+      return false;
+    }
     return isMoneyLanguage(text);
   });
 

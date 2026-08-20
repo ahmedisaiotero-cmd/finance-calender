@@ -85,7 +85,7 @@ export function extractPersonFromMemory(
   }
 
   const namedPerson = prompt.match(
-    /\b(?:call|text|send|pay|give)\s+([a-z][a-z' -]{1,24})\b/,
+    /\b(?:call|text|send|pay|give|met with|meet with)\s+([a-z][a-z' -]{1,24})\b/,
   );
   if (namedPerson?.[1]) {
     const raw = namedPerson[1].trim();

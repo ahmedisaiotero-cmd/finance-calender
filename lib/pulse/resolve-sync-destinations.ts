@@ -19,7 +19,7 @@ const CATEGORY_DESTINATIONS: Record<PulsePlanCategory, SyncDestination[]> = {
   reminder: ["Calendar"],
   "savings-goal": ["Goals", "Finance"],
   task: ["Calendar"],
-  general: ["Calendar"],
+  general: ["Goals"],
 };
 
 const TIMELINE_LABEL_BLOCKLIST = new Set([
@@ -52,27 +52,23 @@ export function sanitizeSyncDestinations(
   );
 }
 
-function hasTimelineDestination(plan: PulsePlan) {
-  return (
-    plan.timeline?.startDate ||
+export function hasConcreteCalendarTiming(plan: PulsePlan) {
+  return Boolean(
     plan.timeline?.deadlineDate ||
-    plan.timeline?.isTimed ||
-    plan.dateLabel !== "Upcoming"
+      plan.timeline?.recurrence ||
+      plan.timeline?.isTimed ||
+      (plan.timeline?.startDate &&
+        plan.timeline.timelineRole !== "task" &&
+        plan.timeline.kind !== "unknown"),
   );
 }
 
-function hasConcreteCalendarTiming(plan: PulsePlan) {
-  return Boolean(
-    plan.timeline?.startDate ||
-      plan.timeline?.deadlineDate ||
-      plan.timeline?.recurrence ||
-      plan.timeline?.isTimed ||
-      (plan.dateLabel && plan.dateLabel !== "Upcoming"),
-  );
+function hasTimelineDestination(plan: PulsePlan) {
+  return hasConcreteCalendarTiming(plan);
 }
 
 function isFinanceLanguage(plan: PulsePlan) {
-  return /\b(rent|bill|budget|payment|pay|paid|payday|income|subscription|spent|cost|money|cash|send)\b/i.test(
+  return /\b(rent|bill|budget|payment|pay|paid|payday|income|subscription|spent|overspend|overspending|cost|money|cash|send|debt)\b/i.test(
     plan.prompt,
   );
 }
@@ -84,7 +80,7 @@ function isFamilyLanguage(plan: PulsePlan) {
 }
 
 function isRelationshipLanguage(plan: PulsePlan) {
-  return /\b(grandma|grandpa|grandmother|grandfather|friend|friends|partner|wife|husband|girlfrienda?|boyfriend|anniversary|birthday|bday|dinner with|date night|date with|date\b)\b/i.test(
+  return /\b(grandma|grandpa|grandmother|grandfather|friend|friends|partner|wife|husband|girlfrienda?|boyfriend|anniversary|birthday|bday|dinner with|date night|date with|date\b|met with|meet with)\b/i.test(
     plan.prompt,
   );
 }
@@ -128,11 +124,21 @@ function destinationsForLifeNote(plan: PulsePlan): SyncDestination[] | null {
     else if (isRelationshipLanguage(plan)) destinations.push("Relationships");
     else destinations.push("Goals");
   }
+  if (lifeNote.kind === "financial_state") destinations.push("Finance");
+  if (lifeNote.kind === "no_plan") {
+    destinations.push(isFinanceLanguage(plan) ? "Finance" : "Goals");
+  }
   if (lifeNote.kind === "routine") {
     destinations.push(isHealthLanguage(plan) ? "Health" : "Goals");
   }
 
-  if (hasConcreteCalendarTiming(plan)) destinations.push("Calendar");
+  if (
+    hasConcreteCalendarTiming(plan) &&
+    lifeNote.kind !== "financial_state" &&
+    lifeNote.kind !== "no_plan"
+  ) {
+    destinations.push("Calendar");
+  }
   return unique(destinations);
 }
 
@@ -196,7 +202,14 @@ function inferCategoryDestinations(plan: PulsePlan): SyncDestination[] {
     return hasTimelineDestination(plan) ? ["Goals", "Calendar"] : ["Goals"];
   }
 
-  return unique(CATEGORY_DESTINATIONS[plan.category] ?? ["Calendar"]);
+  const base = CATEGORY_DESTINATIONS[plan.category] ?? [];
+  if (hasTimelineDestination(plan)) {
+    return unique([
+      ...base.filter((destination) => destination !== "Goals"),
+      "Calendar",
+    ]);
+  }
+  return unique(base.length > 0 ? base : ["Goals"]);
 }
 
 export function resolveSyncDestinations(

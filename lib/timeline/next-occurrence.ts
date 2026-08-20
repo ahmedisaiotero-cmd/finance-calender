@@ -1,4 +1,5 @@
 import { toDateKey } from "@/lib/calendar-utils";
+import { classifyLifeNote } from "@/lib/intelligence/life-note-classifier";
 import type { TimelineResolution } from "@/lib/timeline/resolve-timeline";
 
 const DAY_NAMES = [
@@ -172,10 +173,15 @@ export function isBriefEligibleMemory(
   const days = daysUntilDateKey(key, reference);
   if (days == null || days < 0) return false;
 
-  const text = `${item.title} ${item.prompt}`.toLowerCase();
+  const combined = `${item.title} ${item.prompt}`;
+  const text = combined.toLowerCase();
+  const lifeNote = classifyLifeNote(combined);
+  if (lifeNote?.kind === "financial_state" || lifeNote?.kind === "no_plan") {
+    return false;
+  }
   const isPayday =
     item.moneyType === "income" ||
-    /\b(payday|pay day|get paid|paycheck)\b/.test(text);
+    /\b(payday|pay day|get paid|got paid|paycheck)\b/.test(text);
 
   if (isPayday) return days <= 21;
   if (/\bbirthday\b/i.test(text)) return days <= 30;

@@ -77,3 +77,20 @@ test("generateDailyBrief stays compassionate when empty", () => {
   assert.equal(brief.isEmpty, true);
   assert.equal(brief.pulse.state, "connect");
 });
+
+test("priority chips do not invent Today cards", () => {
+  const brief = generateDailyBrief({
+    items: [],
+    profile: {
+      ...EMPTY_USER_PROFILE,
+      onboardingComplete: true,
+      name: "Ahmed",
+      priorities: ["Money", "Family"],
+      directness: "direct",
+    },
+    reference: new Date("2026-08-20T09:00:00"),
+  });
+  assert.equal(brief.isEmpty, true);
+  const text = [brief.lede, ...brief.items.map((item) => item.text), brief.pulse.message].join(" ");
+  assert.doesNotMatch(text, /Money today|Family\/plans today/i);
+});

@@ -39,6 +39,7 @@ export type UserTimelineContext = {
 
 export type ResolveTimelineOptions = {
   now?: Date;
+  timeZone?: string;
   userContext?: UserTimelineContext;
 };
 
@@ -88,6 +89,62 @@ const MONTH_INDEX: Record<string, number> = {
 
 function startOfDay(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
+
+const WORD_ORDINALS: Record<string, number> = {
+  first: 1,
+  second: 2,
+  third: 3,
+  fourth: 4,
+  fifth: 5,
+  sixth: 6,
+  seventh: 7,
+  eighth: 8,
+  ninth: 9,
+  tenth: 10,
+  eleventh: 11,
+  twelfth: 12,
+  thirteenth: 13,
+  fourteenth: 14,
+  fifteenth: 15,
+  sixteenth: 16,
+  seventeenth: 17,
+  eighteenth: 18,
+  nineteenth: 19,
+  twentieth: 20,
+  "twenty-first": 21,
+  "twenty-second": 22,
+  "twenty-third": 23,
+  "twenty-fourth": 24,
+  "twenty-fifth": 25,
+  "twenty-sixth": 26,
+  "twenty-seventh": 27,
+  "twenty-eighth": 28,
+  "twenty-ninth": 29,
+  thirtieth: 30,
+  "thirty-first": 31,
+};
+
+export function calendarDateInTimeZone(now: Date, timeZone?: string) {
+  if (!timeZone) return startOfDay(now);
+
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(now);
+  const year = Number(parts.find((part) => part.type === "year")?.value);
+  const month = Number(parts.find((part) => part.type === "month")?.value);
+  const day = Number(parts.find((part) => part.type === "day")?.value);
+  if (!year || !month || !day) return startOfDay(now);
+  return new Date(year, month - 1, day);
+}
+
+function isAbsenceOfPlans(text: string) {
+  return /\b((don'?t|do not|does not|didn't|did not|no|not)\b.{0,24}\b(much\s+)?plans?|nothing planned|no plans)\b/i.test(
+    text,
+  );
 }
 
 function addDays(date: Date, amount: number) {
@@ -257,7 +314,14 @@ function durationBetween(startTime?: string, endTime?: string) {
 }
 
 function parseOrdinalDay(text: string) {
-  const match = text.match(/\b(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)?\b/);
+  const word = text.match(
+    /\b(?:the\s+)?(thirty-first|twenty-first|twenty-second|twenty-third|twenty-fourth|twenty-fifth|twenty-sixth|twenty-seventh|twenty-eighth|twenty-ninth|thirtieth|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth|twentieth)\b/i,
+  );
+  if (word) {
+    return WORD_ORDINALS[word[1].toLowerCase()] ?? null;
+  }
+
+  const match = text.match(/\b(?:the\s+)?(\d{1,2})(?:st|nd|rd|th)\b/);
   if (!match) return null;
   const day = Number(match[1]);
   if (Number.isNaN(day) || day < 1 || day > 31) return null;
@@ -662,6 +726,10 @@ function resolveRelative(
   now: Date,
   time: ResolvedTime,
 ) {
+  if (isAbsenceOfPlans(text)) {
+    return null;
+  }
+
   if (/\btoday\b/.test(text)) {
     return buildResolution(input, {
       kind: "relative",
@@ -939,7 +1007,7 @@ export function resolveTimeline(
 ): TimelineResolution {
   const sourceText = input.trim();
   const text = sourceText.toLowerCase();
-  const now = startOfDay(options.now ?? new Date());
+  const now = calendarDateInTimeZone(options.now ?? new Date(), options.timeZone);
   const tense = detectTense(text);
   const time = resolveTime(sourceText);
 

@@ -50,6 +50,69 @@ export async function appendChatMessage(
   });
 }
 
+const CHAT_RETRY_WINDOW_MS = 20_000;
+
+export function resolveChatTurnPersistence(input: {
+  lastUser?: { content: string; createdAtMs: number } | null;
+  lastAfterUser?: { role: string } | null;
+  userText: string;
+  nowMs: number;
+}): "insert_both" | "insert_sync_only" | "skip" {
+  if (
+    input.lastUser &&
+    input.lastUser.content === input.userText &&
+    input.nowMs - input.lastUser.createdAtMs < CHAT_RETRY_WINDOW_MS
+  ) {
+    if (input.lastAfterUser?.role === "sync") return "skip";
+    return "insert_sync_only";
+  }
+  return "insert_both";
+}
+
+export async function saveChatTurn(
+  userId: string,
+  userText: string,
+  reply: string,
+) {
+  if (!isDatabaseConfigured()) return;
+
+  const lastUser = await prisma.syncChatMessage.findFirst({
+    where: { userId, role: "user" },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const lastAfterUser = lastUser
+    ? await prisma.syncChatMessage.findFirst({
+        where: { userId, createdAt: { gt: lastUser.createdAt } },
+        orderBy: { createdAt: "asc" },
+      })
+    : null;
+
+  const action = resolveChatTurnPersistence({
+    lastUser: lastUser
+      ? { content: lastUser.content, createdAtMs: lastUser.createdAt.getTime() }
+      : null,
+    lastAfterUser: lastAfterUser ? { role: lastAfterUser.role } : null,
+    userText,
+    nowMs: Date.now(),
+  });
+
+  if (action === "skip") return;
+  if (action === "insert_sync_only") {
+    await appendChatMessage(userId, "sync", reply);
+    return;
+  }
+
+  await prisma.$transaction([
+    prisma.syncChatMessage.create({
+      data: { userId, role: "user", content: userText },
+    }),
+    prisma.syncChatMessage.create({
+      data: { userId, role: "sync", content: reply },
+    }),
+  ]);
+}
+
 export async function loadChatHistory(userId: string, limit = 40) {
   if (!isDatabaseConfigured()) return [];
 

@@ -166,6 +166,15 @@ export function detectSyncCommandIntent(input: string): SyncCommandIntent {
     });
   }
 
+  const actuallyDue = text.match(
+    /^actually[, ]+(.+?)\s+(?:is\s+)?due(?:\s+on)?\s+(?:the\s+)?(.+)$/i,
+  );
+  if (actuallyDue) {
+    return editIntent("actually", actuallyDue[1], {
+      toDateLabel: actuallyDue[2].trim(),
+    });
+  }
+
   const actuallyMake = text.match(
     new RegExp(`^actually\\s+make\\s+it\\s+(${DAY_LABEL_PATTERN}|${TIME_LABEL_PATTERN})$`, "i"),
   );

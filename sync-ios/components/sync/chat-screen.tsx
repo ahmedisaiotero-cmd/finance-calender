@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { SyncTextInput } from "./sync-text-input";
 import { SyncColors, SyncSpacing, SyncTypography } from "../../constants/sync-theme";
-import { attemptBriefCapture } from "../../lib/engine/capture-brief-input";
+import { applyChatTurn } from "../../../lib/sync-capture/apply-chat-turn";
 import { useCapturedItems } from "../../lib/engine/captured-items";
 import { loadLifeProfile } from "../../lib/engine/life-profile";
 import { loadActiveWorkSchedule } from "../../lib/engine/user-timeline-context";
@@ -82,12 +82,16 @@ export function ChatScreen() {
       text: trimmed,
     };
 
-    attemptBriefCapture(
+    applyChatTurn(
       trimmed,
       {
         items: activeItems,
         workSchedule: loadActiveWorkSchedule() ?? null,
         reference,
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        priorAssistantText: [...messages]
+          .reverse()
+          .find((message) => message.role === "sync")?.text,
       },
       {
         addCapturedItem,

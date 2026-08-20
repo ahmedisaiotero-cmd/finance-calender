@@ -4,6 +4,7 @@ import type { CapturedSyncItem, SyncDestination } from "@/lib/captured-items";
 import type { MeaningAnalysis } from "@/lib/intelligence/meaning-engine";
 import { createPulsePlan } from "@/lib/pulse/create-pulse-plan";
 import {
+  hasConcreteCalendarTiming,
   resolveSyncDestinations,
   sanitizeSyncDestinations,
 } from "@/lib/pulse/resolve-sync-destinations";
@@ -22,7 +23,7 @@ import {
 } from "@/lib/sync-profile/user-profile";
 import type { CaptureCategoryHint } from "@/lib/sync-capture/capture-hint";
 import { buildMemoryUnderstanding } from "@/lib/intelligence/memory-understanding";
-import { isNonCalendarLifeNote } from "@/lib/intelligence/life-note-classifier";
+import { classifyLifeNote, isNonCalendarLifeNote } from "@/lib/intelligence/life-note-classifier";
 import { cleanMemoryTitle } from "@/lib/sync-capture/memory-title";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
 
@@ -37,6 +38,7 @@ export type CapturePipelineContext = {
   categoryHint?: CaptureCategoryHint;
   captureSource?: import("@/lib/sync-capture/capture-source").CaptureSource;
   voiceTranscript?: string;
+  timeZone?: string;
 };
 
 export type PreparedCapture = {
@@ -182,7 +184,7 @@ export function enrichCapturePlan(plan: PulsePlan, reference: Date): PulsePlan {
         text,
       );
 
-    if (impliesToday || plan.category === "general") {
+    if (impliesToday) {
       const todayKey = toDateKey(reference);
       const isWorkLog =
         /\b(worked|working|coded|coding|overtime)\b/i.test(plan.prompt) ||
@@ -236,7 +238,7 @@ export function prepareCaptureFromText(
 
   const reference = context.reference ?? new Date();
   const rawPlan = createPulsePlan(trimmed, {
-    timeline: { now: reference },
+    timeline: { now: reference, timeZone: context.timeZone },
     categoryHint: context.categoryHint,
   });
   const plan = enrichCapturePlan(rawPlan, reference);
@@ -248,11 +250,16 @@ export function prepareCaptureFromPlan(
   context: CapturePipelineContext,
 ): PreparedCapture {
   const preview = buildSyncPreviewViewModel(plan, buildPreviewContext(context));
-  const destinations = sanitizeSyncDestinations(
+  const rawDestinations = sanitizeSyncDestinations(
     context.selectedDestinations?.length
       ? context.selectedDestinations
       : preview.where.destinations,
   );
+  const destinations =
+    hasConcreteCalendarTiming(plan) ||
+    (rawDestinations.length === 1 && rawDestinations[0] === "Calendar")
+      ? rawDestinations
+      : rawDestinations.filter((destination) => destination !== "Calendar");
   const title = context.targetTitle ?? compactCaptureTitle(plan);
   const duplicate = detectDuplicateCapture(plan, title, context.items);
 
@@ -279,6 +286,8 @@ export function prepareCaptureFromPlan(
 export function isSilentCaptureReady(
   prepared: PreparedCapture,
 ): boolean {
+  // Remember useful undated facts (states, concerns, people, money).
+  // Calendar/Today still require concrete timing via destinations + brief eligibility.
   if (prepared.preview.readyToSave) {
     return true;
   }
@@ -286,7 +295,46 @@ export function isSilentCaptureReady(
   const { plan, destinations } = prepared;
   if (destinations.length === 0) return false;
 
+  if (isNonCalendarLifeNote(plan.prompt)) {
+    const kind = classifyLifeNote(plan.prompt)?.kind;
+    if (
+      kind === "financial_state" ||
+      kind === "no_plan" ||
+      kind === "concern"
+    ) {
+      return true;
+    }
+  }
+
+  if (
+    /\b(canceled|cancelled)\b/i.test(plan.prompt) &&
+    destinations.length > 0 &&
+    !/\b(something|it|that)\b/i.test(plan.prompt)
+  ) {
+    return true;
+  }
+
+  if (
+    destinations.includes("Finance") &&
+    /\b(overspend|overspending|spent|spending)\b/i.test(plan.prompt)
+  ) {
+    return true;
+  }
+
+  if (/\b(i am hungry|i'?m hungry)\b/i.test(plan.prompt) && destinations.length > 0) {
+    return true;
+  }
+
   const timeline = plan.timeline;
+  if (
+    (destinations.includes("Relationships") || destinations.includes("Family")) &&
+    !timeline?.startDate &&
+    !timeline?.deadlineDate &&
+    !timeline?.isTimed
+  ) {
+    return true;
+  }
+
   if (!timeline) return false;
 
   const confidence = timeline.confidence ?? 0;
@@ -409,7 +457,7 @@ export function prepareUniversalCapture(
   const trimmed = text.trim();
   const plan = enrichCapturePlan(
     createPulsePlan(trimmed, {
-      timeline: { now: reference },
+      timeline: { now: reference, timeZone: context.timeZone },
       categoryHint: context.categoryHint,
     }),
     reference,
@@ -425,7 +473,7 @@ export function prepareUniversalCapture(
       const destinations = sanitizeSyncDestinations(
         resolveSyncDestinations(plan, context.categoryHint).length > 0
           ? resolveSyncDestinations(plan, context.categoryHint)
-          : ["Calendar"],
+          : ["Goals"],
       );
       const title = compactCaptureTitle(plan);
       const preview = buildSyncPreviewViewModel(plan, buildPreviewContext(context));
@@ -451,7 +499,7 @@ export function prepareUniversalCapture(
     })();
 
   if (finalPrepared.destinations.length === 0) {
-    finalPrepared.destinations = ["Calendar"];
+    finalPrepared.destinations = ["Goals"];
   }
 
   return finalPrepared;

@@ -17,6 +17,7 @@ import {
 } from "@/lib/sync-time-blocks";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
 import { analyzeConsequences } from "@/lib/intelligence/consequence-engine";
+import { classifyLifeNote } from "@/lib/intelligence/life-note-classifier";
 import type { SyncUserContext } from "@/lib/intelligence/sync-user-context";
 import { titleCaseKeep } from "@/lib/pulse/parse-pulse-prompt";
 import { resolveSyncDestinations, sanitizeSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";
@@ -220,6 +221,14 @@ function isReadyToSave(
   }
 
   if (mode !== "create") return false;
+
+  const lifeNote = classifyLifeNote(plan.prompt);
+  if (
+    destinations.length > 0 &&
+    (lifeNote?.kind === "financial_state" || lifeNote?.kind === "no_plan")
+  ) {
+    return true;
+  }
 
   const score = plan.timeline?.confidence ?? 0;
   const hasDate = Boolean(

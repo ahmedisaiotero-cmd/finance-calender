@@ -586,4 +586,21 @@ function assertLifeAreaDestinationsOnly(
   assert.ok(forecast.cards.some((card) => card.message === "Payday is coming up."));
 }
 
+{
+  const august = new Date("2026-08-20T15:00:00");
+  const rent = resolveTimeline("rent is due on the first", { now: august });
+  assert.equal(rent.deadlineDate, "2026-09-01");
+  assert.equal(rent.timelineRole, "deadline");
+
+  const paid = resolveTimeline("i got paid today", { now: august });
+  assert.equal(paid.startDate, "2026-08-20");
+
+  const utcMorning = new Date("2026-08-21T02:00:00Z");
+  const localToday = resolveTimeline("i got paid today", {
+    now: utcMorning,
+    timeZone: "America/Los_Angeles",
+  });
+  assert.equal(localToday.startDate, "2026-08-20");
+}
+
 console.log("Timeline resolution tests passed");

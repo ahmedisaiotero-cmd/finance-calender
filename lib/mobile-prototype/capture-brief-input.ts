@@ -279,3 +279,6 @@ export function formatCaptureAcknowledgment(
 
   return voiceAcknowledgment(kind, captured.title, acknowledgmentDetail);
 }
+
+export { applyChatTurn } from "@/lib/sync-capture/apply-chat-turn";
+export { interpretChatTurn } from "@/lib/sync-capture/interpret-chat-turn";

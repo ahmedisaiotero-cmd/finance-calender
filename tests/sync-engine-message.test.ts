@@ -80,7 +80,7 @@ const examples: MessageExample[] = [
     remembered: true,
     category: "general",
     timeframe: "today",
-    destination: "Calendar",
+    destination: "Goals",
   },
 ] as const;
 

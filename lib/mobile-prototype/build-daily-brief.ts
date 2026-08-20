@@ -77,7 +77,7 @@ function isPaydayItem(item: CapturedSyncItem) {
   const text = `${item.title} ${item.prompt}`.toLowerCase();
   return (
     item.moneyType === "income" ||
-    /\b(payday|pay day|get paid|paycheck)\b/.test(text) ||
+    /\b(payday|pay day|get paid|got paid|paycheck)\b/.test(text) ||
     item.title === "Payday" ||
     item.title === "Upcoming Paycheck"
   );

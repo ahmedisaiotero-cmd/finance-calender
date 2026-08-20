@@ -93,8 +93,9 @@ export function buildEditPlanFromCommand(
   const dateLabel = commandIntent.toDateLabel ?? existing.dateLabel;
   const startTime = commandIntent.toTime ?? existing.timeline?.startTime;
   const timeLabel = startTime ? formatClock(startTime) : "";
+  const restated = originalCommand.replace(/^(actually|wait,)[, ]*/i, "").trim();
   const plan = createPulsePlan(
-    [existing.title, dateLabel, timeLabel].filter(Boolean).join(" "),
+    restated || [existing.title, dateLabel, timeLabel].filter(Boolean).join(" "),
     { timeline },
   );
 

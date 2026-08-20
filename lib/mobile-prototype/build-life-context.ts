@@ -49,7 +49,7 @@ function isPaydayMemory(item: CapturedSyncItem) {
   const text = `${item.title} ${item.originalPrompt ?? item.prompt}`.toLowerCase();
   return (
     item.moneyType === "income" ||
-    /\b(payday|pay day|get paid|paycheck)\b/.test(text)
+    /\b(payday|pay day|get paid|got paid|paycheck)\b/.test(text)
   );
 }
 
@@ -388,7 +388,17 @@ export function buildLifeContextForecast(input: {
     return FORECAST_TOMORROW_MORNING_PACKED;
   }
 
-  if (!overlaps(FORECAST_SPACE_EVENING)) {
+  const timedToday = input.blocks.filter((block) => block.isTimed && block.startTime);
+  const eveningBusy = timedToday.some((block) => {
+    const hour = Number(block.startTime?.split(":")[0]);
+    return !Number.isNaN(hour) && hour >= 17;
+  });
+
+  if (
+    timedToday.length > 0 &&
+    !eveningBusy &&
+    !overlaps(FORECAST_SPACE_EVENING)
+  ) {
     return FORECAST_SPACE_EVENING;
   }
 

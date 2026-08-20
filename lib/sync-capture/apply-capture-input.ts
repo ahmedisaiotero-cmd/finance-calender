@@ -37,11 +37,22 @@ export type ApplyCaptureContext = {
   categoryHint?: CaptureCategoryHint;
   captureSource?: import("@/lib/sync-capture/capture-source").CaptureSource;
   voiceTranscript?: string;
+  timeZone?: string;
+  forceSaveUncertain?: boolean;
 };
 
 export type ApplyCaptureHandlers = {
   addCapturedItem: (
-    ...args: Parameters<typeof saveCapture>[1] extends infer T ? [T] : never
+    plan: PreparedCapture["plan"] & { status: "saved" },
+    destinations: PreparedCapture["destinations"],
+    title?: string,
+    extras?: {
+      meaning?: MeaningAnalysis;
+      protectedTime?: CapturedSyncItem["protectedTime"];
+      understanding?: string;
+      captureSource?: CapturedSyncItem["captureSource"];
+      voiceTranscript?: string;
+    },
   ) => CapturedSyncItem;
   updateCapturedItem: (
     id: string,
@@ -153,6 +164,7 @@ function pipelineContext(
     categoryHint: context.categoryHint,
     captureSource: context.captureSource,
     voiceTranscript: context.voiceTranscript,
+    timeZone: context.timeZone,
   };
 }
 
@@ -170,19 +182,7 @@ function captureSaveOptions(
 export function applyCaptureInput(
   text: string,
   context: ApplyCaptureContext,
-  handlers: {
-    addCapturedItem: (
-      plan: PreparedCapture["plan"] & { status: "saved" },
-      destinations: PreparedCapture["destinations"],
-      title?: string,
-      extras?: { meaning?: PreparedCapture["meaning"] },
-    ) => CapturedSyncItem;
-    updateCapturedItem: (
-      id: string,
-      updates: Partial<CapturedSyncItem>,
-    ) => CapturedSyncItem | null;
-    softDeleteCapturedItem: (id: string) => void;
-  },
+  handlers: ApplyCaptureHandlers,
 ): ApplyCaptureResult {
   const trimmed = text.trim();
   if (!trimmed) return { status: "empty" };
@@ -251,7 +251,11 @@ export function applyCaptureInput(
       action.primaryTarget,
       action.commandIntent,
       trimmed,
-      { now: reference, userContext: { workSchedule: context.workSchedule ?? undefined } },
+      {
+        now: reference,
+        timeZone: context.timeZone,
+        userContext: { workSchedule: context.workSchedule ?? undefined },
+      },
     );
     const enriched = enrichCapturePlan(plan, reference);
     const prepared = prepareCaptureFromText(trimmed, {
@@ -320,6 +324,10 @@ export function applyCaptureInput(
       title: prepared.title,
       overlapNotice,
     };
+  }
+
+  if (context.forceSaveUncertain === false) {
+    return { status: "too_vague", message: VAGUE_CAPTURE_MESSAGE };
   }
 
   const fallback = forceSaveUniversalCapture(

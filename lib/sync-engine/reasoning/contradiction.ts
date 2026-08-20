@@ -37,9 +37,13 @@ function normalize(text: string) {
 }
 
 function rentDueDay(text: string): string | null {
-  const match = text.match(/\brent\s+is\s+due\s+(?:on\s+)?([a-z]+)\b/i);
+  const match = text.match(
+    /\brent\s+is\s+due\s+(?:on\s+)?(?:the\s+)?(\d{1,2}(?:st|nd|rd|th)?|first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|[a-z]+)\b/i,
+  );
   if (!match?.[1]) return null;
-  return match[1].toLowerCase();
+  const value = match[1].toLowerCase();
+  if (value === "the") return null;
+  return value;
 }
 
 function birthdayDay(text: string): string | null {
