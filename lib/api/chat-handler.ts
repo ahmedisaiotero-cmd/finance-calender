@@ -20,6 +20,7 @@ import {
   publicOpenAIChatError,
   resolveOpenAIApiKey,
   resolveOpenAIChatModel,
+  SYNC_CHAT_CONVERSATION_POLICY,
 } from "@/lib/api/openai-chat-config";
 import { loadRequestIdentity } from "@/lib/auth/load-request-identity";
 import type { RequestIdentity } from "@/lib/auth/request-identity";
@@ -57,13 +58,13 @@ export function fallbackReply(body: ChatRequestBody): string {
   const tone = clampChatText(body.profile?.tone, 40) || "balanced";
 
   if (/\b(skip|didn't|did not|forgot)\b/.test(lower)) {
-    return "Got it — no judgment. Want to move it, or let it go this week?";
+    return "Got it — no judgment.";
   }
 
   if (/\b(stress|anxious|overwhelm|tired)\b/.test(lower)) {
     return tone === "direct"
       ? `Noted, ${who}. I'll keep the briefing lighter.`
-      : `That sounds like a lot, ${who}. I'll readjust — want to say more?`;
+      : `That sounds like a lot, ${who}. I'll readjust.`;
   }
 
   return "Thanks for telling me. I'll readjust your briefing around this.";
@@ -85,16 +86,15 @@ export function chatPromptContextFromIdentity(
 }
 
 export function systemPromptFromContext(context: ChatPromptContext) {
-  return `You are Sync — a calm personal reasoning companion. Not a chatbot, not a coach.
+  return `${SYNC_CHAT_CONVERSATION_POLICY}
 
-Voice: curious, concise, compassionate. Never shame. Never say "failed", "missed", or "behind".
-Reply in 1-3 short sentences. Ask at most one curious follow-up when it helps.
-Tone setting: ${context.tone}.
+Voice: calm, observant, concise, trustworthy. Never shame. Never say "failed", "missed", or "behind".
+Directness: ${context.tone}.
 User name: ${context.name}.
 ${context.workingToward ? `Working toward: ${context.workingToward}.` : ""}
 ${context.currentStress ? `Current stress context: ${context.currentStress}.` : ""}
 
-If the user shares life events, acknowledge and remember the shape of it — do not invent facts.`;
+Do not invent facts.`;
 }
 
 /** @deprecated Use systemPromptFromContext with server-loaded profile. */
@@ -180,7 +180,7 @@ export async function defaultCallChatDownstream(input: {
         })),
         { role: "user" as const, content: input.message },
       ],
-      maxTokens: 180,
+      maxTokens: 240,
       temperature: 0.6,
     });
 
