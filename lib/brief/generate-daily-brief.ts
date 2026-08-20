@@ -57,18 +57,17 @@ function whyForItem(text: string, profile: SyncUserProfile): string | null {
     return `Connected to what you're working toward: ${goal}.`;
   }
 
+  const protectedTime = profile.protectedCalendar?.trim();
   if (
-    profile.protectedCalendar?.trim() &&
-    /\b(family|gym|workout|sleep|kids|partner)\b/i.test(text)
+    protectedTime &&
+    text.toLowerCase().includes(protectedTime.toLowerCase())
   ) {
     return "You asked Sync to protect time like this.";
   }
 
-  if (profile.currentStress?.trim() && profile.priorities.length > 0) {
-    const area = profile.priorities[0];
-    if (new RegExp(area, "i").test(text)) {
-      return `${area} is on your radar right now.`;
-    }
+  const pressure = profile.currentStress?.trim();
+  if (pressure && text.toLowerCase().includes(pressure.toLowerCase())) {
+    return "You said this is demanding attention right now.";
   }
 
   return null;
@@ -124,8 +123,14 @@ function buildCuriousHook(
     return `You mentioned ${goal} — want to talk about how this week looks?`;
   }
 
-  if (profile.currentStress?.trim()) {
-    return `You mentioned stress around ${profile.currentStress.trim()} — anything shifted since then?`;
+  const pressure = profile.currentStress?.trim();
+  if (
+    pressure &&
+    items.some((item) =>
+      item.text.toLowerCase().includes(pressure.toLowerCase()),
+    )
+  ) {
+    return `You mentioned ${pressure} — anything shifted since then?`;
   }
 
   return null;

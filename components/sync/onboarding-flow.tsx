@@ -5,59 +5,50 @@ import { useRouter } from "next/navigation";
 
 import { SyncLogo } from "@/components/brand/sync-logo";
 import { Button } from "@/components/ui/button";
-import { applyLifeProfile } from "@/lib/mobile-prototype/apply-life-profile";
 import { useCapturedItems } from "@/lib/captured-items";
 import {
-  CHECK_IN_OPTIONS,
-  DAY_STYLE_OPTIONS,
+  completeOnboardingSubmission,
+  canEnterAuthenticatedHome,
+  interpretProfileGetResponse,
+  sanitizeSyncUserProfile,
+} from "@/lib/sync-profile/complete-onboarding";
+import { materializeOnboardingReading } from "@/lib/sync-profile/materialize-onboarding-reading";
+import {
+  applyInitialReadingCorrection,
+  buildOnboardingInitialReading,
+  nextOnboardingStep,
+  onboardingQuestionCount,
+  onboardingQuestionIndex,
+  pressureQuestion,
+  shouldAskGoalQuestion,
+  type OnboardingStepId,
+} from "@/lib/sync-profile/onboarding-reading";
+import {
+  CONSTRAINT_OPTIONS,
   DIRECTNESS_OPTIONS,
   EMPTY_USER_PROFILE,
-  PRIORITY_OPTIONS,
+  GOAL_TIMEFRAME_OPTIONS,
+  ONBOARDING_PRIORITY_OPTIONS,
+  loadUserProfile,
+  saveUserProfile,
   toggleProfileChip,
+  type GoalTimeframe,
   type SyncUserProfile,
 } from "@/lib/sync-profile/user-profile";
 import { cn } from "@/lib/utils";
-
-type OnboardingStep =
-  | "intro"
-  | "name"
-  | "day-style"
-  | "priorities"
-  | "stress"
-  | "working-toward"
-  | "check-in"
-  | "directness"
-  | "protected"
-  | "coming-up"
-  | "building";
-
-const FLOW_STEPS: OnboardingStep[] = [
-  "name",
-  "day-style",
-  "priorities",
-  "stress",
-  "working-toward",
-  "check-in",
-  "directness",
-  "protected",
-  "coming-up",
-];
-
-function stepMeta(step: OnboardingStep) {
-  const index = FLOW_STEPS.indexOf(step);
-  return index === -1 ? null : { current: index + 1, total: FLOW_STEPS.length };
-}
 
 function OnboardingShell({
   eyebrow,
   question,
   step,
+  total,
   children,
   footer,
 }: {
   eyebrow: string;
   question: string;
-  step: { current: number; total: number };
+  step: number;
+  total: number;
   children: React.ReactNode;
   footer: React.ReactNode;
 }) {
@@ -65,7 +56,7 @@ function OnboardingShell({
     <div className="flex min-h-[70vh] flex-col justify-between gap-8">
       <div className="space-y-4">
         <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-          {step.current} of {step.total}
+          {step} of {total}
         </p>
         <p className="text-[11px] font-semibold uppercase tracking-widest text-primary/80">
           {eyebrow}
@@ -119,44 +110,115 @@ function ChipGrid({
 
 export function SyncOnboardingFlow() {
   const router = useRouter();
-  const { activeItems, addCapturedItem } = useCapturedItems();
-  const [step, setStep] = useState<OnboardingStep>("intro");
+  const { activeItems, addCapturedItem, hydrated } = useCapturedItems();
+  const [step, setStep] = useState<OnboardingStepId>("intro");
   const [profile, setProfile] = useState<SyncUserProfile>(EMPTY_USER_PROFILE);
-  const appliedRef = useRef(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+  const redirectingRef = useRef(false);
 
   const update = (patch: Partial<SyncUserProfile>) => {
     setProfile((current) => ({ ...current, ...patch }));
   };
 
   useEffect(() => {
-    if (step !== "building" || appliedRef.current) return;
-    appliedRef.current = true;
+    if (!hydrated || redirectingRef.current) return;
 
-    const completed: SyncUserProfile = {
-      ...profile,
-      onboardingComplete: true,
-      updatedAt: new Date().toISOString(),
-    };
-
-    applyLifeProfile(completed, {
-      items: activeItems,
-      addCapturedItem,
-    });
-
-    void fetch("/api/profile", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(completed),
-    }).catch(() => {
-      // local profile is source of truth when auth/db unavailable
-    });
-
-    const timer = window.setTimeout(() => {
+    if (canEnterAuthenticatedHome(loadUserProfile())) {
+      redirectingRef.current = true;
       router.replace("/");
-    }, 2200);
+      return;
+    }
 
-    return () => window.clearTimeout(timer);
-  }, [step, profile, activeItems, addCapturedItem, router]);
+    let cancelled = false;
+
+    async function checkRemote() {
+      try {
+        const response = await fetch("/api/profile", { credentials: "include" });
+        const body = (await response.json().catch(() => ({}))) as {
+          profile?: unknown;
+        };
+        const interpreted = interpretProfileGetResponse({
+          ok: response.ok,
+          status: response.status,
+          body: {
+            profile: body.profile
+              ? sanitizeSyncUserProfile(body.profile)
+              : null,
+          },
+        });
+        if (cancelled || redirectingRef.current) return;
+        if (canEnterAuthenticatedHome(interpreted.profile)) {
+          saveUserProfile(interpreted.profile!);
+          redirectingRef.current = true;
+          router.replace("/");
+        }
+      } catch {
+        // Stay on onboarding if remote cannot be read.
+      }
+    }
+
+    void checkRemote();
+    return () => {
+      cancelled = true;
+    };
+  }, [hydrated, router]);
+
+  async function finishOnboarding() {
+    if (pending) return;
+    setError(null);
+    setPending(true);
+    setStep("building");
+
+    const result = await completeOnboardingSubmission({
+      profile,
+      applyLocal: (completed) => {
+        materializeOnboardingReading(completed, {
+          items: activeItems,
+          addCapturedItem,
+        });
+      },
+      saveRemote: async (completed) => {
+        const response = await fetch("/api/profile", {
+          method: "PUT",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(completed),
+        });
+        const data = (await response.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        return {
+          ok: response.ok,
+          status: response.status,
+          error: data.error,
+        };
+      },
+    });
+
+    if (!result.ok) {
+      setError(result.error);
+      setPending(false);
+      setStep("reading");
+      return;
+    }
+
+    router.replace("/");
+    router.refresh();
+  }
+
+  const total = onboardingQuestionCount(profile);
+  const index = onboardingQuestionIndex(step, profile);
+  const continueButton = (disabled: boolean, next: OnboardingStepId, label = "Continue") => (
+    <Button
+      size="lg"
+      className="h-12 w-full rounded-xl sm:w-auto"
+      disabled={disabled}
+      onClick={() => setStep(next)}
+    >
+      {label}
+    </Button>
+  );
 
   if (step === "intro") {
     return (
@@ -165,10 +227,15 @@ export function SyncOnboardingFlow() {
           <SyncLogo size="md" />
           <h1 className="text-4xl font-semibold tracking-tight">Stay in Sync.</h1>
           <p className="max-w-md text-lg text-muted-foreground">
-            Tell me what matters. I&apos;ll remember — curious, not pushy.
+            A short first reading — what matters, what&apos;s pressing, and how
+            direct I should be.
           </p>
         </div>
-        <Button size="lg" className="h-12 rounded-xl" onClick={() => setStep("name")}>
+        <Button
+          size="lg"
+          className="h-12 rounded-xl"
+          onClick={() => setStep(nextOnboardingStep("intro", profile))}
+        >
           Begin
         </Button>
       </div>
@@ -183,33 +250,23 @@ export function SyncOnboardingFlow() {
           Building your first briefing…
         </h2>
         <p className="text-muted-foreground">
-          I&apos;m learning the shape of your life.
+          I&apos;m taking in what you just told me.
         </p>
       </div>
     );
   }
-
-  const meta = stepMeta(step);
-  if (!meta) return null;
-
-  const continueButton = (disabled: boolean, next: OnboardingStep, label = "Continue") => (
-    <Button
-      size="lg"
-      className="h-12 w-full rounded-xl sm:w-auto"
-      disabled={disabled}
-      onClick={() => setStep(next)}
-    >
-      {label}
-    </Button>
-  );
 
   if (step === "name") {
     return (
       <OnboardingShell
         eyebrow="Starting point"
         question="What should I call you?"
-        step={meta}
-        footer={continueButton(!profile.name.trim(), "day-style")}
+        step={index + 1}
+        total={total}
+        footer={continueButton(
+          !profile.name.trim(),
+          nextOnboardingStep("name", profile),
+        )}
       >
         <input
           autoFocus
@@ -222,53 +279,45 @@ export function SyncOnboardingFlow() {
     );
   }
 
-  if (step === "day-style") {
-    return (
-      <OnboardingShell
-        eyebrow="Your rhythm"
-        question="What does a good day look like for you?"
-        step={meta}
-        footer={continueButton(!profile.dayStyle, "priorities")}
-      >
-        <ChipGrid
-          options={DAY_STYLE_OPTIONS}
-          selected={profile.dayStyle}
-          onToggle={(value) => update({ dayStyle: value as SyncUserProfile["dayStyle"] })}
-        />
-      </OnboardingShell>
-    );
-  }
-
-  if (step === "priorities") {
+  if (step === "matters") {
     return (
       <OnboardingShell
         eyebrow="What matters"
-        question="What areas should I keep an eye on?"
-        step={meta}
-        footer={continueButton(profile.priorities.length === 0, "stress")}
+        question="What currently matters most?"
+        step={index + 1}
+        total={total}
+        footer={continueButton(
+          profile.priorities.length === 0,
+          nextOnboardingStep("matters", profile),
+        )}
       >
+        <p className="mb-4 text-sm text-muted-foreground">Pick one or two.</p>
         <ChipGrid
-          options={PRIORITY_OPTIONS}
+          options={ONBOARDING_PRIORITY_OPTIONS}
           selected={profile.priorities}
           onToggle={(value) =>
-            update({ priorities: toggleProfileChip(profile.priorities, value) })
+            update({
+              priorities: toggleProfileChip(profile.priorities, value).slice(0, 2),
+            })
           }
         />
       </OnboardingShell>
     );
   }
 
-  if (step === "stress") {
+  if (step === "pressure") {
+    const copy = pressureQuestion(profile);
     return (
       <OnboardingShell
-        eyebrow="Right now"
-        question="What's stressing you most right now?"
-        step={meta}
-        footer={continueButton(false, "working-toward")}
+        eyebrow={copy.eyebrow}
+        question={copy.question}
+        step={index + 1}
+        total={total}
+        footer={continueButton(false, nextOnboardingStep("pressure", profile))}
       >
         <textarea
           className="min-h-28 w-full rounded-xl border border-border/60 bg-muted/10 px-4 py-3 text-base outline-none focus:border-primary/40"
-          placeholder="Optional — helps me calibrate tone, not alarms."
+          placeholder={copy.placeholder}
           value={profile.currentStress}
           onChange={(e) => update({ currentStress: e.target.value })}
         />
@@ -276,39 +325,74 @@ export function SyncOnboardingFlow() {
     );
   }
 
-  if (step === "working-toward") {
+  if (step === "coming-up") {
     return (
       <OnboardingShell
-        eyebrow="Direction"
-        question="What are you working toward in the next few months?"
-        step={meta}
-        footer={continueButton(false, "check-in")}
+        eyebrow="On the horizon"
+        question="Anything important coming up?"
+        step={index + 1}
+        total={total}
+        footer={continueButton(false, nextOnboardingStep("coming-up", profile))}
       >
         <textarea
           className="min-h-28 w-full rounded-xl border border-border/60 bg-muted/10 px-4 py-3 text-base outline-none focus:border-primary/40"
-          placeholder="Savings, a project, more balance…"
-          value={profile.workingToward}
-          onChange={(e) => update({ workingToward: e.target.value })}
+          placeholder="Rent Friday, trip next month, big meeting Thursday…"
+          value={profile.comingUp}
+          onChange={(e) => update({ comingUp: e.target.value })}
         />
       </OnboardingShell>
     );
   }
 
-  if (step === "check-in") {
+  if (step === "goal") {
     return (
       <OnboardingShell
-        eyebrow="Timing"
-        question="When do you usually have 30 seconds to check in?"
-        step={meta}
-        footer={continueButton(!profile.checkInTime, "directness")}
+        eyebrow="Direction"
+        question={
+          shouldAskGoalQuestion(profile)
+            ? "One thing you're working toward, if you have it?"
+            : "What's making that harder right now?"
+        }
+        step={index + 1}
+        total={total}
+        footer={continueButton(false, nextOnboardingStep("goal", profile))}
       >
-        <ChipGrid
-          options={CHECK_IN_OPTIONS}
-          selected={profile.checkInTime}
-          onToggle={(value) =>
-            update({ checkInTime: value as SyncUserProfile["checkInTime"] })
-          }
-        />
+        {shouldAskGoalQuestion(profile) ? (
+          <div className="space-y-4">
+            <textarea
+              className="min-h-24 w-full rounded-xl border border-border/60 bg-muted/10 px-4 py-3 text-base outline-none focus:border-primary/40"
+              placeholder="Two months of rent saved, finish the deck, get sleep back…"
+              value={profile.workingToward}
+              onChange={(e) => update({ workingToward: e.target.value })}
+            />
+            <ChipGrid
+              options={GOAL_TIMEFRAME_OPTIONS}
+              selected={profile.goalTimeframe}
+              onToggle={(value) =>
+                update({
+                  goalTimeframe:
+                    profile.goalTimeframe === value
+                      ? ""
+                      : (value as GoalTimeframe),
+                })
+              }
+            />
+          </div>
+        ) : null}
+        <div className={shouldAskGoalQuestion(profile) ? "mt-6 space-y-3" : "space-y-3"}>
+          <p className="text-sm text-muted-foreground">
+            Anything tight right now?
+          </p>
+          <ChipGrid
+            options={CONSTRAINT_OPTIONS}
+            selected={profile.constraints}
+            onToggle={(value) =>
+              update({
+                constraints: toggleProfileChip(profile.constraints, value),
+              })
+            }
+          />
+        </div>
       </OnboardingShell>
     );
   }
@@ -317,9 +401,13 @@ export function SyncOnboardingFlow() {
     return (
       <OnboardingShell
         eyebrow="Tone"
-        question="How direct should I be?"
-        step={meta}
-        footer={continueButton(!profile.directness, "protected")}
+        question="How direct should I be when something has a consequence?"
+        step={index + 1}
+        total={total}
+        footer={continueButton(
+          !profile.directness,
+          nextOnboardingStep("directness", profile),
+        )}
       >
         <ChipGrid
           options={DIRECTNESS_OPTIONS}
@@ -332,46 +420,60 @@ export function SyncOnboardingFlow() {
     );
   }
 
-  if (step === "protected") {
+  if (step === "reading") {
+    const reading = buildOnboardingInitialReading(profile);
     return (
       <OnboardingShell
-        eyebrow="Protected time"
-        question="Anything I should always protect on your calendar?"
-        step={meta}
-        footer={continueButton(false, "coming-up")}
-      >
-        <textarea
-          className="min-h-28 w-full rounded-xl border border-border/60 bg-muted/10 px-4 py-3 text-base outline-none focus:border-primary/40"
-          placeholder="Family dinners, workouts, sleep…"
-          value={profile.protectedCalendar}
-          onChange={(e) => update({ protectedCalendar: e.target.value })}
-        />
-      </OnboardingShell>
-    );
-  }
-
-  if (step === "coming-up") {
-    return (
-      <OnboardingShell
-        eyebrow="On the horizon"
-        question="Anything important coming up?"
-        step={meta}
+        eyebrow="First reading"
+        question="Does this match what you told me?"
+        step={total}
+        total={total}
         footer={
-          <Button
-            size="lg"
-            className="h-12 w-full rounded-xl sm:w-auto"
-            onClick={() => setStep("building")}
-          >
-            See my briefing
-          </Button>
+          <div className="space-y-3">
+            {error ? (
+              <p className="text-[13px] text-red-600/90 dark:text-red-400/90">
+                {error}
+              </p>
+            ) : null}
+            <Button
+              size="lg"
+              className="h-12 w-full rounded-xl sm:w-auto"
+              disabled={pending}
+              onClick={() => void finishOnboarding()}
+            >
+              See my briefing
+            </Button>
+          </div>
         }
       >
-        <textarea
-          className="min-h-28 w-full rounded-xl border border-border/60 bg-muted/10 px-4 py-3 text-base outline-none focus:border-primary/40"
-          placeholder="Rent Friday, trip next month, big meeting Thursday…"
-          value={profile.comingUp}
-          onChange={(e) => update({ comingUp: e.target.value })}
-        />
+        <div className="space-y-4">
+          {reading.length === 0 ? (
+            <p className="text-muted-foreground">
+              Sync will stay quiet until there&apos;s something specific to hold.
+            </p>
+          ) : (
+            reading.map((item) => (
+              <label key={item.id} className="block space-y-1">
+                <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+                  {item.label}
+                </span>
+                <textarea
+                  className="min-h-16 w-full rounded-xl border border-border/60 bg-muted/10 px-4 py-2 text-sm outline-none focus:border-primary/40"
+                  value={item.text}
+                  onChange={(e) =>
+                    setProfile((current) =>
+                      applyInitialReadingCorrection(
+                        current,
+                        item.id,
+                        e.target.value,
+                      ),
+                    )
+                  }
+                />
+              </label>
+            ))
+          )}
+        </div>
       </OnboardingShell>
     );
   }
