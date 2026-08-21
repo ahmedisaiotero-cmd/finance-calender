@@ -26,14 +26,14 @@ const messyInputs = [
   {
     text: "I keep delaying cancelling Uber",
     title: "Keep Delaying Cancelling Uber",
-    destinations: ["Calendar"],
-    importance: "medium",
+    destinations: ["Goals"],
+    importance: "low",
   },
   {
     text: "I thought about the vending business again",
     title: "Thought About The Vending Business Again",
-    destinations: ["Goals", "Calendar"],
-    importance: "medium",
+    destinations: ["Goals"],
+    importance: "low",
   },
   {
     text: "Payday is Friday",
@@ -50,7 +50,7 @@ const messyInputs = [
   {
     text: "I spent less this month",
     title: "Small Purchase",
-    destinations: ["Finance", "Calendar"],
+    destinations: ["Finance"],
     importance: "medium",
   },
   {
@@ -200,12 +200,12 @@ function assertDestinations(actual: string[], expected: readonly string[], text:
   assert.doesNotMatch(todayLines, /\b(graph|node|edge|dashboard)\b/i);
   assert.doesNotMatch(todayLines, /\byou should\b|\byou need to\b/i);
 
-  // Current pre-Life-Graph behavior: Decision owns Today ordering and may
-  // prioritize same-day timed Sync work over tomorrow's birthday.
+  // Timed Sync work still belongs on Today; undated thoughts should not.
   assert.match(today.primaryPriority.text, /Sync work starts at 8:00 PM/i);
-  assert.ok(
+  assert.equal(
     today.supportingPriorities.some((line) => /vending business/i.test(line.text)),
-    "current Today output includes the vending-business note as supporting context",
+    false,
+    "undated vending-business notes should not occupy Today",
   );
 }
 

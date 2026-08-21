@@ -303,6 +303,12 @@ export function cleanMemoryTitle(input: MemoryTitleInput): string {
     if (cleaned && !looksLikeRawCaptureTitle(cleaned)) {
       return cleaned;
     }
+    if (
+      /\brent\b/i.test(text) &&
+      !/\b(saved|saving|save)\b/i.test(text)
+    ) {
+      return "Rent Due";
+    }
   }
 
   if (looksLikeRawCaptureTitle(input.title) || looksLikeRawCaptureTitle(prompt)) {
@@ -317,7 +323,15 @@ export function cleanMemoryTitle(input: MemoryTitleInput): string {
     }
     if (/\banniversary\b/i.test(prompt)) return "Anniversary";
     if (isPayday(input, text)) return "Payday";
-    if (/\brent\b/i.test(text) && /\b(due|pay)\b/i.test(text)) return "Rent Due";
+    if (
+      /\brent\b/i.test(text) &&
+      /\b(due|pay|today|tomorrow|monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i.test(
+        text,
+      ) &&
+      !/\b(saved|saving|save)\b/i.test(text)
+    ) {
+      return "Rent Due";
+    }
     if (/\bshower(?:ed|ing)?\b/i.test(text)) return "Shower Logged";
     if (/\b(gym|workout)\b/i.test(text)) return "Workout";
     const relation = extractBirthdayRelation(prompt) ?? extractBirthdayRelation(input.title);

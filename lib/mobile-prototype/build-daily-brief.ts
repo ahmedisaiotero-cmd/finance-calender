@@ -98,7 +98,7 @@ function paydayPhrase(item: CapturedSyncItem, reference: Date) {
 
 function deadlineBriefSubject(item: CapturedSyncItem) {
   const prompt = (item.originalPrompt ?? item.prompt).toLowerCase();
-  if (/\brent\b/.test(prompt) && /\b(due|pay)\b/.test(prompt)) {
+  if (/\brent\b/.test(prompt) && !/\b(saved|saving|save)\b/.test(prompt)) {
     return "Rent";
   }
 

@@ -53,14 +53,34 @@ export function sanitizeSyncDestinations(
 }
 
 export function hasConcreteCalendarTiming(plan: PulsePlan) {
-  return Boolean(
-    plan.timeline?.deadlineDate ||
-      plan.timeline?.recurrence ||
-      plan.timeline?.isTimed ||
-      (plan.timeline?.startDate &&
-        plan.timeline.timelineRole !== "task" &&
-        plan.timeline.kind !== "unknown"),
-  );
+  const timeline = plan.timeline;
+  if (!timeline) return false;
+  if (timeline.deadlineDate || timeline.recurrence || timeline.isTimed) {
+    return true;
+  }
+  if (!timeline.startDate || timeline.kind === "unknown") {
+    return false;
+  }
+  if (
+    timeline.timelineRole === "log" &&
+    timeline.kind === "relative" &&
+    /^today$/i.test(timeline.label ?? "")
+  ) {
+    return false;
+  }
+  if (timeline.timelineRole === "task") {
+    return (
+      plan.category === "reminder" ||
+      plan.category === "expense" ||
+      plan.category === "subscription" ||
+      plan.category === "workout" ||
+      plan.category === "workday" ||
+      plan.category === "work-schedule" ||
+      plan.category === "date-night" ||
+      isFinanceLanguage(plan)
+    );
+  }
+  return true;
 }
 
 function hasTimelineDestination(plan: PulsePlan) {
