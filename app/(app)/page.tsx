@@ -22,12 +22,15 @@ export default function HomePage() {
   const router = useRouter();
   const { activeItems, addCapturedItem, hydrated } = useCapturedItems();
   const itemsRef = useRef(activeItems);
-  itemsRef.current = activeItems;
   const addRef = useRef(addCapturedItem);
-  addRef.current = addCapturedItem;
   const [decision, setDecision] = useState<"wait" | "enter" | "onboarding">(
     "wait",
   );
+
+  useEffect(() => {
+    itemsRef.current = activeItems;
+    addRef.current = addCapturedItem;
+  }, [activeItems, addCapturedItem]);
 
   useEffect(() => {
     if (!hydrated) return;

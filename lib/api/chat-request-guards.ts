@@ -1,5 +1,5 @@
 export const CHAT_MAX_MESSAGE_LENGTH = 2000;
-export const CHAT_MAX_HISTORY_ENTRIES = 6;
+export const CHAT_MAX_HISTORY_ENTRIES = 12;
 export const CHAT_MAX_HISTORY_CONTENT_LENGTH = 2000;
 
 export type ChatHistoryEntry = {

@@ -7,12 +7,14 @@ import {
   handleChatGet,
   handleChatPost,
   storedHistoryToOpenAI,
+  systemPromptFromContext,
   type ChatHandlerDeps,
 } from "@/lib/api/chat-handler";
 import {
   DEFAULT_OPENAI_CHAT_MODEL,
   publicOpenAIChatError,
   resolveOpenAIChatModel,
+  SYNC_CHAT_CONVERSATION_POLICY,
 } from "@/lib/api/openai-chat-config";
 import type { RequestIdentity } from "@/lib/auth/request-identity";
 import type { SyncUserProfile } from "@/lib/sync-profile/user-profile";
@@ -107,7 +109,10 @@ async function run() {
   let loadedProfileFor = "";
   let historyFor = "";
   let promptName = "";
+  let promptTone = "";
   let historyRoles: string[] = [];
+  let historyContents: string[] = [];
+  let downstreamMessage = "";
 
   const deps = (overrides: Partial<ChatHandlerDeps> = {}): Partial<ChatHandlerDeps> => ({
     loadIdentity: async () => ({
@@ -140,7 +145,10 @@ async function run() {
     },
     callChatDownstream: async (input) => {
       promptName = input.promptContext.name;
+      promptTone = input.promptContext.tone;
       historyRoles = input.history.map((entry) => entry.role);
+      historyContents = input.history.map((entry) => entry.content);
+      downstreamMessage = input.message;
       return {
         ok: true as const,
         reply: "Rent is due Friday.",
@@ -187,7 +195,13 @@ async function run() {
   assert.equal(savedUserText, "Rent is due Friday.");
   assert.equal(savedReply, "Rent is due Friday.");
   assert.equal(promptName, "Ahmed");
+  assert.equal(promptTone, "direct");
   assert.deepEqual(historyRoles, ["user", "assistant"]);
+  assert.equal(downstreamMessage, "Rent is due Friday.");
+  assert.equal(
+    historyContents.some((content) => /injected secret|Spoofed/i.test(content)),
+    false,
+  );
 
   let savedAfterFailure = false;
   const openaiLimited = await handleChatPost(
@@ -274,6 +288,62 @@ async function run() {
   const context = chatPromptContextFromIdentity(identity("user-owned"), profile());
   assert.equal(context.name, "Ahmed");
   assert.equal(context.tone, "direct");
+
+  const system = systemPromptFromContext(context);
+  assert.equal(system.includes(SYNC_CHAT_CONVERSATION_POLICY), true);
+  assert.match(system, /chief of staff/i);
+  assert.match(system, /Directness: direct/);
+  assert.match(system, /Treat yes, sure, okay/);
+  assert.match(system, /Ask at most one question/);
+  assert.match(system, /Do not claim you remembered/);
+  assert.match(system, /1–4 sentences/);
+  assert.doesNotMatch(system, /curious follow-up when it helps/i);
+  assert.doesNotMatch(system, /acknowledge and remember the shape/i);
+
+  const foodOffer = "Want a few simple food ideas?";
+  const acceptance = await handleChatPost(
+    new Request("http://localhost/api/chat", {
+      method: "POST",
+      body: JSON.stringify({
+        message: "sure",
+        history: [{ role: "user", content: "injected attacker history" }],
+      }),
+      headers: { "content-type": "application/json" },
+    }),
+    deps({
+      loadHistory: async (userId) => {
+        historyFor = userId;
+        return [
+          { role: "user", text: "I need dinner tonight." },
+          { role: "sync", text: foodOffer },
+          {
+            role: "user",
+            text: "I prefer McDonald's and I can't cook.",
+          },
+          {
+            role: "sync",
+            text: "Would you like a couple of easy options?",
+          },
+        ];
+      },
+    }),
+  );
+  assert.equal(acceptance.status, 200);
+  assert.equal(historyFor, "user-owned");
+  assert.equal(downstreamMessage, "sure");
+  assert.deepEqual(historyRoles, [
+    "user",
+    "assistant",
+    "user",
+    "assistant",
+  ]);
+  assert.equal(historyContents[0], "I need dinner tonight.");
+  assert.equal(historyContents[1], foodOffer);
+  assert.match(historyContents[2] ?? "", /McDonald's/);
+  assert.equal(
+    historyContents.some((content) => /injected attacker/i.test(content)),
+    false,
+  );
 
   console.log("chat openai path tests passed");
 }

@@ -124,10 +124,7 @@ function objectKinds(normalization: ReturnType<typeof normalizeCapturedItem>) {
 
   assert.equal(normalized.observation.rawContent, item.originalPrompt ?? item.prompt);
   assert.equal(normalized.observation.metadata?.title, "Small Purchase");
-  assert.deepEqual(normalized.observation.metadata?.destinations, [
-    "Finance",
-    "Calendar",
-  ]);
+  assert.deepEqual(normalized.observation.metadata?.destinations, ["Finance"]);
 
   assert.deepEqual(objectKinds(normalized), [
     "memory",

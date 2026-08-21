@@ -213,7 +213,9 @@ function extractBirthdaySubject(prompt: string): string | null {
 
 function deadlineSubject(item: CapturedSyncItem) {
   const prompt = (item.originalPrompt ?? item.prompt).toLowerCase();
-  if (/\brent\b/.test(prompt) && /\b(due|pay)\b/.test(prompt)) return "Rent";
+  if (/\brent\b/.test(prompt) && !/\b(saved|saving|save)\b/.test(prompt)) {
+    return "Rent";
+  }
   const title = displayMemoryTitle(item);
   if (/\bdue$/i.test(title)) return title.replace(/\s+due$/i, "").trim();
   return displayMemoryTitle(item);
