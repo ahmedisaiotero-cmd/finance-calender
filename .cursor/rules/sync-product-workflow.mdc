@@ -62,7 +62,7 @@ Answer:
 - Does this improve trustworthy decisions?
 - How does this reduce mental load?
 - What real-life behavior becomes easier?
-- Does this improve Memory, Understanding, Consequences, Judgment, Briefing, Safety, or Trust?
+- Does this improve Memory, Understanding, Consequences, Judgment, Briefing, Safety, Trust, Activity, or Passport?
 
 **If none apply: do not build it.**
 
@@ -140,6 +140,7 @@ If a proposed change includes any of the following, **stop and explain why** bef
 A change is **not complete** unless:
 
 - it improves trustworthy decisions
+- it improves Memory, Understanding, Consequences, Today, My Life, Trust, Activity, or Passport
 - it reuses shared intelligence where possible
 - it includes tests
 - it reduces clutter

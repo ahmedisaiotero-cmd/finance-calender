@@ -52,7 +52,7 @@ Do not invoke subagents merely because they exist. Do not let subagents edit fil
 - Read and follow `SYNC_WORKFLOW.md` and `SYNC_VISION.md` before meaningful product or architecture changes.
 - Treat Sync as a personal reasoning engine and daily briefing, not a planner, generic dashboard, or chatbot-first product.
 - Preserve the intelligence sequence **Memory → Understanding → Consequences → Decision/Judgment → Today**. The full pipeline in `SYNC_REASONING_SPEC.md` implements this sequence; do not fork it.
-- A requested product change must improve at least one of: **Memory, Understanding, Consequences, Today, My Life, Goals, Trust**. If none apply, pause and explain rather than forcing implementation. Goals remain a deferred product surface until `SYNC_ENGINE_ROADMAP.md` reaches that phase — do not build a Goals planner.
+- A requested product change must improve at least one of: **Memory, Understanding, Consequences, Today, My Life, Trust, Activity, or Passport**. If none apply, pause and explain rather than forcing implementation. Goals remain a deferred product surface until `SYNC_ENGINE_ROADMAP.md` reaches that phase — do not build a Goals planner.
 - Reuse shared intelligence and adapters before creating surface-specific or mobile-only logic.
 - Keep UI minimal. Avoid dashboards, productivity-page sprawl, unnecessary category tabs, excessive debug panels, and disconnected demo logic.
 - Add or update messy real-life tests for behavior changes.
@@ -79,6 +79,27 @@ Commands below are from root `package.json` and `sync-ios/package.json`. Do not 
 | Build | `npm run build` |
 
 Focused Sync Engine suites also exist as `npm run test:sync-engine:*` (see root `package.json`). Run iOS validation only when the change affects iOS, shared wrappers, or cross-platform behavior. Documentation-only changes get a diff review and lightweight checks — not a full build.
+
+## Shared GitHub work
+
+Canonical remote: `https://github.com/ahmedisaiotero-cmd/finance-calender.git` (GitHub spelling is `finance-calender`). The local folder name may differ. Environments stay synchronized **only through Git** on that repository.
+
+- If uncommitted local work could conflict, stop. Do not reset, discard, or overwrite unrelated changes.
+- Do not push secrets or `.env` files.
+- Do not add MCP servers, AI SDKs, n8n, or bots to the Sync **application**. GitHub, Vercel, and editor plugins belong in the agent environment, not in app runtime.
+- Do not change Vercel production settings or deploy unless the user explicitly asks. Linked deploy project: `finance-calender-g6ay` on Vercel team `ahmedisaiotero-cmds-projects` (GitHub org `ahmedisaiotero-cmd`).
+
+## Working approach (main-first)
+
+Supervised Sync development happens **directly on `main`**.
+
+- Before every task, pull `main` and confirm the working-tree state. Preserve unrelated local work.
+- Make small, focused commits so every completed step is an easy rollback point.
+- Never combine unrelated changes in one commit.
+- Never rewrite `main` history or force-push.
+- Do not apply destructive database migrations or production changes without asking first.
+- Unattended Cloud/background agents should use temporary branches when Cursor requires them, then merge only after verification.
+- Do not delete historical save/reference branches unless asked. Keep `cursor/ai-activity-foundation` as the Activity + Passport foundation reference.
 
 ## Engine-first priorities
 
@@ -135,7 +156,7 @@ Every change must improve at least one engine stage:
 - Safety
 - Trust
 
-A requested **product** change must improve at least one of: Memory, Understanding, Consequences, Today, My Life, Goals, or Trust. Goals product expansion waits until the intelligence foundation is stable (`SYNC_ENGINE_ROADMAP.md`).
+A requested **product** change must improve at least one of: Memory, Understanding, Consequences, Today, My Life, Trust, Activity, or Passport. Goals product expansion waits until the intelligence foundation is stable (`SYNC_ENGINE_ROADMAP.md`).
 
 Legacy surfaces Today and My Life consume engine output — improve them only when trust work requires it.
 

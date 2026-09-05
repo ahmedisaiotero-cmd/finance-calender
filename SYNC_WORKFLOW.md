@@ -12,6 +12,8 @@ Every change must improve at least one of:
 - **Today**
 - **My Life**
 - **Trust**
+- **Activity**
+- **Passport**
 - **Sync Engine**
 
 If it does not improve one of these, **do not build it.**
