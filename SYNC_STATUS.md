@@ -40,8 +40,6 @@ Last reviewed from repository inspection on the current `main` branch.
 
 ## Known open risks
 
-1. Unscoped Supabase timeline path remains available as a library helper but is not used by `/api/timeline`
-2. Production must apply `ChatRateLimitWindow` migration before relying on chat metering in deploy
-3. Transitive npm audit findings (hono / js-yaml / ip-address / jsondiffpatch) — no forced upgrades applied
-4. sync-ios full `tsc` still struggles with `@/` path resolution against linked shared `lib`
-5. Chat UI may still soft-fallback locally on non-OK API responses (auth/limit errors not yet surfaced in UI)
+1. Production must apply `ChatRateLimitWindow` migration before relying on chat metering in deploy
+2. Remaining npm audit findings need breaking upgrades (`ai` v7, Prisma config / `deepmerge-ts`) — not applied
+3. sync-ios full `tsc` still struggles with `@/` path resolution against linked shared `lib`

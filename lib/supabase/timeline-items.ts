@@ -1,5 +1,4 @@
 import { toDateKey } from "@/lib/calendar-utils";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { TimelineEvent, TimelineEventDetail } from "@/lib/timeline-events";
 
 export type SupabaseTimelineItemRow = {
@@ -19,13 +18,6 @@ const VALID_CATEGORIES = new Set([
   "personal",
   "relationships",
 ]);
-
-function monthDateBounds(year: number, month: number) {
-  const start = `${year}-${String(month + 1).padStart(2, "0")}-01`;
-  const lastDay = new Date(year, month + 1, 0).getDate();
-  const end = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-  return { start, end };
-}
 
 function normalizeStatus(status: string) {
   return status.toLowerCase();
@@ -83,29 +75,16 @@ export function supabaseTimelineRowToEvent(
   };
 }
 
+/**
+ * Unscoped month-range reads are disabled. `/api/timeline` uses Prisma
+ * workspace scope. Callers must not query `timeline_items` until the table
+ * has an owner field and RLS.
+ */
 export async function getTimelineItemsFromSupabase(
-  year: number,
-  month: number,
+  _year: number,
+  _month: number,
 ): Promise<TimelineEvent[]> {
-  const supabase = createSupabaseServerClient();
-  const { start, end } = monthDateBounds(year, month);
-
-  const { data, error } = await supabase
-    .from("timeline_items")
-    .select("id, title, category, date, status, detail, created_at")
-    .gte("date", start)
-    .lte("date", end)
-    .order("date", { ascending: true })
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    console.error(
-      "Supabase timeline_items query failed:",
-      error.code,
-      error.message,
-    );
-    throw error;
-  }
-
-  return (data as SupabaseTimelineItemRow[] | null)?.map(supabaseTimelineRowToEvent) ?? [];
+  throw new Error(
+    "Unscoped Supabase timeline_items reads are disabled until owner + RLS exist.",
+  );
 }

@@ -3,6 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { applyChatTurn } from "@/lib/sync-capture/apply-chat-turn";
+import {
+  chatClientFailureMessage,
+  shouldPersistChatCapture,
+} from "@/lib/api/chat-client-safety";
 import { loadLifeProfile } from "@/lib/mobile-prototype/life-profile";
 import { profileTone } from "@/lib/sync-profile/user-profile";
 import { useCapturedItems } from "@/lib/captured-items";
@@ -77,31 +81,13 @@ export function ChatSurface() {
       text: trimmed,
     };
 
-    applyChatTurn(
-      trimmed,
-      {
-        items: activeItems,
-        workSchedule: loadActiveWorkSchedule() ?? null,
-        reference,
-        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        priorAssistantText: [...messages]
-          .reverse()
-          .find((message) => message.role === "sync")?.text,
-      },
-      {
-        addCapturedItem,
-        updateCapturedItem,
-        softDeleteCapturedItem,
-      },
-    );
-
     const nextMessages = [...messages, userMessage];
     setMessages(nextMessages);
     setInput("");
     setPending(true);
 
-    let reply =
-      "Thanks for telling me. I'll readjust your briefing around this.";
+    let reply = "";
+    let persistCapture = false;
 
     try {
       const response = await fetch("/api/chat", {
@@ -114,13 +100,34 @@ export function ChatSurface() {
       });
 
       const data = (await response.json()) as { reply?: string; error?: string };
-      if (response.ok && data.reply?.trim()) {
+      persistCapture = shouldPersistChatCapture(response.status);
+      if (persistCapture && data.reply?.trim()) {
         reply = data.reply.trim();
-      } else if (data.error?.trim()) {
-        reply = data.error.trim();
+      } else {
+        reply = chatClientFailureMessage(response.status, data.error);
       }
     } catch {
-      reply = "Could not reach chat. Check your connection and try again.";
+      reply = chatClientFailureMessage(0);
+    }
+
+    if (persistCapture) {
+      applyChatTurn(
+        trimmed,
+        {
+          items: activeItems,
+          workSchedule: loadActiveWorkSchedule() ?? null,
+          reference,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          priorAssistantText: [...messages]
+            .reverse()
+            .find((message) => message.role === "sync")?.text,
+        },
+        {
+          addCapturedItem,
+          updateCapturedItem,
+          softDeleteCapturedItem,
+        },
+      );
     }
 
     const syncMessage: ChatMessage = {
