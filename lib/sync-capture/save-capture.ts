@@ -301,7 +301,10 @@ export function isSilentCaptureReady(
       kind === "financial_state" ||
       kind === "no_plan" ||
       kind === "concern" ||
-      kind === "health_signal"
+      (kind === "health_signal" &&
+        /\b(chest (felt )?tight|felt tight|tight chest|migraine|pain|symptom|felt sick|not feeling well)\b/i.test(
+          plan.prompt,
+        ))
     ) {
       return true;
     }
