@@ -211,6 +211,7 @@ export function commitPreparedCapture(
     protectTime: toSave.meaning.protection.recommended,
     captureSource: saveContext.captureSource ?? "typed",
     voiceTranscript: saveContext.voiceTranscript,
+    reference: saveContext.reference,
   });
 
   const overlap = toSave.preview.when.overlap;

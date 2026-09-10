@@ -129,6 +129,8 @@ function hasRelevantDestination(result: BaselineResult, expected: RegExp) {
 {
   const cases = [
     "I ate cereal.",
+    "coffee this morning",
+    "random thought: the clouds looked strange on the walk home",
     "I saw a red car.",
     "I watched a random video.",
     "I heard a dog bark.",
@@ -143,6 +145,11 @@ function hasRelevantDestination(result: BaselineResult, expected: RegExp) {
     assert.equal(result.debug.shouldSurfaceLater, false);
     assert.ok(result.debug.confidence <= 0.5);
     expectNotHighPriority(result, input);
+    assert.equal(
+      result.briefingEffect.changed,
+      false,
+      `${input}: trivial input should not change briefing output`,
+    );
   }
 }
 

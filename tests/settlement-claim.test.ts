@@ -80,6 +80,13 @@ function addDays(date: Date, amount: number) {
   assert.equal(paid.debug.memoryDecision, "update_existing");
   assert.equal(paid.debug.wouldCreateMemory, false);
   assert.equal(paid.correctionTarget.targetMemoryId, rentMemory.id);
+  const surfacedAfterPayment = [
+    paid.runtime.after.judgment.primary,
+    ...paid.runtime.after.judgment.supporting,
+    paid.runtime.after.brief.lede,
+    ...paid.runtime.after.brief.lines,
+  ].join(" ");
+  assert.doesNotMatch(surfacedAfterPayment, /rent is due friday/i);
 }
 
 {

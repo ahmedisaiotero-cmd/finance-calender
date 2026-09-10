@@ -200,3 +200,55 @@ test("duplicate chat submission does not duplicate memory", () => {
     "skip",
   );
 });
+
+test("probe corpus keeps light daily chatter quiet", () => {
+  const store = createTestCaptureStore();
+  const applied = applyChatTurn(
+    "coffee this morning",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+
+  assert.equal(store.items.length, 0);
+  assert.equal(applied.results.length, 1);
+  assert.equal(applied.results[0]?.status, "too_vague");
+  assert.match(
+    applied.results[0]?.status === "too_vague" ? applied.results[0].message : "",
+    /quiet/i,
+  );
+});
+
+test("probe corpus asks before storing vague timed placeholders", () => {
+  for (const text of [
+    "something tomorrow",
+    "flight at 6am and school dropoff and work standup",
+    "remind me about mom's birthday next month",
+    "follow up with them next week",
+  ]) {
+    const store = createTestCaptureStore();
+    const applied = applyChatTurn(
+      text,
+      { items: store.items, reference: august },
+      store.handlers,
+    );
+
+    assert.equal(store.items.length, 0, text);
+    assert.equal(applied.results.length, 1, text);
+    assert.equal(applied.results[0]?.status, "needs_clarification", text);
+  }
+});
+
+test("probe corpus stores symptom-like health notes as health context", () => {
+  const store = createTestCaptureStore();
+  const applied = applyChatTurn(
+    "my chest felt tight after running this morning",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const item = store.items[0];
+
+  assert.equal(applied.results[0]?.status, "saved");
+  assert.ok(item);
+  assert.equal(item.destinations.includes("Health"), true);
+  assert.match(item.understanding ?? "", /health signal/i);
+});

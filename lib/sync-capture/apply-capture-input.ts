@@ -30,6 +30,8 @@ import {
   isUnverifiedSettlementClaim,
   unverifiedSettlementFollowUp,
 } from "@/lib/intelligence/settlement-claim";
+import { detectTrivialInput } from "@/lib/sync-engine/input/trivial-input";
+import { detectVagueInput } from "@/lib/sync-engine/input/vague-input";
 import { detectContradiction } from "@/lib/sync-engine/reasoning/contradiction";
 import { detectAmbiguity } from "@/lib/trust/ambiguity-detection";
 import { resolveCaptureReference } from "@/lib/trust/reference-resolution";
@@ -181,6 +183,7 @@ function captureSaveOptions(
     protectTime,
     captureSource: context.captureSource ?? "typed",
     voiceTranscript: context.voiceTranscript,
+    reference: context.reference,
   };
 }
 
@@ -191,6 +194,28 @@ export function applyCaptureInput(
 ): ApplyCaptureResult {
   const trimmed = text.trim();
   if (!trimmed) return { status: "empty" };
+
+  if (detectTrivialInput(trimmed).detected) {
+    return {
+      status: "too_vague",
+      message: "Sync is keeping this quiet for now.",
+    };
+  }
+
+  const vagueInput = detectVagueInput(trimmed);
+  if (
+    vagueInput.detected &&
+    vagueInput.recommendedAction === "ask_follow_up"
+  ) {
+    return {
+      status: "needs_clarification",
+      draftText: trimmed,
+      message:
+        vagueInput.followUpQuestion ??
+        "What should Sync know before remembering this?",
+      suggestions: ["Add the missing person", "Add the date", "Add what changed"],
+    };
+  }
 
   if (isVagueCaptureInput(trimmed)) {
     const specific = ambiguousReferenceMessage(trimmed);
