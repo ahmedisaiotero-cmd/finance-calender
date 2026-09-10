@@ -103,6 +103,16 @@ assertAsksForClarification(
   /payment_target/,
   /what is due/i,
 );
+assertAsksForClarification(
+  "my assistant paid the rent",
+  /payment_confirmation/,
+  /rent actually go through/i,
+);
+assertAsksForClarification(
+  "ChatGPT paid the electric bill",
+  /payment_confirmation/,
+  /electric bill actually go through/i,
+);
 
 assertClearMemory("I have a dentist appointment Thursday at 3 PM.", /dentist|appointment/i);
 assertClearMemory("I need to cancel Uber before Friday.");

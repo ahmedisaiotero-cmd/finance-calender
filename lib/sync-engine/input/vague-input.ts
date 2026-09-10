@@ -1,10 +1,17 @@
+import {
+  classifySettlementClaim,
+  isUnverifiedSettlementClaim,
+  unverifiedSettlementFollowUp,
+} from "@/lib/intelligence/settlement-claim";
+
 export type VagueInputMissing =
   | "object"
   | "person"
   | "time"
   | "location"
   | "action_target"
-  | "payment_target";
+  | "payment_target"
+  | "payment_confirmation";
 
 export type VagueInputRecommendedAction =
   | "ask_follow_up"
@@ -123,6 +130,15 @@ export function detectVagueInput(text: string): VagueInputDetection {
       ["payment_target"],
       "Payment target is unclear.",
       "What did you pay?",
+    );
+  }
+
+  const settlement = classifySettlementClaim(trimmed);
+  if (isUnverifiedSettlementClaim(trimmed)) {
+    return ask(
+      settlement.obligationKey ? ["payment_confirmation"] : ["payment_target", "payment_confirmation"],
+      "Payment is unverified, so Sync will not remember it as settled.",
+      unverifiedSettlementFollowUp(trimmed),
     );
   }
 

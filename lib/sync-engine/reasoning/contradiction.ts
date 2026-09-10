@@ -1,10 +1,16 @@
 import type { CapturedSyncItem } from "@/lib/captured-items";
+import {
+  classifySettlementClaim,
+  moneyObligationKeyFromText,
+  unverifiedSettlementFollowUp,
+} from "@/lib/intelligence/settlement-claim";
 
 export type ContradictionType =
   | "schedule"
   | "date"
   | "preference"
   | "identity"
+  | "money"
   | "unknown";
 
 export type ContradictionDetection = {
@@ -13,6 +19,7 @@ export type ContradictionDetection = {
   relatedMemoryIds: string[];
   recommendedAction: "ask_follow_up" | "update_existing" | "low_confidence_memory";
   reason: string;
+  followUpQuestion?: string;
 };
 
 const DAYS = [
@@ -147,6 +154,44 @@ export function detectContradiction(input: {
         relatedMemoryIds,
         recommendedAction: relatedMemoryIds.length === 1 ? "update_existing" : "ask_follow_up",
         reason: "Birthday date correction conflicts with an existing birthday memory.",
+      };
+    }
+  }
+
+  const incomingClaim = classifySettlementClaim(input.text);
+  if (incomingClaim.state && incomingClaim.obligationKey) {
+    const related: Array<{ id: string; state: "due" | "paid" }> = [];
+    for (const item of input.items) {
+      const existingText = `${item.prompt} ${item.title} ${item.originalPrompt ?? ""}`;
+      const existingKey = moneyObligationKeyFromText(existingText);
+      if (existingKey !== incomingClaim.obligationKey) continue;
+      const existingClaim = classifySettlementClaim(existingText);
+      if (!existingClaim.state || existingClaim.state === incomingClaim.state) continue;
+      related.push({ id: item.id, state: existingClaim.state });
+    }
+    if (related.length > 0) {
+      const unverifiedPaid =
+        incomingClaim.state === "paid" && incomingClaim.verification === "unverified";
+      const userClosingDue =
+        incomingClaim.state === "paid" &&
+        incomingClaim.actor === "user" &&
+        related.length === 1 &&
+        related[0].state === "due";
+      return {
+        detected: true,
+        type: "money",
+        relatedMemoryIds: related.map((entry) => entry.id),
+        recommendedAction: unverifiedPaid
+          ? "ask_follow_up"
+          : userClosingDue
+            ? "update_existing"
+            : "ask_follow_up",
+        reason: unverifiedPaid
+          ? "An unverified payment claim conflicts with an open money due."
+          : "Paid and due statements conflict for the same money obligation.",
+        followUpQuestion: unverifiedPaid
+          ? unverifiedSettlementFollowUp(input.text)
+          : "Which is current — still due, or already paid?",
       };
     }
   }

@@ -1648,10 +1648,13 @@ export function processSyncMessage(
   });
 
   const vagueInput = detectVagueInput(text);
+  const unverifiedSettlementAsk =
+    vagueInput.detected &&
+    vagueInput.missing.includes("payment_confirmation");
   if (
     vagueInput.detected &&
     vagueInput.recommendedAction === "ask_follow_up" &&
-    !preCorrectionTarget.detected
+    (!preCorrectionTarget.detected || unverifiedSettlementAsk)
   ) {
     const conversationGoal = selectConversationGoal({
       intent: conversationIntent,
@@ -1670,6 +1673,8 @@ export function processSyncMessage(
       reference,
       vagueInput,
       conversationIntent,
+      contradiction: preContradiction,
+      correctionTarget: preCorrectionTarget,
       conversationState: compactConversationState(baseConversationState),
       conversationGoal: compactConversationGoal(conversationGoal),
     });
@@ -1769,7 +1774,8 @@ export function processSyncMessage(
       ? "I found a few memories this might refer to. Which one should I update?"
       : "I may be missing the exact memory to correct. What should I update?"
     : contradiction.detected && memoryDecision === "ask_follow_up"
-      ? "That may conflict with what I already remember. Can you clarify which one is current?"
+      ? contradiction.followUpQuestion ??
+        "That may conflict with what I already remember. Can you clarify which one is current?"
       : memoryDecision === "update_existing" && correctionTarget.targetMemoryId
         ? "Got it. I'll update that existing memory."
         : responseForPrepared(prepared, consequence, timeframe, reference);

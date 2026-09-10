@@ -102,6 +102,21 @@ function appendTurns(
 }
 
 {
+  const due = run("Rent is due Friday.");
+  const rentMemory = memoryFromSyncEngineResult(due, reference);
+  assert.ok(rentMemory);
+
+  const paid = run("I paid rent.", [rentMemory]);
+  assert.equal(paid.contradiction.detected, true);
+  assert.equal(paid.contradiction.type, "money");
+  assert.equal(paid.correctionTarget.detected, true);
+  assert.equal(paid.correctionTarget.action, "update_existing");
+  assert.equal(paid.correctionTarget.targetMemoryId, rentMemory.id);
+  assert.equal(paid.debug.memoryDecision, "update_existing");
+  assert.equal(paid.debug.wouldCreateMemory, false);
+}
+
+{
   const first = run("mom birthday thursday");
   const birthdayMemory = memoryFromSyncEngineResult(first, reference);
   assert.ok(birthdayMemory);

@@ -105,7 +105,10 @@ function scoreCandidate(input: {
       ? 2
       : input.contradiction.type === "schedule" && /\bwork\b/.test(itemText)
         ? 2
-        : input.contradiction.type === "preference" &&
+        : input.contradiction.type === "money" &&
+            /\b(rent|bill|electric|due|paid)\b/.test(itemText)
+          ? 2
+          : input.contradiction.type === "preference" &&
             /\b(like|love|hate|prefer|vegetarian|steak)\b/.test(itemText)
           ? 2
           : 0;
@@ -181,6 +184,21 @@ export function detectCorrectionTarget(input: {
       action: "ask_follow_up",
       candidateMemoryIds: [],
       reason: "No existing memory matches the correction target.",
+    };
+  }
+
+  if (input.contradiction.type === "money" && candidates.length === 1) {
+    const only = candidates[0];
+    return {
+      detected: true,
+      confidence: input.contradiction.recommendedAction === "update_existing" ? 0.82 : 0.62,
+      action: input.contradiction.recommendedAction === "update_existing"
+        ? "update_existing"
+        : "ask_follow_up",
+      targetMemoryId:
+        input.contradiction.recommendedAction === "update_existing" ? only.id : undefined,
+      candidateMemoryIds: [only.id],
+      reason: input.contradiction.reason,
     };
   }
 

@@ -26,6 +26,11 @@ import {
   CAPTURE_EDIT_NOT_FOUND,
   CAPTURE_VAGUE,
 } from "@/lib/mobile-prototype/sync-voice";
+import {
+  isUnverifiedSettlementClaim,
+  unverifiedSettlementFollowUp,
+} from "@/lib/intelligence/settlement-claim";
+import { detectContradiction } from "@/lib/sync-engine/reasoning/contradiction";
 import { detectAmbiguity } from "@/lib/trust/ambiguity-detection";
 import { resolveCaptureReference } from "@/lib/trust/reference-resolution";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
@@ -196,6 +201,53 @@ export function applyCaptureInput(
   }
 
   const reference = context.reference ?? new Date();
+
+  if (isUnverifiedSettlementClaim(trimmed)) {
+    return {
+      status: "needs_clarification",
+      draftText: trimmed,
+      message: unverifiedSettlementFollowUp(trimmed),
+      suggestions: ["I paid rent", "Rent is still due", "I paid the electric bill"],
+    };
+  }
+
+  const moneyContradiction = detectContradiction({
+    text: trimmed,
+    items: context.items,
+  });
+  if (
+    moneyContradiction.detected &&
+    moneyContradiction.type === "money" &&
+    moneyContradiction.recommendedAction === "update_existing" &&
+    moneyContradiction.relatedMemoryIds.length === 1
+  ) {
+    const targetId = moneyContradiction.relatedMemoryIds[0];
+    const target = context.items.find((item) => item.id === targetId);
+    if (target) {
+      const prepared = prepareCaptureFromText(trimmed, {
+        ...pipelineContext(context),
+        excludeCaptureId: target.id,
+      });
+      const title = prepared?.title || target.title;
+      handlers.updateCapturedItem(target.id, {
+        prompt: trimmed,
+        originalPrompt: trimmed,
+        title,
+        updatedAt: reference.toISOString(),
+        timeline: prepared?.plan.timeline ?? target.timeline,
+        category: prepared?.plan.category ?? target.category,
+        meaning: prepared?.meaning ?? target.meaning,
+      });
+      return {
+        status: "saved",
+        kind: "edit",
+        title,
+        itemId: target.id,
+        meaning: prepared?.meaning ?? target.meaning,
+      };
+    }
+  }
+
   const action = resolveCaptureAction(trimmed, context.items);
   const referenceResolution = resolveCaptureReference({
     commandText: trimmed,

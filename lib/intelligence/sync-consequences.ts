@@ -5,6 +5,7 @@ import {
   importanceToPriorityBoost,
   scoreMemoryImportance,
 } from "@/lib/intelligence/importance-scoring";
+import { classifySettlementClaim } from "@/lib/intelligence/settlement-claim";
 import { composeCuratedBrief } from "@/lib/intelligence/briefing-composer";
 import {
   BRIEF_EMPTY_NO_CONTEXT,
@@ -143,6 +144,7 @@ function isPaydayItem(item: CapturedSyncItem) {
 
 function isDeadlineMemory(item: CapturedSyncItem) {
   const text = `${item.title} ${item.originalPrompt ?? item.prompt}`.toLowerCase();
+  if (classifySettlementClaim(text).state === "paid") return false;
   return (
     item.timeline?.timelineRole === "deadline" ||
     (item.category === "reminder" && /\b(due|rent|bill)\b/.test(text))

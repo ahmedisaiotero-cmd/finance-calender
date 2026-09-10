@@ -12,6 +12,10 @@ import {
 import { isTimelineNoiseConsequence } from "@/lib/intelligence/consequence-timing";
 import type { SyncConsequence } from "@/lib/intelligence/sync-consequences";
 import { effectiveMemoryWeight } from "@/lib/intelligence/memory-aging";
+import {
+  isUnverifiedSettlementClaim,
+  moneyObligationKeyFromText,
+} from "@/lib/intelligence/settlement-claim";
 import { applyLifeContextConnections } from "@/lib/mobile-prototype/build-life-context";
 import { HOME_QUIET } from "@/lib/mobile-prototype/sync-voice";
 import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
@@ -405,6 +409,31 @@ function candidatesFromConsequences(
 
       if (consequence.kind === "work_start" && !consequence.sourceMemoryId) {
         breakdown.penalty -= 45;
+      }
+
+      const sourceItem = consequence.sourceMemoryId
+        ? items.find((item) => item.id === consequence.sourceMemoryId)
+        : null;
+      const evidenceText = [
+        text,
+        sourceItem?.prompt,
+        sourceItem?.originalPrompt,
+        sourceItem?.title,
+      ]
+        .filter(Boolean)
+        .join(" ");
+      if (isUnverifiedSettlementClaim(evidenceText)) {
+        const key = moneyObligationKeyFromText(evidenceText);
+        const openMatchingDue = consequences.some((other) => {
+          if (other.kind !== "financial_due") return false;
+          const dueItem = other.sourceMemoryId
+            ? items.find((item) => item.id === other.sourceMemoryId)
+            : null;
+          const dueText = `${other.surfaceText} ${dueItem?.prompt ?? ""} ${dueItem?.title ?? ""}`;
+          const dueKey = moneyObligationKeyFromText(dueText);
+          return !key || dueKey === key;
+        });
+        breakdown.penalty -= openMatchingDue ? 90 : 55;
       }
 
       if (consequence.kind === "income" || /\bflight\b/i.test(text)) {
