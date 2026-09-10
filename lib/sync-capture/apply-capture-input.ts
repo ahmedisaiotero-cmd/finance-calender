@@ -382,7 +382,10 @@ export function applyCaptureInput(
       destinations,
       title,
     );
-    handlers.updateCapturedItem(action.primaryTarget.id, updated);
+    handlers.updateCapturedItem(action.primaryTarget.id, {
+      ...updated,
+      understanding: buildMemoryUnderstanding(updated, reference),
+    });
     return {
       status: "saved",
       kind: "edit",
