@@ -17,6 +17,7 @@ import {
   type PreparedCapture,
 } from "@/lib/sync-capture/save-capture";
 import type { MeaningAnalysis } from "@/lib/intelligence/meaning-engine";
+import { buildMemoryUnderstanding } from "@/lib/intelligence/memory-understanding";
 import {
   CAPTURE_CLARIFY_REMEMBER_WHAT,
   CAPTURE_CLARIFY_WHO,
@@ -254,14 +255,45 @@ export function applyCaptureInput(
         excludeCaptureId: target.id,
       });
       const title = prepared?.title || target.title;
+      const destinations = prepared?.destinations.length
+        ? prepared.destinations
+        : target.destinations;
+      const timeline = prepared?.plan.timeline ?? target.timeline;
+      const category = prepared?.plan.category ?? target.category;
+      const updatedUnderstanding = prepared
+        ? buildMemoryUnderstanding(
+            {
+              title,
+              prompt: prepared.plan.prompt,
+              originalPrompt: prepared.plan.originalPrompt,
+              destinations,
+              timeline,
+              category,
+              workAvailability:
+                prepared.plan.parsedInput?.workAvailability ??
+                target.workAvailability,
+              moneyType: prepared.plan.parsedInput?.moneyType ?? target.moneyType,
+            },
+            reference,
+          )
+        : target.understanding;
       handlers.updateCapturedItem(target.id, {
         prompt: trimmed,
         originalPrompt: trimmed,
         title,
         updatedAt: reference.toISOString(),
-        timeline: prepared?.plan.timeline ?? target.timeline,
-        category: prepared?.plan.category ?? target.category,
+        dateLabel: prepared?.plan.dateLabel ?? target.dateLabel,
+        timeLabel: prepared?.plan.timeLabel ?? target.timeLabel,
+        amount: prepared?.plan.parsedInput?.amount ?? target.amount,
+        frequency: prepared?.plan.parsedInput?.frequency ?? target.frequency,
+        moneyType: prepared?.plan.parsedInput?.moneyType ?? target.moneyType,
+        workAvailability:
+          prepared?.plan.parsedInput?.workAvailability ?? target.workAvailability,
+        destinations,
+        timeline,
+        category,
         meaning: prepared?.meaning ?? target.meaning,
+        understanding: updatedUnderstanding,
       });
       return {
         status: "saved",

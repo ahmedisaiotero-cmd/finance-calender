@@ -202,20 +202,27 @@ test("duplicate chat submission does not duplicate memory", () => {
 });
 
 test("probe corpus keeps light daily chatter quiet", () => {
-  const store = createTestCaptureStore();
-  const applied = applyChatTurn(
+  for (const text of [
     "coffee this morning",
-    { items: store.items, reference: august },
-    store.handlers,
-  );
+    "random thought: the clouds looked strange on the walk home",
+  ]) {
+    const store = createTestCaptureStore();
+    const applied = applyChatTurn(
+      text,
+      { items: store.items, reference: august },
+      store.handlers,
+    );
 
-  assert.equal(store.items.length, 0);
-  assert.equal(applied.results.length, 1);
-  assert.equal(applied.results[0]?.status, "too_vague");
-  assert.match(
-    applied.results[0]?.status === "too_vague" ? applied.results[0].message : "",
-    /quiet/i,
-  );
+    assert.equal(store.items.length, 0, text);
+    assert.equal(applied.results.length, 1, text);
+    assert.equal(applied.results[0]?.status, "too_vague", text);
+    assert.match(
+      applied.results[0]?.status === "too_vague"
+        ? applied.results[0].message
+        : "",
+      /quiet/i,
+    );
+  }
 });
 
 test("probe corpus asks before storing vague timed placeholders", () => {
@@ -251,4 +258,19 @@ test("probe corpus stores symptom-like health notes as health context", () => {
   assert.ok(item);
   assert.equal(item.destinations.includes("Health"), true);
   assert.match(item.understanding ?? "", /health signal/i);
+});
+
+test("tight money language remains money context, not a health symptom", () => {
+  const store = createTestCaptureStore();
+  applyChatTurn(
+    "budget felt tight this month",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const item = store.items[0];
+
+  assert.ok(item);
+  assert.equal(item.destinations.includes("Finance"), true);
+  assert.equal(item.destinations.includes("Health"), false);
+  assert.match(item.understanding ?? "", /money concern/i);
 });

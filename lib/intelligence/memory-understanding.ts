@@ -56,6 +56,9 @@ function interpretLightMemory(profile: MemoryProfile, text: string): string | nu
     return "Meal logged.";
   }
   if (profile.type === "expense") {
+    if (/\brent\b/i.test(text) && /\bpaid\b/i.test(text)) {
+      return "Rent payment logged.";
+    }
     if (/\$\s*\d+|\d+\s*dollars?/i.test(text)) {
       return "Small money note saved.";
     }
@@ -172,6 +175,10 @@ export function buildMemoryUnderstanding(
   const days = daysUntilDateKey(dateKey, reference);
   const when = whenPhrase(days, dateKey, item.timeline?.label);
   const time = timePhrase(item.timeline);
+
+  if (/\brent\b/i.test(text) && /\bpaid\b/i.test(text)) {
+    return "Rent payment logged.";
+  }
 
   const profileInterpretation = interpretFromProfile(
     profile,

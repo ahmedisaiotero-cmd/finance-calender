@@ -133,6 +133,9 @@ function addDays(date: Date, amount: number) {
   }
   assert.equal(store.items.length, 1);
   assert.match(store.items[0].prompt, /i paid rent/i);
+  assert.equal(store.items[0].destinations.includes("Calendar"), false);
+  assert.doesNotMatch(store.items[0].understanding ?? "", /rent is due/i);
+  assert.match(store.items[0].understanding ?? "", /paid|payment/i);
   const brief = buildDailyBrief({ items: store.items, reference });
   const dueLines = (brief.consequences ?? [])
     .filter((consequence) => consequence.kind === "financial_due")
