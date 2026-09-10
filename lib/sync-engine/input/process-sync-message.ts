@@ -328,16 +328,22 @@ function prospectiveUpdatedMemoryFromPrepared(
   response: string,
   updatedAt: Date,
 ): CapturedSyncItem {
+  const original = prepared.plan.originalPrompt ?? prepared.plan.prompt;
+  const pronounEdit = /^(move|reschedule|change)\s+(it|that|this)\b/i.test(original);
+  const destinations = pronounEdit
+    ? existing.destinations
+    : prepared.destinations.length > 0
+      ? prepared.destinations
+      : existing.destinations;
+
   return {
     ...existing,
-    title: prepared.title || existing.title,
-    category: prepared.plan.category,
+    title: pronounEdit ? existing.title : prepared.title || existing.title,
+    category: pronounEdit ? existing.category : prepared.plan.category,
     prompt: prepared.plan.prompt,
     originalPrompt: prepared.plan.originalPrompt,
     normalizationCorrections: prepared.plan.normalizationCorrections,
-    destinations: prepared.destinations.length > 0
-      ? prepared.destinations
-      : existing.destinations,
+    destinations,
     dateLabel: prepared.plan.dateLabel,
     timeLabel: prepared.plan.timeLabel,
     amount: prepared.plan.parsedInput?.amount ?? existing.amount ?? null,
@@ -1686,7 +1692,7 @@ export function processSyncMessage(
   if (
     vagueInput.detected &&
     vagueInput.recommendedAction === "ask_follow_up" &&
-    (!preCorrectionTarget.detected || unverifiedSettlementAsk)
+    (preCorrectionTarget.action !== "update_existing" || unverifiedSettlementAsk)
   ) {
     const conversationGoal = selectConversationGoal({
       intent: conversationIntent,

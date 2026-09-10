@@ -24,9 +24,18 @@ function weekdayLabel(dateKey: string) {
   return new Date(y, m - 1, d).toLocaleDateString("en-US", { weekday: "long" });
 }
 
+function monthDayLabel(dateKey: string) {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+  });
+}
+
 function whenPhrase(
   days: number | null,
   dateKey: string | null,
+  reference: Date,
   timelineLabel?: string | null,
 ): string {
   const label = timelineLabel?.trim().toLowerCase();
@@ -38,7 +47,13 @@ function whenPhrase(
   if (days === 1) return "tomorrow";
   if (days >= 2 && days <= 7 && dateKey) return weekdayLabel(dateKey);
   if (days <= 14) return `in ${days} days`;
-  if (days <= 45) return "later this month";
+  if (days <= 45 && dateKey) {
+    const [year, month] = dateKey.split("-").map(Number);
+    if (year === reference.getFullYear() && month === reference.getMonth() + 1) {
+      return "later this month";
+    }
+    return monthDayLabel(dateKey);
+  }
   return "coming up";
 }
 
@@ -94,19 +109,19 @@ function interpretFromProfile(
     return "Health signal noted — Sync will keep this in context.";
   }
 
+  if (profile.type === "concern") {
+    if (/\brent\b|\bbill\b|\bmoney\b|\bbudget\b|\bafford\b/i.test(text)) {
+      return "Money concern noted — Sync will keep this in context without treating it like a bill.";
+    }
+    return "Concern noted — Sync will keep this in context without turning it into a task.";
+  }
+
   if (profile.weight === "light" && profile.type !== "routine") {
     return interpretLightMemory(profile, text);
   }
 
   if (profile.type === "emotion") {
     return interpretEmotionalMemory(text, days);
-  }
-
-  if (profile.type === "concern") {
-    if (/\brent\b|\bbill\b|\bmoney\b|\bbudget\b|\bafford\b/i.test(text)) {
-      return "Money concern noted — Sync will keep this in context without treating it like a bill.";
-    }
-    return "Concern noted — Sync will keep this in context without turning it into a task.";
   }
 
   if (profile.type === "goal") {
@@ -173,7 +188,7 @@ export function buildMemoryUnderstanding(
       ? resolveNextOccurrenceDateKey(item.timeline, reference)
       : null) ?? resolveCaptureDateKey(item as CapturedSyncItem, reference);
   const days = daysUntilDateKey(dateKey, reference);
-  const when = whenPhrase(days, dateKey, item.timeline?.label);
+  const when = whenPhrase(days, dateKey, reference, item.timeline?.label);
   const time = timePhrase(item.timeline);
 
   if (/\brent\b/i.test(text) && /\bpaid\b/i.test(text)) {

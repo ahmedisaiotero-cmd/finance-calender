@@ -103,6 +103,14 @@ export function detectVagueInput(text: string): VagueInputDetection {
     );
   }
 
+  if (/^(it'?s|it s|it is)\s+(today|tomorrow|tonight|next week|this week)\b/i.test(compact)) {
+    return ask(
+      ["object"],
+      "Pronoun-only timing is missing the actual event or commitment.",
+      "What is happening then?",
+    );
+  }
+
   if (/^(something|stuff|things?|something important)\s+(today|tomorrow|tonight|next week|this week)\b/i.test(compact)) {
     return ask(
       ["object"],
@@ -123,6 +131,22 @@ export function detectVagueInput(text: string): VagueInputDetection {
       ["time"],
       "Birthday reminder is missing the specific date.",
       "What date is the birthday?",
+    );
+  }
+
+  if (/^(move|reschedule|change)\s+(it|that|this)\s+to\b/i.test(compact)) {
+    return ask(
+      ["object"],
+      "Edit target is unclear.",
+      "What should I move?",
+    );
+  }
+
+  if (/^remind me later\b/i.test(compact)) {
+    return ask(
+      ["object", "time"],
+      "Reminder is missing the subject and useful timing.",
+      "What should I remind you about, and when?",
     );
   }
 

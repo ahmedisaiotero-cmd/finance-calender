@@ -227,6 +227,10 @@ test("probe corpus keeps light daily chatter quiet", () => {
 
 test("probe corpus asks before storing vague timed placeholders", () => {
   for (const text of [
+    "it’s tomorrow",
+    "move it to Friday",
+    "paid that",
+    "remind me later",
     "something tomorrow",
     "flight at 6am and school dropoff and work standup",
     "remind me about mom's birthday next month",
@@ -273,4 +277,116 @@ test("tight money language remains money context, not a health symptom", () => {
   assert.equal(item.destinations.includes("Finance"), true);
   assert.equal(item.destinations.includes("Health"), false);
   assert.match(item.understanding ?? "", /money concern/i);
+});
+
+test("password reset reminder is stored without secret handling or generic goals", () => {
+  const store = createTestCaptureStore();
+  applyChatTurn(
+    "bank password reset tomorrow",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const item = store.items[0];
+
+  assert.ok(item);
+  assert.equal(item.destinations.includes("Finance"), true);
+  assert.equal(item.destinations.includes("Calendar"), true);
+  assert.equal(item.destinations.includes("Goals"), false);
+  assert.doesNotMatch(item.understanding ?? "", /secret|password is/i);
+});
+
+test("feeling off lately is health context, not generic goal progress", () => {
+  const store = createTestCaptureStore();
+  applyChatTurn(
+    "I feel off lately",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const item = store.items[0];
+
+  assert.ok(item);
+  assert.equal(item.destinations.includes("Health"), true);
+  assert.equal(item.destinations.includes("Goals"), false);
+  assert.match(item.understanding ?? "", /health signal/i);
+});
+
+test("appointment move updates existing memory without adding finance", () => {
+  const store = createTestCaptureStore();
+  applyChatTurn(
+    "dentist appointment Thursday at 3pm",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const originalId = store.items[0]?.id;
+
+  const moved = applyChatTurn(
+    "move it to Friday",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const item = store.items[0];
+
+  assert.equal(moved.results[0]?.status, "saved");
+  assert.equal(moved.results[0]?.status === "saved" ? moved.results[0].kind : null, "edit");
+  assert.equal(store.items.length, 1);
+  assert.equal(item?.id, originalId);
+  assert.match(item?.title ?? "", /dentist appointment/i);
+  assert.equal(item?.destinations.includes("Health"), true);
+  assert.equal(item?.destinations.includes("Calendar"), true);
+  assert.equal(item?.destinations.includes("Finance"), false);
+  assert.equal(item?.timeline?.startDate, "2026-08-21");
+  assert.match(item?.understanding ?? "", /friday|tomorrow/i);
+});
+
+test("work standup time correction updates existing work memory", () => {
+  const store = createTestCaptureStore();
+  applyChatTurn(
+    "work standup tomorrow at 9am",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const originalId = store.items[0]?.id;
+
+  const corrected = applyChatTurn(
+    "actually work standup is at 10am",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const item = store.items[0];
+
+  assert.equal(corrected.results[0]?.status, "saved");
+  assert.equal(corrected.results[0]?.status === "saved" ? corrected.results[0].kind : null, "edit");
+  assert.equal(store.items.length, 1);
+  assert.equal(item?.id, originalId);
+  assert.equal(item?.destinations.includes("Work"), true);
+  assert.equal(item?.destinations.includes("Calendar"), true);
+  assert.equal(item?.destinations.includes("Finance"), false);
+  assert.equal(item?.timeline?.startDate, "2026-08-21");
+  assert.equal(item?.timeline?.startTime, "10:00");
+});
+
+test("missing birthday date asks first, then clear date creates one memory", () => {
+  const store = createTestCaptureStore();
+  const birthdayReference = new Date("2026-06-10T18:00:00");
+  const missing = applyChatTurn(
+    "remind me about mom's birthday next month",
+    { items: store.items, reference: birthdayReference },
+    store.handlers,
+  );
+  assert.equal(missing.results[0]?.status, "needs_clarification");
+  assert.equal(store.items.length, 0);
+
+  const supplied = applyChatTurn(
+    "mom's birthday is July 12",
+    { items: store.items, reference: birthdayReference },
+    store.handlers,
+  );
+  const item = store.items[0];
+
+  assert.equal(supplied.results[0]?.status, "saved");
+  assert.equal(store.items.length, 1);
+  assert.match(item?.title ?? "", /mom's birthday/i);
+  assert.equal(item?.destinations.includes("Family"), true);
+  assert.equal(item?.destinations.includes("Calendar"), true);
+  assert.match(item?.understanding ?? "", /july 12/i);
 });
