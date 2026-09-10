@@ -45,7 +45,7 @@ function tokenize(text: string) {
 }
 
 function hasCorrectionCue(text: string) {
-  return /\b(actually|actual|instead|now|correction|not|that was|this was)\b/i.test(text);
+  return /\b(actually|actual|instead|now|correction|not|that was|this was|move|reschedule|change)\b/i.test(text);
 }
 
 function domainFor(text: string) {

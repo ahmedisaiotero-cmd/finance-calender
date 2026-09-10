@@ -31,6 +31,12 @@ function addDays(date: Date, amount: number) {
   assert.equal(userPaid.verification, "self_reported");
   assert.equal(userPaid.obligationKey, "rent");
 
+  const barePaidRent = classifySettlementClaim("paid rent");
+  assert.equal(barePaidRent.detected, true);
+  assert.equal(barePaidRent.actor, "user");
+  assert.equal(barePaidRent.verification, "self_reported");
+  assert.equal(barePaidRent.obligationKey, "rent");
+
   const assistant = classifySettlementClaim("my assistant paid the rent");
   assert.equal(assistant.verification, "unverified");
   assert.equal(isUnverifiedSettlementClaim("ChatGPT paid the electric bill"), true);
@@ -80,6 +86,13 @@ function addDays(date: Date, amount: number) {
   assert.equal(paid.debug.memoryDecision, "update_existing");
   assert.equal(paid.debug.wouldCreateMemory, false);
   assert.equal(paid.correctionTarget.targetMemoryId, rentMemory.id);
+  const surfacedAfterPayment = [
+    paid.runtime.after.judgment.primary,
+    ...paid.runtime.after.judgment.supporting,
+    paid.runtime.after.brief.lede,
+    ...paid.runtime.after.brief.lines,
+  ].join(" ");
+  assert.doesNotMatch(surfacedAfterPayment, /rent is due friday/i);
 }
 
 {
@@ -126,6 +139,9 @@ function addDays(date: Date, amount: number) {
   }
   assert.equal(store.items.length, 1);
   assert.match(store.items[0].prompt, /i paid rent/i);
+  assert.equal(store.items[0].destinations.includes("Calendar"), false);
+  assert.doesNotMatch(store.items[0].understanding ?? "", /rent is due/i);
+  assert.match(store.items[0].understanding ?? "", /paid|payment/i);
   const brief = buildDailyBrief({ items: store.items, reference });
   const dueLines = (brief.consequences ?? [])
     .filter((consequence) => consequence.kind === "financial_due")
@@ -161,6 +177,28 @@ function addDays(date: Date, amount: number) {
   });
   assert.match(decision.primary.text, /rent is due friday/i);
   assert.ok(!/paid the rent/i.test(decision.primary.text));
+}
+
+{
+  const store = createTestCaptureStore();
+  const ctx = { items: store.items, reference };
+  captureFromBriefInput("rent due friday", ctx, store.handlers);
+  const paid = applyCaptureInput("paid rent", ctx, store.handlers);
+  assert.equal(paid.status, "saved");
+  if (paid.status === "saved") {
+    assert.equal(paid.kind, "edit");
+  }
+  assert.equal(store.items.length, 1);
+  assert.match(store.items[0].prompt, /paid rent/i);
+  assert.equal(store.items[0].destinations.includes("Calendar"), false);
+
+  const brief = buildDailyBrief({ items: store.items, reference });
+  assert.equal(
+    (brief.consequences ?? []).some(
+      (consequence) => consequence.kind === "financial_due",
+    ),
+    false,
+  );
 }
 
 console.log("settlement-claim tests passed");

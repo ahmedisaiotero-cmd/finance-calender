@@ -77,7 +77,6 @@ function capture(text: string, store = createTestCaptureStore()) {
     "my daughter has school tomorrow",
     "rent due friday",
     "payday tomorrow at 5am",
-    "coffee this morning",
     "fixed my car today",
     "i cleaned my room",
   ];
@@ -98,6 +97,19 @@ function capture(text: string, store = createTestCaptureStore()) {
     });
     assert.equal(confirmation.headline, "Remembered.");
   }
+}
+
+{
+  const store = createTestCaptureStore();
+  const result = attemptBriefCapture(
+    "coffee this morning",
+    { items: store.items, reference, workSchedule },
+    store.handlers,
+  );
+
+  assert.equal(result.status, "too_vague");
+  assert.equal(store.items.length, 0);
+  assert.match(result.status === "too_vague" ? result.message : "", /quiet/i);
 }
 
 {

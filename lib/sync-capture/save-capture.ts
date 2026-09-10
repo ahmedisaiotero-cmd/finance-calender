@@ -300,7 +300,11 @@ export function isSilentCaptureReady(
     if (
       kind === "financial_state" ||
       kind === "no_plan" ||
-      kind === "concern"
+      kind === "concern" ||
+      (kind === "health_signal" &&
+        /\b(chest (felt )?tight|tight chest|migraine|pain|symptom|felt sick|not feeling well|feel off|feeling off)\b/i.test(
+          plan.prompt,
+        ))
     ) {
       return true;
     }
@@ -398,6 +402,7 @@ export function saveCapture(
     skipDuplicateCheck?: boolean;
     captureSource?: CapturedSyncItem["captureSource"];
     voiceTranscript?: string;
+    reference?: Date;
   },
 ): SavedCaptureResult | null {
   const { plan, destinations, title, meaning, duplicate } = prepared;
@@ -421,7 +426,7 @@ export function saveCapture(
     category: plan.category,
     workAvailability: plan.parsedInput?.workAvailability,
     moneyType: plan.parsedInput?.moneyType,
-  });
+  }, options?.reference);
 
   const item = addCapturedItem(
     { ...plan, status: "saved" },
@@ -524,6 +529,7 @@ export function forceSaveUniversalCapture(
     protectTime: options?.protectTime ?? finalPrepared.meaning.protection.recommended,
     captureSource: context.captureSource ?? "typed",
     voiceTranscript: context.voiceTranscript,
+    reference: context.reference,
   });
 
   if (!saved) {
