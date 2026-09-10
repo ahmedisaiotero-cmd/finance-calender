@@ -60,6 +60,10 @@ export {
 export { deriveInterpretations } from "@/lib/intelligence/life-graph/interpretation";
 export { deriveBeliefs } from "@/lib/intelligence/life-graph/beliefs";
 export { buildDecisionGraphContext } from "@/lib/intelligence/life-graph/decision-context";
+export {
+  applyJudgmentGraphContinuity,
+  buildJudgmentGraphContext,
+} from "@/lib/intelligence/life-graph/judgment-continuity";
 export { buildNarrativeContext } from "@/lib/intelligence/life-graph/narrative-context";
 export {
   buildLifeGraphDiagnostics,

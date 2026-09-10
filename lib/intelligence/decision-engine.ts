@@ -17,6 +17,10 @@ import {
   moneyObligationKeyFromText,
 } from "@/lib/intelligence/settlement-claim";
 import { applyLifeContextConnections } from "@/lib/mobile-prototype/build-life-context";
+import {
+  applyJudgmentGraphContinuity,
+  buildJudgmentGraphContext,
+} from "@/lib/intelligence/life-graph/judgment-continuity";
 import { HOME_QUIET } from "@/lib/mobile-prototype/sync-voice";
 import { displayMemoryTitle } from "@/lib/sync-capture/memory-title";
 import { isContextConnectionLine } from "@/lib/sync-capture/surface-copy";
@@ -672,11 +676,15 @@ export function decideTodayPriorities(input: DecisionEngineInput): TodayDecision
     priorities,
   );
 
-  const merged = applyLifeContextConnections(
-    [...todayCandidates, ...consequenceCandidates],
-    consequences,
+  const merged = applyJudgmentGraphContinuity(
+    applyLifeContextConnections(
+      [...todayCandidates, ...consequenceCandidates],
+      consequences,
+      items,
+      reference,
+    ),
     items,
-    reference,
+    buildJudgmentGraphContext({ items, consequences, reference }),
   );
 
   const { primary, supporting, rankedCandidates } = selectPriorities(
