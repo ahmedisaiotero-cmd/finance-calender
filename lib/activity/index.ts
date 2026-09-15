@@ -16,6 +16,27 @@ export {
   type ActivityEventInput,
 } from "@/lib/activity/activity-event";
 export {
+  ACTIVITY_EVENT_SCHEMA_VERSION,
+  ACTIVITY_LEDGER_DEFAULT_LIMIT,
+  ACTIVITY_LEDGER_MAX_LIMIT,
+  ActivityLedgerError,
+  appendActivityEvent,
+  clampActivityLimit,
+  decodeActivityCursor,
+  encodeActivityCursor,
+  getActivityEvent,
+  listActivityEvents,
+  ownerFromIdentity,
+} from "@/lib/activity/ledger";
+export type {
+  ActivityEventStore,
+  ActivityLedgerPage,
+  ActivityOwner,
+  AppendActivityEventInput,
+  AppendActivityEventResult,
+  PersistedActivityEvent,
+} from "@/lib/activity/ledger-types";
+export {
   redactSecrets,
   looksLikeSecret,
   sanitizeDetail,
