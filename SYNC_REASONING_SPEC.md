@@ -1,10 +1,30 @@
 # Sync Reasoning Spec
 
-This document defines the required reasoning pipeline for every user input.
+This document defines the required reasoning pipeline for every user input **and** for every agent request.
 
-It is the engineering contract for the Sync Engine. All capture, memory, consequence, judgment, and briefing logic should align with these stages.
+It is the engineering contract for the Sync Engine. Capture, memory, consequence, judgment, briefing, activity, and permission logic should align with these stages.
 
-Read alongside `SYNC_ENGINE_MANIFESTO.md` and `SYNC_EVALUATION.md`.
+Read alongside `SYNC_TRUST_LAYER.md`, `SYNC_ENGINE_MANIFESTO.md`, and `SYNC_EVALUATION.md`.
+
+Agent-path mapping (do not fork a second pipeline):
+
+```
+Agent request
+  ↓
+Understanding (what is claimed; evidence level)
+  ↓
+Memory Decision (ledger-only vs also remember)
+  ↓
+Consequence Reasoning (sharing / reversibility / blast radius)
+  ↓
+Judgment (allow / deny / limit / ask)
+  ↓
+Response (quiet receipt or approval prompt)
+  ↓
+Future Follow-up (expiry, revoke, GitHub confirm)
+  ↓
+Briefing Effect (optional; not the product)
+```
 
 ---
 

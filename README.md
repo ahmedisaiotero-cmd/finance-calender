@@ -1,14 +1,16 @@
 # Sync
 
-Sync is a **personal reasoning engine for daily life** — not a chatbot, dashboard, or planner.
+Sync is a **user-controlled trust layer** between a person and AI systems — permission, provenance, and action receipts. It is not a chatbot, dashboard, planner, or AI reputation score.
 
-Conceptual flow:
+Canonical direction: [`SYNC_TRUST_LAYER.md`](./SYNC_TRUST_LAYER.md).
+
+The intelligence pipeline stays as internal machinery:
 
 ```text
-Capture → Memory → Understanding / Life Graph → Consequences → Decision Engine → Today briefing
+Evidence / Memory → Understanding / Claims → Sharing risk → Allow / deny / ask → Receipt
 ```
 
-The Sync app (`/` mobile prototype, `/sync-lab`) is the first product surface. Shared intelligence lives in `lib/`. `sync-ios/` is a separate Expo client that re-exports shared modules.
+The website is the account and control center. Cursor/ChatGPT connect through OAuth/MCP to the same account. `/sync-lab` teaches the engine. Shared intelligence lives in `lib/` (`lib/activity`, `lib/passport`, `lib/intelligence`). `sync-ios/` is a separate Expo client that re-exports shared modules.
 
 ## Quick start
 
@@ -34,7 +36,8 @@ Root TypeScript and ESLint intentionally exclude `sync-ios`. Do not add React Na
 
 ## Architecture boundaries
 
-- **Decision Engine** owns prioritization/ranking (`lib/intelligence/decision-engine.ts`).
+- **Activity / Passport** own evidence and claims (`lib/activity`, `lib/passport`). Never upgrade verification in place.
+- **Decision Engine** owns ranking and allow/deny/approval scoring (`lib/intelligence/decision-engine.ts`).
 - **Life Graph** is a deterministic projection/context layer, not primary storage.
 - Vague / low-confidence input should clarify instead of becoming unreliable memory.
 - Surfaces consume shared intelligence; they do not invent ranking or Sync voice.

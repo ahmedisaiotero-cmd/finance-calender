@@ -4,6 +4,7 @@ This document maps the repository structure for the Sync Foundation Release and 
 
 For mission, trust rules, and sequencing, read:
 
+- `SYNC_TRUST_LAYER.md`
 - `SYNC_VISION.md`
 - `SYNC_WORKFLOW.md`
 - `SYNC_INTELLIGENCE.md`
@@ -12,15 +13,14 @@ For mission, trust rules, and sequencing, read:
 
 ## 0. Architecture framing (current naming preserved)
 
-Sync is a personal intelligence engine for life.
-The Sync app is the first product surface powered by that engine and remains the proving ground.
+Sync is a user-controlled trust layer. The website is the account and control center; MCP/OAuth are doorways.
 
 Current repository organization should be read through four layers:
 
-1. **Sync Intelligence** (`lib/intelligence/*`, `lib/sync-capture/*`)
-2. **Adapters** (`lib/mobile-prototype/*`, surface view-model builders, bridge modules)
+1. **Sync Intelligence** (`lib/activity/*`, `lib/passport/*`, `lib/intelligence/*`, `lib/sync-capture/*`)
+2. **Adapters** (`lib/mobile-prototype/*`, future MCP/OAuth, surface view-model builders)
 3. **Surfaces** (`app/*`, `components/*`, `sync-ios/*`)
-4. **Integrations** (optional external data connectors; user-approved only; no forced defaults)
+4. **Integrations** (GitHub verifier first; user-approved; connecting a host ≠ omniscience)
 
 This is a direction-alignment guide only. Do not move folders or rename modules by default.
 

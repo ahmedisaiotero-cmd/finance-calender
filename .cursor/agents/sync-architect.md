@@ -18,18 +18,18 @@ Must not:
 - Edit files
 - Commit or push
 - Design a broad rewrite unless the existing architecture makes the requested behavior impossible
-- Recommend adding runtime agents, AI SDKs, model APIs, n8n, or MCP servers to the Sync app
+- Recommend adding n8n, extra model SDKs, or Cursor-runtime agents to the Sync app. Product MCP/OAuth as the trust-layer interface **is in scope**.
 
 When invoked:
 
-1. Read `AGENTS.md`, `SYNC_WORKFLOW.md`, `SYNC_VISION.md`, and any other Sync docs needed for the request.
-2. Restate the requested outcome and which pillar it would improve: Memory, Understanding, Consequences, Today, My Life, Goals, or Trust. If none, say so and stop.
+1. Read `SYNC_TRUST_LAYER.md`, `AGENTS.md`, `SYNC_WORKFLOW.md`, `SYNC_VISION.md`, and any other Sync docs needed for the request.
+2. Restate the requested outcome and which pillar it would improve: Trust, Activity, Passport, Safety, Memory, Understanding, Consequences, or Judgment. If none, say so and stop.
 3. Trace the existing **active pathway** that currently owns the behavior. Name the ownership layer: intelligence, adapter, API/database, or UI/surface.
-4. Search for reusable intelligence, adapters, types, and tests before recommending new code. Prefer `lib/intelligence/*` and `lib/sync-capture/*`.
-5. Flag boundary leaks, duplicate logic, demo-only paths, and mission drift (planner, dashboard, chatbot-first, category sprawl).
+4. Search for reusable intelligence, adapters, types, and tests before recommending new code. Prefer `lib/activity/*`, `lib/passport/*`, `lib/intelligence/*`, and `lib/sync-capture/*`.
+5. Flag boundary leaks, duplicate logic, demo-only paths, and mission drift (planner, dashboard, chatbot-first, reputation score, fabricated verification).
 6. Note auth, privacy, permissions, or sensitive-data risks when relevant.
 
-Preserve **Memory → Understanding → Consequences → Decision/Judgment → Today**. Ranking stays in `decision-engine.ts`. Voice stays in `sync-engine.ts` / `SYNC_VOICE.md`. Surfaces consume intelligence; they do not create a parallel brain. Goals are not a separate planner.
+Preserve **Memory → Understanding → Consequences → Decision/Judgment** as the trust-layer machinery. Ranking and allow/deny stay in `decision-engine.ts`. Voice stays in `sync-engine.ts` / `SYNC_VOICE.md`. MCP handlers stay thin. Goals are not a separate planner.
 
 Return a concise implementation recommendation:
 

@@ -27,13 +27,15 @@ Last reviewed from repository inspection on the current `main` branch.
 
 ## Placeholder / deferred
 
-- Full Goals product loop (roadmap after Decision/Life Graph trust)
-- Forced integrations (calendar/bank/health APIs)
+- Persist ActivityEvent ledger + OAuth/MCP (next; see `SYNC_TRUST_LAYER.md`)
+- Full Goals product loop
+- Calendar/bank/health APIs (not GitHub — GitHub is in-scope as verifier)
 - Supabase `timeline_items` owner column + RLS (currently disabled on `/api/timeline`)
 - Applying `ChatRateLimitWindow` migration in production (committed as `20260813000000_chat_rate_limit_window`; not applied by this repo change)
 
 ## Documentation vs code
 
+- Authoritative product direction: `SYNC_TRUST_LAYER.md`
 - Authoritative sequencing: `SYNC_ENGINE_ROADMAP.md`
 - Repository map: `SYNC_REPOSITORY.md`
 - Root README previously drifted to create-next-app boilerplate; replaced with Sync-accurate guidance

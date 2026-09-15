@@ -1,133 +1,103 @@
 # Sync Engine Roadmap
 
-This roadmap defines how Sync becomes a trusted personal reasoning engine.
+This roadmap defines how Sync becomes a trusted permission, context, and action-receipt layer.
 
-It supersedes product-expansion sequencing in `ROADMAP.md` when the two conflict. Consumer surfaces wait until trust is earned.
+It supersedes product-expansion sequencing in `ROADMAP.md` when the two conflict. Canonical product direction: `SYNC_TRUST_LAYER.md`.
 
-Read alongside `SYNC_ENGINE_MANIFESTO.md`, `SYNC_REASONING_SPEC.md`, and `SYNC_EVALUATION.md`.
+Read alongside `SYNC_ENGINE_MANIFESTO.md`, `SYNC_REASONING_SPEC.md`, `SYNC_ACTIVITY_PASSPORT.md`, and `SYNC_EVALUATION.md`.
 
 ---
 
 ## North Star
 
-**Trustworthy Decision Rate** — see `SYNC_EVALUATION.md`.
+**Never-fabricated verification** plus a working **Cursor ↔ Sync ↔ GitHub** loop (then ChatGPT on the same account).
 
-The UI is a lab until the trust gates are met. Do not expand tabs, dashboards, or domain apps before then.
+Do not expand life dashboards, reputation scores, or a custom identity protocol. Briefing TDR work may continue as engine tests; it is not the product gate.
 
 ---
 
 ## Approved Build Sequence
 
-This sequence is authoritative. The goal-directed loop comes only after Life Graph continuity and Decision stabilization, so goals do not steer intelligence that has not earned trust yet.
+This sequence is authoritative.
 
-1. **Regression tests and current-behavior lock**
-2. **Life Graph projection**
-3. **Connections, identity resolution, continuity, and beliefs**
-4. **Stabilize Consequences and Decision ranking**
-5. **Goal-directed loop**
-6. **Messy real-life testing and trust corrections**
-7. **Integrations**
-8. **Beta**
+0. **Direction lock** — `SYNC_TRUST_LAYER.md` and agent rules (done when those docs are current)
+1. **Persist the Activity + Passport contracts** — append-only ledger, OAuth clients, agent connections (reuse `lib/activity`, `lib/passport`; do not dump into `SyncProfile.data`)
+2. **Permission engine** — narrow, expiring grants; human confirmation for sensitive actions
+3. **GitHub verification connector** — first `source_confirmed` path
+4. **MCP adapter** — thin tools over the same account; no parallel brain
+5. **Cursor connection**
+6. **ChatGPT Sync app** (same OAuth account)
+7. **Quiet control center** — connections, approvals, receipts, revoke
+8. **Signed receipts** — after the loop works
+9. **Additional platforms** — only with a concrete use case and enough API access
 
-The goal-directed loop must reuse the single reasoning pipeline and shared Judgment. It must not become a planner, a separate goal agent, page-local ranking, or a reason to expand the UI. Integrations remain optional, consent-based inputs and wait until the goal loop and trust corrections are stable.
+Legacy sequence (Life Graph, briefing TDR, goals, consumer Today polish) is **frozen** unless it unblocks this loop.
 
----
-
-## Phase 1: Stabilize the Lab
-
-**Goal:** Make `/sync-lab` and the mobile prototype reliable teaching surfaces — not product polish.
-
-- Keep `/sync-lab` minimal
-- Fix build/hydration issues
-- Reduce information overload
-- Make debug decision-focused
-- Keep advanced internals collapsed
-- Preserve existing intelligence pipeline; no parallel ranking forks
-
-**Exit criteria:**
-
-- Lab loads consistently without hydration errors
-- Decision metadata visible in debug without overwhelming normal view
-- `npm run check` passes
-- 100-memory stress test passes
+Integrations are no longer “step 7 after TDR ≥ 85%.” GitHub + MCP **are** the product path. Calendar/bank/health APIs remain deferred.
 
 ---
 
-## Phase 2: Teach the Engine
+## Phase T1: Evidence ledger
 
-**Goal:** Improve reasoning with real inputs and human correction.
+**Goal:** Activity events survive a process restart without claiming extra verification.
 
-- Feed real personal inputs through capture → full pipeline
-- Review what Sync understood at each reasoning stage
-- Correct bad memory, consequence, and judgment decisions
-- Add failed examples to test suites before fixing logic
-- Document weekly review findings per `SYNC_EVALUATION.md`
+- Prisma insert-only rows matching `ActivityEvent`
+- Writes only through `createActivityEvent`
+- Corrections = new events (`correlationId`, supersede in detail)
+- Tests: persist + never-upgrade + redaction
 
-**Exit criteria:**
-
-- Weekly review process running
-- Failed examples converted to tests within 48 hours
-- TDR tracked week over week
+**Exit:** events round-trip; agent-reported cannot become `source_confirmed` in place.
 
 ---
 
-## Phase 3: Evaluate Trust
+## Phase T2: OAuth + permission grants
 
-**Goal:** Measure and improve trustworthy decision rate systematically.
+**Goal:** A host can Sign in with Sync and receive a narrow, expiring grant.
 
-- Measure Trustworthy Decision Rate on reviewed corpus
-- Build memory / consequence / judgment test coverage by reasoning stage
-- Track failures by pipeline stage (Input → Briefing Effect)
-- Expand stress corpus as real failures appear
-- Gate merges on `test:intelligence:all`
+- Human login stays Supabase
+- Sync-issued OAuth authorize/token for plugins
+- `PermissionState` + scopes on `AgentConnection`
+- Minimal pending-approval UI (not a dashboard)
 
-**Exit criteria:**
-
-- TDR ≥ 85% on 50-item weekly review
-- Failures categorized by stage with owning tests
-- No uncategorized recurring failure for 2 weeks
+**Exit:** grant, expire, revoke recorded as activity events.
 
 ---
 
-## Phase 4: Private Alpha
+## Phase T3: GitHub confirmation
 
-**Goal:** Real users as teachers — not customers.
+**Goal:** An outside system can upgrade a *new* event to `source_confirmed`.
 
-- **1 user first** (founder / builder)
-- Then **5 trusted users**
-- Users correct Sync; corrections become tests
-- No marketing, no onboarding flows, no theme polish
-- Lab + minimal mobile shell only
-
-**Exit criteria:**
-
-- Alpha users report “I trust what Sync surfaces” more often than not
-- Correction loop works (inspect, edit, delete)
-- Sensitive domains handled conservatively
+**Exit:** Cursor-reported “tests passed” stays agent-reported until GitHub checks confirm.
 
 ---
 
-## Phase 5: Product Surface
+## Phase T4: MCP + Cursor
 
-**Only after trust improves.**
+**Goal:** Cursor calls Sync tools against the same account.
 
-- Refine consumer UI (Today, Memory, My Life)
-- Consider Sync Life as a coherent surface
-- Later consider Sync Health or Sync Money — **as reasoning domains, not dashboard apps**
+Tools: context, permission, approval, record instruction, report action, verify outcome, previous task state.
 
-Do not revisit Phase 5 until Phase 3 exit criteria are met.
+**Exit:** closed loop without ChatGPT still counts.
 
 ---
 
-## Explicitly Deprioritized Until Phase 5
+## Phase T5: ChatGPT app + revocation
 
-- New main tabs
+**Goal:** Second host retrieves a limited verified summary; user revokes both from the website.
+
+**Exit:** the demonstration in `SYNC_TRUST_LAYER.md`.
+
+---
+
+## Explicitly deprioritized
+
+- New main tabs, analytics, streaks, reputation scores
 - Sync Health / Sync Money standalone apps
-- Onboarding flows and themes
-- Dashboards, analytics, charts, streaks
-- Integrations (calendar sync, bank sync, health APIs)
-- Chatbot-first experiences
-- Productivity coaching and gamification
+- Custom cryptographic protocol or blockchain
+- Ten shallow integrations
+- Chatbot-first UI (`/api/chat` is not the protocol)
+- Today / Daily Brief redesign
+- Ingesting full conversation histories by default
 
 ---
 
@@ -135,24 +105,23 @@ Do not revisit Phase 5 until Phase 3 exit criteria are met.
 
 | Phase | Status |
 |---|---|
-| Phase 1: Stabilize the Lab | **In progress** |
-| Phase 2: Teach the Engine | Starting (weekly reviews, stress tests) |
-| Phase 3: Evaluate Trust | Partial (`test:intelligence:all`, decision-stress 100-memory) |
-| Phase 4: Private Alpha | Not started |
-| Phase 5: Product Surface | Deferred |
+| Direction lock | **In progress** (docs) |
+| Activity + Passport contracts | **Done** (pure TS, not persisted) |
+| Phase T1: Evidence ledger | Next |
+| Phase T2–T5 | Not started |
+| Legacy briefing phases 1–5 | Frozen unless they unblock T1–T5 |
 
-**Approved sequence position:** Steps 1–4 are the active foundation. Step 5 (goal-directed loop) waits for Life Graph continuity and Consequence/Decision stabilization. Steps 7–8 (integrations and beta) remain deferred.
-
-**Immediate focus:** lock current behavior, finish Life Graph continuity, stabilize consequence and Decision quality, and convert failed real-life examples into tests before production fixes.
+**Immediate focus:** persist `ActivityEvent`, then OAuth-bound MCP, then GitHub as the only external verifier.
 
 ---
 
 ## How This Relates to `ROADMAP.md`
 
-`ROADMAP.md` describes historical MVP and intelligence architecture work. This document defines **what comes next**.
+`ROADMAP.md` describes historical MVP and intelligence architecture work. This document plus `SYNC_TRUST_LAYER.md` define **what comes next**.
 
 When planning work:
 
-1. Read `SYNC_ENGINE_ROADMAP.md` for sequencing
-2. Read `ROADMAP.md` for module status and completed milestones
-3. If conflict: **engine trust wins over product expansion**
+1. Read `SYNC_TRUST_LAYER.md` for product direction
+2. Read `SYNC_ENGINE_ROADMAP.md` for sequencing
+3. Read `ROADMAP.md` for module status and completed milestones
+4. If conflict: **never-fabricated verification and the closed loop win over briefing expansion**

@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 # Sync change workflow
 
-Repository development workflow only. Do not add agents, SDKs, model APIs, n8n, or MCP servers to the Sync application.
+Repository development workflow only. Do not add Cursor-runtime agents, extra model SDKs, n8n, or editor MCP as application scaffolding. **Product MCP/OAuth for ChatGPT/Cursor is in scope** (`SYNC_TRUST_LAYER.md`). Do not treat `/api/chat` as the agent protocol.
 
 The main Cursor Agent is the only implementation owner. Subagents inspect or verify; they do not edit. Do not invoke them merely because they exist.
 
@@ -21,12 +21,12 @@ Read `AGENTS.md`, `SYNC_WORKFLOW.md`, and `SYNC_VISION.md` first. Reuse existing
 1. Check `git status`. Preserve all existing user changes. Never overwrite unrelated work.
 2. Understand the requested outcome.
 3. Inspect relevant existing code before proposing new code. Search shared intelligence and adapters first (`lib/intelligence/*`, `lib/sync-capture/*`).
-4. Identify which Sync product pillar the change improves: Memory, Understanding, Consequences, Today, My Life, Goals, or Trust.
+4. Identify which Sync pillar the change improves: Trust, Activity, Passport, Safety, Memory, Understanding, Consequences, or Judgment.
 5. Identify the active pathway that currently owns the behavior.
 6. State important risks or ambiguity.
-7. If the change does not clearly support Sync’s mission, pause and explain rather than forcing implementation.
+7. If the change does not clearly support the trust layer (`SYNC_TRUST_LAYER.md`), pause and explain rather than forcing implementation.
 
-Sync is a personal reasoning engine and daily briefing, not a planner, generic dashboard, or chatbot-first product. Preserve **Memory → Understanding → Consequences → Decision/Judgment → Today**. Goals stay deferred as a product surface until `SYNC_ENGINE_ROADMAP.md` reaches that phase.
+Sync is a user-controlled trust layer, not a planner, generic dashboard, or chatbot-first product. Preserve **Memory → Understanding → Consequences → Decision/Judgment** as evidence, claims, sharing risk, and allow/deny/approval. Do not fork it. Goals stay deferred. Today/briefing is frozen unless it unblocks the Cursor ↔ Sync ↔ GitHub loop.
 
 ## Phase B — Decide whether delegation helps
 

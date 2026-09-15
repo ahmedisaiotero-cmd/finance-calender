@@ -8,28 +8,28 @@ Also read: `SYNC_WORKFLOW.md`, `SYNC_REASONING_SPEC.md`, `SYNC_EVALUATION.md`, `
 
 ## What Sync Is
 
-Sync is a **personal intelligence engine for life**.
+Sync is a **user-controlled trust layer** between a person and AI systems.
 
-It helps people make better day-to-day decisions by understanding context, consequences, memory, and timing.
+It records who authorized an action, what an agent may do, what was shared, and what an outside system actually confirmed.
 
-**The product is trust.**
+**The product is trust** — provenance and permission, not a reputation score and not a daily briefing.
 
-The reusable intelligence layer is the long-term product.
-The Sync app is the first product surface powered by that layer, presenting understanding as a calm daily life briefing.
-UI work should ship that intelligence clearly — not compete with planners, dashboards, or domain apps.
+Canonical direction: `SYNC_TRUST_LAYER.md`.
 
-**Core question:** *What do I need to know right now?*
+The reusable intelligence layer remains the long-term product. The Sync website is a quiet control center. ChatGPT, Cursor, and other hosts connect to the **same** account through OAuth/MCP. They do not get a private copy of Sync, and connecting is not the same as observing everything on that host.
+
+**Core question:** *Did this agent have permission, and what is the evidence?*
 
 **Core loop:**
 
-1. Tell Sync what happened or what is coming.
-2. Sync understands it.
-3. Sync decides whether to remember, ask, surface later, or stay quiet.
-4. Sync organizes the consequences.
-5. Sync judges what deserves attention.
-6. Sync helps the user understand the moment clearly and calmly.
+1. An agent or the user requests context, permission, or to record an action.
+2. Sync understands the claim and its evidence level.
+3. Sync decides allow, deny, limit, or ask.
+4. Sync appends an evidence record (never silently upgrades verification).
+5. Sync may later expose a minimum-necessary receipt or claim to another agent.
+6. The user can inspect, revoke, correct, or delete without rewriting history.
 
-The value of Sync is **trustworthy judgment**, not storage or feature breadth.
+Life briefing (Home, Capture, My Life) remains as a proving ground. Do not grow it as the product.
 
 ---
 
@@ -46,6 +46,8 @@ Sync is **not**:
 - a habit tracker
 - a finance app, fitness app, or collection of widgets
 - a motivational coach
+- a universal AI reputation score
+- a custom identity protocol or blockchain
 
 If a feature turns Sync into something on this list, stop and rethink it.
 
@@ -53,15 +55,17 @@ If a feature turns Sync into something on this list, stop and rethink it.
 
 ## Surfaces (Teaching & Output)
 
-### Sync app — first product surface
+### Sync website — control center (quiet, not opaque)
 
-The current app is the primary proving ground for Sync Intelligence. Its core surfaces are:
+The authenticated site is where the human manages the trust layer:
 
-- **Home** — what matters now
-- **My Life** — what Sync knows
-- **Life Timeline** — when it matters
-- **Capture** — how Sync learns
-- **Area views** — focused views powered by shared intelligence
+- connected agents and services
+- pending approvals and narrow grants
+- recent receipts with evidence labels
+- revoke, correct, delete, export
+- “Why does this agent know that?”
+
+Do not turn this into a daily dashboard. Legacy Home / My Life / Capture / Timeline / area views stay in the repo; freeze them unless they unblock the trust loop.
 
 ### `/sync-lab` — teaching/evaluation surface
 
@@ -73,9 +77,9 @@ Debug explainability belongs here — not in normal user replies.
 
 The mobile prototype is a current shell for the first app surface. Do not delete it. Do not treat it as a feature playground — it validates trustworthy decisions in a minimal shell.
 
-### Today — briefing output of judgment
+### Today — frozen briefing output (not the north star)
 
-**What matters now** — as decided by the Judgment stage (`decision-engine.ts`).
+**Legacy:** what matters now, as decided by the Judgment stage (`decision-engine.ts`). Do not expand this surface unless it unblocks the trust loop.
 
 Today is a **life briefing**, not a reporting engine or design canvas. It displays:
 
