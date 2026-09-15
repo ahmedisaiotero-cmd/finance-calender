@@ -13,6 +13,9 @@ import {
   ACTIVITY_LEDGER_DEFAULT_LIMIT,
   ACTIVITY_LEDGER_MAX_LIMIT,
   ActivityLedgerError,
+  PUBLIC_ACTIVITY_VERIFICATION_LEVELS,
+  PRIVILEGED_ACTIVITY_VERIFICATION_LEVELS,
+  isPublicActivityVerification,
   type ActivityEventStore,
   type ActivityLedgerCursor,
   type ActivityLedgerPage,
@@ -29,6 +32,9 @@ export {
   ACTIVITY_LEDGER_DEFAULT_LIMIT,
   ACTIVITY_LEDGER_MAX_LIMIT,
   ActivityLedgerError,
+  PUBLIC_ACTIVITY_VERIFICATION_LEVELS,
+  PRIVILEGED_ACTIVITY_VERIFICATION_LEVELS,
+  isPublicActivityVerification,
 };
 
 export type LedgerClock = () => Date;
@@ -45,16 +51,18 @@ function clampLimit(limit: number | undefined): number {
 
 export function ownerFromIdentity(
   identity: RequestIdentity,
-  clientBody?: {
+  untrusted?: {
     workspaceId?: unknown;
     userId?: unknown;
     ownerId?: unknown;
     email?: unknown;
+    headers?: Headers | Record<string, string | null | undefined>;
   },
 ): ActivityOwner {
+  void untrusted;
   return {
     userId: identity.user.id,
-    workspaceId: trustedWorkspaceId(identity, clientBody),
+    workspaceId: trustedWorkspaceId(identity, untrusted),
   };
 }
 
@@ -91,7 +99,17 @@ function assertIdempotencyKey(key: string) {
   }
 }
 
-export async function appendActivityEvent(
+function assertPublicVerification(level: string) {
+  if (!isPublicActivityVerification(level)) {
+    throw new ActivityLedgerError(
+      "privileged_verification",
+      "This verification level cannot be set through the public activity route",
+      403,
+    );
+  }
+}
+
+async function insertActivityEvent(
   input: AppendActivityEventInput,
   deps: { store: ActivityEventStore; now?: LedgerClock },
 ): Promise<AppendActivityEventResult> {
@@ -141,6 +159,36 @@ export async function appendActivityEvent(
   }
 
   return inserted;
+}
+
+/**
+ * Public append path used by ordinary authenticated clients and `POST /api/activity`.
+ * Rejects privileged verification levels instead of relabeling them.
+ */
+export async function appendActivityEvent(
+  input: AppendActivityEventInput,
+  deps: { store: ActivityEventStore; now?: LedgerClock },
+): Promise<AppendActivityEventResult> {
+  assertPublicVerification(input.event.verification);
+  return insertActivityEvent(input, deps);
+}
+
+/**
+ * Trusted server-side verifier path. Not imported by `POST /api/activity`.
+ * Callers must already assert `source_confirmed`; this will not silently upgrade.
+ */
+export async function appendSourceConfirmedActivityEvent(
+  input: AppendActivityEventInput,
+  deps: { store: ActivityEventStore; now?: LedgerClock },
+): Promise<AppendActivityEventResult> {
+  if (input.event.verification !== "source_confirmed") {
+    throw new ActivityLedgerError(
+      "verifier_verification_required",
+      "Trusted verifier writes must already use source_confirmed",
+      400,
+    );
+  }
+  return insertActivityEvent(input, deps);
 }
 
 export async function getActivityEvent(

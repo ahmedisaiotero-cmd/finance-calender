@@ -3,13 +3,16 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
 import {
+  ActivityLedgerError,
   appendActivityEvent,
+  appendSourceConfirmedActivityEvent,
   clampActivityLimit,
   decodeActivityCursor,
   encodeActivityCursor,
   getActivityEvent,
   listActivityEvents,
   ownerFromIdentity,
+  PUBLIC_ACTIVITY_VERIFICATION_LEVELS,
 } from "@/lib/activity/ledger";
 import { ACTIVITY_EVENT_SCHEMA_VERSION } from "@/lib/activity/ledger-types";
 import { createMemoryActivityEventStore } from "@/lib/activity/memory-event-store";
@@ -73,6 +76,67 @@ async function main() {
     assert.equal(loaded?.workspaceId, ownerA.workspaceId);
   }
 
+  // Ordinary clients cannot manufacture source_confirmed or system_logged.
+  {
+    const store = createMemoryActivityEventStore();
+    await assert.rejects(
+      () =>
+        appendActivityEvent(
+          {
+            owner: ownerA,
+            event: eventInput({
+              id: "evt-spoof",
+              verification: "source_confirmed",
+              summary: "I swear GitHub passed.",
+            }),
+            idempotencyKey: "spoof-1",
+          },
+          { store, now: clockFrom("2026-09-15T18:00:30.000Z") },
+        ),
+      (error: unknown) =>
+        error instanceof ActivityLedgerError &&
+        error.code === "privileged_verification" &&
+        error.status === 403,
+    );
+    await assert.rejects(
+      () =>
+        appendActivityEvent(
+          {
+            owner: ownerA,
+            event: eventInput({
+              id: "evt-spoof-logged",
+              verification: "system_logged",
+            }),
+            idempotencyKey: "spoof-2",
+          },
+          { store, now: clockFrom("2026-09-15T18:00:31.000Z") },
+        ),
+      (error: unknown) =>
+        error instanceof ActivityLedgerError && error.code === "privileged_verification",
+    );
+    assert.equal(await getActivityEvent(ownerA, "evt-spoof", store), null);
+    const page = await listActivityEvents({ owner: ownerA, limit: 50 }, store);
+    assert.equal(page.records.length, 0);
+
+    await assert.rejects(
+      () =>
+        appendSourceConfirmedActivityEvent(
+          {
+            owner: ownerA,
+            event: eventInput({
+              id: "evt-relabel",
+              verification: "self_reported",
+            }),
+            idempotencyKey: "relabel-1",
+          },
+          { store, now: clockFrom("2026-09-15T18:00:32.000Z") },
+        ),
+      (error: unknown) =>
+        error instanceof ActivityLedgerError &&
+        error.code === "verifier_verification_required",
+    );
+  }
+
   // Secrets are redacted before the store sees the payload.
   {
     const seen: string[] = [];
@@ -117,7 +181,7 @@ async function main() {
         owner: ownerA,
         event: eventInput({
           id: "evt-dup",
-          verification: "source_confirmed",
+          verification: "self_reported",
           summary: "GitHub said tests passed.",
         }),
         idempotencyKey: "same-delivery",
@@ -149,7 +213,7 @@ async function main() {
       { store, now: clockFrom("2026-09-15T18:04:00.000Z") },
     );
 
-    const confirmed = await appendActivityEvent(
+    const confirmed = await appendSourceConfirmedActivityEvent(
       {
         owner: ownerA,
         event: eventInput({
@@ -233,10 +297,19 @@ async function main() {
       user: { id: "user-trusted", email: "a@example.com", name: "A" },
       workspace: { id: "ws-trusted", name: "Personal" },
     };
+    assert.deepEqual([...PUBLIC_ACTIVITY_VERIFICATION_LEVELS], [
+      "unverified",
+      "self_reported",
+    ]);
+
     const owner = ownerFromIdentity(identity, {
       userId: "user-attacker",
       workspaceId: "ws-attacker",
       ownerId: "owner-attacker",
+      headers: {
+        "x-workspace-id": "ws-header-attacker",
+        "x-user-id": "user-header-attacker",
+      },
     });
     assert.equal(owner.userId, "user-trusted");
     assert.equal(owner.workspaceId, "ws-trusted");
@@ -366,6 +439,24 @@ async function main() {
     assert.equal(ledgerSource.includes("createActivityEvent"), true);
     assert.equal(ledgerSource.includes("sync-connections"), false);
     assert.equal(ledgerSource.includes("/api/chat"), false);
+
+    const routeSource = readFileSync(join(process.cwd(), "app/api/activity/route.ts"), "utf8");
+    assert.equal(routeSource.includes("appendActivityEvent"), true);
+    assert.equal(routeSource.includes("appendSourceConfirmedActivityEvent"), false);
+
+    const migration = readFileSync(
+      join(process.cwd(), "prisma/migrations/20260915000000_activity_event_ledger/migration.sql"),
+      "utf8",
+    );
+    assert.match(migration, /"userId" TEXT NOT NULL/);
+    assert.match(migration, /"workspaceId" TEXT NOT NULL/);
+    assert.match(migration, /"idempotencyKey" TEXT NOT NULL/);
+    assert.match(
+      migration,
+      /UNIQUE INDEX "ActivityEventRecord_workspaceId_userId_idempotencyKey_key"/,
+    );
+    const schema = readFileSync(join(process.cwd(), "prisma/schema.prisma"), "utf8");
+    assert.match(schema, /@@unique\(\[workspaceId, userId, idempotencyKey\]\)/);
   }
 
   console.log("activity-event-ledger tests passed");

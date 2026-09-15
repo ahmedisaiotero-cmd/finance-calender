@@ -32,7 +32,9 @@ export async function GET(request: Request) {
     const limit = limitParam ? Number(limitParam) : undefined;
     const page = await listActivityEvents(
       {
-        owner: ownerFromIdentity(loaded.identity),
+        owner: ownerFromIdentity(loaded.identity, {
+          headers: Object.fromEntries(request.headers),
+        }),
         limit: clampActivityLimit(limit),
         cursor: searchParams.get("cursor"),
       },
@@ -76,7 +78,10 @@ export async function POST(request: Request) {
 
     const result = await appendActivityEvent(
       {
-        owner: ownerFromIdentity(loaded.identity, body),
+        owner: ownerFromIdentity(loaded.identity, {
+          ...body,
+          headers: Object.fromEntries(request.headers),
+        }),
         event: body.event,
         idempotencyKey: body.idempotencyKey,
         priorEventId: body.priorEventId,

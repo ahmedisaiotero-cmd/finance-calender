@@ -117,6 +117,7 @@ model ActivityEventRecord {
   correlationId      String?
   priorEventId       String?
   sourceRef          String?
+  /// Required. Combined with workspaceId + userId for duplicate-delivery protection.
   idempotencyKey     String
   /// Normalized, redacted ActivityEvent JSON. Never tokens or secrets.
   payload            Json

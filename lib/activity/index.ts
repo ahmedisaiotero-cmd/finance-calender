@@ -21,6 +21,7 @@ export {
   ACTIVITY_LEDGER_MAX_LIMIT,
   ActivityLedgerError,
   appendActivityEvent,
+  appendSourceConfirmedActivityEvent,
   clampActivityLimit,
   decodeActivityCursor,
   encodeActivityCursor,
@@ -28,6 +29,11 @@ export {
   listActivityEvents,
   ownerFromIdentity,
 } from "@/lib/activity/ledger";
+export {
+  PUBLIC_ACTIVITY_VERIFICATION_LEVELS,
+  PRIVILEGED_ACTIVITY_VERIFICATION_LEVELS,
+  isPublicActivityVerification,
+} from "@/lib/activity/ledger-types";
 export type {
   ActivityEventStore,
   ActivityLedgerPage,

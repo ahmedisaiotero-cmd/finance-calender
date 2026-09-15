@@ -6,7 +6,7 @@
  * them without inventing a second event model.
  */
 
-import type { ActivityEvent } from "@/lib/activity/types";
+import type { ActivityEvent, VerificationLevel } from "@/lib/activity/types";
 import type { ActivityEventInput } from "@/lib/activity/activity-event";
 
 export const ACTIVITY_EVENT_SCHEMA_VERSION = 1;
@@ -75,6 +75,29 @@ export type ActivityLedgerCursor = {
   recordedAt: string;
   id: string;
 };
+
+/** Ordinary users and agents may submit only these levels. */
+export const PUBLIC_ACTIVITY_VERIFICATION_LEVELS = [
+  "unverified",
+  "self_reported",
+] as const satisfies readonly VerificationLevel[];
+
+/** Only trusted server paths may create these levels. */
+export const PRIVILEGED_ACTIVITY_VERIFICATION_LEVELS = [
+  "system_logged",
+  "source_confirmed",
+] as const satisfies readonly VerificationLevel[];
+
+export type PublicActivityVerification =
+  (typeof PUBLIC_ACTIVITY_VERIFICATION_LEVELS)[number];
+
+export function isPublicActivityVerification(
+  level: string,
+): level is PublicActivityVerification {
+  return (PUBLIC_ACTIVITY_VERIFICATION_LEVELS as readonly string[]).includes(
+    level,
+  );
+}
 
 export class ActivityLedgerError extends Error {
   readonly status: number;
