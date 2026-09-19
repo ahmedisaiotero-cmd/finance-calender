@@ -1,54 +1,45 @@
-# GitHub OAuth → source-confirmed receipt (next vertical slice)
+# GitHub OAuth → source-confirmed receipt
 
-**Status:** implementation-ready plan. **Not implemented.** No GitHub OAuth app credentials are assumed.
+**Status:** implemented as a local vertical slice. Live GitHub OAuth still needs a local OAuth App (`GITHUB_CLIENT_ID` / `SECRET` / redirect). Isolated Postgres is required for Prisma tests.
 
-Do not apply the ledger migration to production Neon as part of this slice. Apply it only to an isolated test or explicitly reviewed non-prod database.
+Do not apply ledger or GitHub migrations to production Neon from this work.
 
-## Goal
+## What is proven
 
-Prove one official connection can create a **new** `source_confirmed` activity event through trusted server code:
+1. Signed-in Sync identity (`requireRequestIdentity`) owns the connection.
+2. Official GitHub HTTP API (`GET /repos/{owner}/{repo}/commits/{sha}`) is the only confirmation source. Fetch is injectable in tests.
+3. OAuth start uses PKCE (`S256`) and `read:user` only. Classic `repo` is not requested (it is write-capable).
+4. Tokens sit in AES-256-GCM (`SYNC_TOKEN_VAULT_KEY`). They never appear on `ActivityEvent`.
+5. `confirmGithubCommit` → `appendSourceConfirmedActivityEvent`. Agent “tests passed” stays `self_reported`; GitHub writes a **new** row and may set `priorEventId`.
+6. Revoke destroys ciphertext and blocks later `get` / confirm (`connection_revoked`).
+7. Public `POST /api/activity` still cannot mint `source_confirmed`.
+8. Cross-owner connection reads fail.
 
-1. Signed-in Sync user (`requireRequestIdentity`).
-2. GitHub OAuth (official API) with **read-only** scopes (start with `repo` read or `public_repo` as appropriate; prefer the narrowest available).
-3. `Connection` + `PermissionGrant` (read checks/commits only, short expiry).
-4. Fetch a check or commit the user asked Sync to verify.
-5. `appendSourceConfirmedActivityEvent` with `priorEventId` if an agent already reported the same action.
-6. Visible receipt with `verification: source_confirmed`.
-7. Revoke connection + grant; further GitHub fetches and privileged writes fail.
-8. Tests: spoof via public POST blocked; cross-user denied; idempotent replay; post-revoke denied.
+## Isolated database
 
-## Files to add (when implementing)
+`prisma migrate deploy` **cannot** bootstrap empty Postgres in this repo: `20250601000000_add_timeline_item` assumes `Workspace` already exists (no baseline). Isolated setup:
 
-| Area | Likely path |
-|---|---|
-| OAuth start/callback | `app/api/connections/github/route.ts` (PKCE, `state`, exact redirect allowlist) |
-| Token vault | `lib/secrets/token-vault.ts` — encrypt; never log |
-| GitHub client | `lib/connectors/github/verify-check.ts` |
-| Grant enforcement | `lib/agent-trust/invariants.ts` + future persist |
-| Receipt | existing `appendSourceConfirmedActivityEvent` |
-| UI | one quiet Connections/Activity view — not a dashboard |
-| Tests | spoof, owner scope, revoke, idempotency |
-| Migration | only after isolated test DB exists |
+```
+docker compose -f docker-compose.test.yml up -d
+# SYNC_TEST_DATABASE_URL=postgresql://sync:sync_test_only@127.0.0.1:5433/sync_test
+npm run db:test:migrate
+```
 
-## Security checklist
+`db:test:migrate` runs `prisma db push` against that localhost URL only. The existing ledger SQL is also applied in `tests/ledger-migration-sql.integration.test.ts` onto a throwaway `User`/`Workspace` database.
 
-- PKCE + `state` + nonce; HTTPS only.
-- Tokens never on `ActivityEvent` or in client storage.
-- Callback must bind to the session user, not a client-supplied `userId`.
-- Public `/api/activity` still cannot create `source_confirmed`.
-- Manual “I connected GitHub” text is `manual` / `self_reported`, never `source_confirmed`.
+## Routes
 
-## Stop conditions
+| Method | Path | Role |
+|---|---|---|
+| POST | `/api/connections/github` | Start OAuth (503 if unset) |
+| GET | `/api/connections/github/callback` | Finish OAuth, persist connection |
+| POST | `/api/connections/github/verify` | Official commit read → receipt |
+| POST | `/api/connections/github/revoke` | Destroy token, revoke grant |
 
-Do not implement this slice until:
+## Limitation
 
-- `SYNC_TEST_DATABASE_URL` points at isolated Postgres **or** the implementer documents a reviewed exception;
-- GitHub OAuth app client ID/secret exist in the **local/non-prod** environment;
-- ledger migration has been applied to that isolated DB, not silently to production.
+Private repositories need a later, narrower GitHub App permission (`contents:read` / `checks:read`). This slice confirms **public** commits after the user is bound with `read:user`.
 
-## Acceptance checks
+## Not in this slice
 
-- Agent-reported “tests passed” stays `self_reported`.
-- GitHub confirmation is a **new** row with `priorEventId`.
-- Revoked grant cannot fetch or confirm.
-- Foreign workspace cannot read the receipt.
+ChatGPT/MCP, identity proofing, other agents, production Neon migrate, desktop rewrite.
