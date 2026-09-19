@@ -8,11 +8,11 @@ Also read: `SYNC_WORKFLOW.md`, `SYNC_REASONING_SPEC.md`, `SYNC_EVALUATION.md`, `
 
 ## What Sync Is
 
-Sync is a **user-controlled trust layer** between a person and AI systems.
+Sync is the **user-controlled identity, permission, and provenance layer** that binds a verified person to their AI agents.
 
-It records who authorized an action, what an agent may do, what was shared, and what an outside system actually confirmed.
+It records who the person is (identity assurance), what an agent may do, what was shared, and what an outside system actually confirmed (event provenance). Those are two different scales.
 
-**The product is trust** — provenance and permission, not a reputation score and not a daily briefing.
+**The product is trust** — not a reputation score and not a daily briefing.
 
 Canonical direction: `SYNC_TRUST_LAYER.md`.
 

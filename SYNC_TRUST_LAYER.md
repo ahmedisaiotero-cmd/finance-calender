@@ -1,197 +1,180 @@
 # Sync Trust Layer
 
-**Status:** active product direction (2026-09-15). This document supersedes briefing-first product framing when the two conflict. The intelligence pipeline is kept; the product question changes.
+**Status:** active product mission (updated 2026-09-19). This document is the canonical product definition.
 
-Read alongside `SYNC_ACTIVITY_PASSPORT.md`, `AGENTS.md`, `SYNC_VISION.md`, and `SYNC_ENGINE_ROADMAP.md`.
+Read alongside `SYNC_ACTIVITY_PASSPORT.md`, `docs/adr/001-two-trust-scales.md`, `docs/adr/002-oauth-mcp-a2a-vc.md`, `docs/SYNC_PRIVACY_LEGAL_CHECKLIST.md`, `AGENTS.md`, and `SYNC_ENGINE_ROADMAP.md`.
 
 ---
 
-## What Sync is now
+## Product definition
 
-Sync is a **user-controlled trust layer** between a person and AI systems.
+> **Sync is the user-controlled identity, permission, and provenance layer that binds a verified person to their AI agents, tells each agent what it may know or do, and records trustworthy receipts of what happened.**
 
-It lets connected agents know, at minimum necessary scope:
+Distributed by **AOT Creatives** (legal entity: **AOT LLC**). The existing Next.js app is the Sync control plane. AOT marketing/download lives on a separate site unless a deliberate monorepo is created later.
 
-- who they are acting for
-- what they are allowed to do
-- what is already known, and how strongly
-- what actually happened, and who confirmed it
+**Core questions:**
 
-The product is still **trust**. Trust now means **provenance and permission**, not a daily life briefing and not a reputation score.
+1. How strongly do we know this account belongs to this person? *(human identity assurance)*
+2. Did this agent have permission, and what is the evidence? *(event/claim provenance)*
 
-**Core question:** *Did this agent have permission, and what is the evidence?*
+These are **two different trust scales**. Never store them in one field. See `docs/adr/001-two-trust-scales.md`.
 
-The existing engine stays as **internal machinery**:
+---
 
-| Stage | Trust-layer job |
-|---|---|
-| Memory | Evidence and events |
-| Understanding | Claims derived from evidence |
-| Consequences | Risk of sharing or acting |
-| Judgment | Allow, deny, limit, or request approval |
-| Response | Quiet receipts and permission language |
+## Intended experience
 
-Life briefing (Today, My Life, Capture) remains in the repo as a proving ground. It is **not** the north star. Do not grow it unless it helps verify identity, permission, provenance, or receipts.
+1. Download or install Sync from AOT Creatives (web/PWA first).
+2. Create and secure one Sync account (email + passkey/MFA).
+3. Optionally choose a higher identity-verification tier. Government-ID proofing is the highest **optional** tier.
+4. Connect a **supported** AI host or agent through official OAuth, MCP, API, or A2A.
+5. Review exactly what that connection may read, write, or do.
+6. Approve limited, expiring permissions. Sync records the user grant; the provider must also authorize what it can technically enforce.
+7. Sync binds person, agent, provider account, permissions, and activity history.
+8. The UI shows **In Sync** only while identity/account, live connection, current permission, and last health check are all valid.
+9. The user can inspect, narrow, pause, revoke, export, or delete access at any time.
+
+Today/briefing may remain as an optional benefit. It is **not** the product identity.
 
 ---
 
 ## What Sync is not
 
-- a planner, dashboard, chatbot, or productivity app
+- an AI model or another general-purpose agent
+- a password manager or government identity issuer
+- a claim that every consumer AI account can be connected
+- an autonomous system with unlimited standing permission
+- a productivity dashboard or daily briefing product
 - a universal “AI reputation score”
-- a custom identity protocol or blockchain
-- a claim that activity is “verified” because it appeared in a conversation
-- a silent collector of full AI chat histories
-
-Quiet is correct. Opaque is not. Users must still inspect, revoke, correct, delete, and require approval.
+- NIST-certified (unless independently assessed — do not advertise this)
 
 ---
 
-## Evidence levels (never upgrade in place)
+## Honest interoperability
 
-Every stored fact needs a provenance label. Map product language onto the existing Activity / Passport enums — do not invent a second type system.
+> Connect supported AI hosts and agents using their official interfaces. Sync provides one identity and permission control plane, and portable credentials where the receiving platform supports open standards.
 
-| Product language | Activity `verification` / Passport `basis` | May call “verified”? |
+Adapter support states (`lib/agent-trust`):
+
+| State | Meaning |
+|---|---|
+| `native` | Official OAuth/API with enforceable scopes |
+| `mcp` | Host connects to Sync’s authenticated MCP server |
+| `a2a` | Agent discoverable through A2A |
+| `manual` | User recorded an agent; no live control or verification |
+| `unsupported` | No safe official integration |
+
+Never scrape sessions, copy cookies, or collect provider passwords. Manual records must not use a live **In Sync** badge.
+
+---
+
+## Two trust scales (do not collapse)
+
+### A. Human identity assurance
+
+Answers: *How strongly has Sync established that this account belongs to a particular person?*
+
+| Tier | Meaning |
+|---|---|
+| `account_verified` | Email plus passkey/MFA. No real-world identity claim. |
+| `self_attested` | User-supplied profile claims, labeled as such. |
+| `source_linked` | Official OAuth/federation proved control of an external account. Not government-ID proofing. |
+| `identity_proofed` | Approved third-party processor verified government ID (and lawful selfie/liveness if chosen). Sync stores the **result and provider reference only**. |
+
+Status: `pending` | `verified` | `failed` | `expired` | `revoked`.
+
+NIST SP 800-63A is vocabulary/guidance, not a certification claim.
+
+### B. Event / claim provenance
+
+Answers: *How strongly is this particular activity or claim supported?*
+
+Preserve the existing Activity / Passport ladder. Do not invent a second event enum.
+
+| Product language | Activity `verification` | Public POST may create? |
 |---|---|---|
-| User-confirmed | `self_reported` / `user_stated` | No |
-| Sync-observed | `system_logged`, actor `sync` | No |
-| Agent-reported | `self_reported`, actor `assistant` | No |
-| Externally verified | `source_confirmed` **and** `isVerifiedClaim` / event `source_confirmed` | Yes |
-| Sync-inferred | `inferred` | No |
+| Unverified | `unverified` | Yes |
+| User- or agent-reported | `self_reported` | Yes |
+| Sync-observed | `system_logged` | No — trusted server path only |
+| Externally confirmed | `source_confirmed` | No — `appendSourceConfirmedActivityEvent` only |
 
-Agent-reported and user-stated must stay distinguishable by **actor**, not by inflating verification.
-
-A signature proves a key signed data. It does not prove the claim is true. GitHub (or another source) confirming a check is stronger than Cursor saying “tests passed.”
+An identity-proofed user can still make an unverified statement. A `source_confirmed` event can belong to a user who never completed government-ID proofing.
 
 ---
 
-## What to record (narrow events, not a score)
+## Core domain objects
 
-For each agent action, prefer these fields (already mostly on `ActivityEvent`):
+Contracts live in `lib/agent-trust/` (TypeScript only; no Prisma persistence yet):
 
-- which human authorized
-- which agent/model requested or performed
-- what information was shared
-- what permission and limits were granted
-- which tool or service was used
-- what action was attempted
-- whether it succeeded (as reported vs as confirmed)
-- which system confirmed the result
-- when the grant expires
-- whether it was revoked
+| Object | Role |
+|---|---|
+| `PrincipalIdentity` | Human owner and identity-assurance record |
+| `AgentIdentity` | Agent bound to a principal — not the human |
+| `AgentCard` | Public A2A-style manifest (no secrets) |
+| `Connection` | Official provider/MCP/A2A link + health |
+| `PermissionGrant` | Least-privilege, expiring grant |
+| `Delegation` | Person authorizes agent under limits |
+| `ContextPackage` | Minimal, purpose-bound disclosure |
+| `ActivityReceipt` | Envelope over append-only `ActivityEvent` |
+| `CredentialAttestation` | Sync-issued signed claim (not government-issued) |
 
-An external agent should be able to ask only:
-
-- “May I modify this repository?”
-- “Does this user require confirmation before spending money?”
-- “Has this task already been completed?”
-- “Which preferences are user-confirmed versus inferred?”
-- “Did the previous coding agent actually run the tests?”
-
-Sync returns the **minimum necessary** answer — never the full history by default.
+Reuse `lib/activity/*` and `lib/passport/*`. Do not dump this into `SyncProfile.data` or `captured-items`.
 
 ---
 
-## Architecture (one account, many doorways)
+## Architecture (preserve the foundation)
 
 ```
-Human  →  Sync website (account, grants, revoke, correct)
-              │
+AOT Creatives (marketing / download)
+        │
+Human → Sync cloud control plane (this repo)
+              ├── Principal identity + optional proofing result
+              ├── Agent identities, cards, connections
+              ├── Permission grants + delegations
+              ├── Encrypted token vault (not in the ledger)
               ├── Evidence ledger (append-only ActivityEvent)
-              ├── Passport claims (derived, correctable)
-              ├── Policies (narrow, time-bound grants)
-              │
-              ├── OAuth  (ChatGPT app, other hosts)
-              ├── MCP    (Cursor and any remote-MCP client)
-              └── Connectors (GitHub and later sources confirm outcomes)
+              ├── Passport claims (correctable; not history)
+              ├── OAuth / MCP / later A2A
+              └── Verifiers (GitHub first) → source_confirmed receipts
 ```
 
-Installing Sync inside ChatGPT, Cursor, or another host is a **doorway** into the same account. It does **not** give Sync omniscience over that host. The host still controls what the plugin receives and whether the agent actually calls Sync.
+**Reuse:** `createActivityEvent`, `appendActivityEvent` (public), `appendSourceConfirmedActivityEvent` (trusted), `requireRequestIdentity`, `trustedWorkspaceId`, Decision Engine for allow/deny/approval scoring.
 
-**Existing foundation to reuse (do not fork):**
-
-- `lib/activity/*` — event contract, redaction, `createActivityEvent`
-- `lib/passport/*` — claims, `isVerifiedClaim`, never-upgrade
-- `lib/auth/request-identity.ts` — trusted human identity
-- `decision-engine.ts` — judgment for sharing risk / approval, not a second ranker
-- Capture/memory pipeline — user-confirmed and inferred **memory**, not the ledger
-
-**Do not treat as verification:** `lib/sync-connections.ts` (labels only).  
-**Do not extend as the agent protocol:** `/api/chat`.
+**Do not treat as verification:** `lib/sync-connections.ts`.  
+**Do not use as the agent protocol:** `/api/chat`.
 
 ---
 
-## Standards to follow (do not invent a protocol)
+## Surfaces (quiet control center)
 
-Build the product on existing rails. Standardization of Sync’s event format can wait until there is real usage.
+Primary navigation when built (minimal, not a dashboard):
 
-| Use | Standard |
-|---|---|
-| Human login | Existing Supabase Auth (passkeys later) |
-| Plugin login | OAuth 2.0 authorize/token issued by Sync |
-| Agent tools | MCP (remote), OAuth-style authorization |
-| Allow/deny API | Align with OpenID AuthZEN shapes when exposing policy |
-| Portable claims later | W3C Verifiable Credentials 2.0 + OpenID for VP |
-| Agent discovery later | A2A Agent Cards |
-| Industry problem space | NIST AI agent identity and authorization |
-| Constraints / provenance research | IETF Agent Identity Protocol (experimental draft only) |
+- **Identity** — assurance tier, security, recovery
+- **Agents** — cards, capabilities, status
+- **Connections** — health, protocol, last check
+- **Permissions** — pause/revoke
+- **Activity** — provenance-aware receipts
+- **Settings & Data** — export, delete, notices
+
+Legacy Home / Capture / My Life stay frozen unless they unblock this loop. `/sync-lab` remains a teaching surface.
 
 ---
 
-## Closed-loop demonstration (definition of done for the pivot)
+## Downloadable software
 
-1. Ahmed signs into one Sync account.
-2. Cursor connects through Sync MCP + OAuth.
-3. ChatGPT connects through a Sync app (same account).
-4. Cursor requests narrowly scoped GitHub authority.
-5. Sync records authorization as evidence.
-6. Cursor performs a repository task.
-7. GitHub independently confirms commits/checks/PR state.
-8. ChatGPT can retrieve a **limited, evidence-labeled** summary of the outcome.
-9. Ahmed can revoke both connections from the Sync site.
-
-Until GitHub (or another source) confirms, the result stays **agent-reported**.
+Web/PWA first. Identity callbacks, OAuth, token vault, attestations, revocation, and the ledger stay in the cloud. No Electron/Tauri rewrite now. See `docs/adr/003-downloadable-pwa-desktop.md`.
 
 ---
 
-## Build sequence (authoritative for this direction)
+## Build sequence
 
-Do not start with a universal protocol, a ChatGPT marketplace polish pass, or a website redesign.
+T0–T1.1 are done on `main` (`104db32`, `5012a9b`, `acb37ce`). Ledger migration is **not** applied to Neon.
 
-0. **Docs / agent rules** — this file plus AGENTS/vision/roadmap (so agents do not refuse product MCP).
-1. **Schemas** — persist ActivityEvent; OAuth clients; agent connections; policies. Corrections = new events, not row mutation.
-2. **Evidence ledger** — append-only writes only via `createActivityEvent`.
-3. **Permission engine** — narrow, expiring grants; human confirmation for sensitive actions.
-4. **GitHub verification connector** — the first `source_confirmed` path.
-5. **MCP adapter** — thin tools: `get_relevant_context`, `check_permission`, `request_approval`, `record_user_instruction`, `report_agent_action`, `verify_task_outcome`, `get_previous_task_state`.
-6. **Cursor connection** — same MCP + same account.
-7. **ChatGPT Sync app** — install + Sign in with Sync.
-8. **Quiet control center** — connections, pending approvals, recent receipts, revoke, “why does this agent know that?”
-9. **Signed receipts** — tamper-evident bundles of user + agent + grant + action + result (after the loop works).
-10. **Additional platforms** — only with a concrete use case and enough API access.
+Next: isolated test-database (blocked until `SYNC_TEST_DATABASE_URL` exists) → GitHub OAuth read-only vertical slice. Plan: `SYNC_GITHUB_VERTICAL_SLICE.md`.
 
-Legacy briefing work is frozen unless it unblocks this loop.
+Do not invent a custom identity protocol, blockchain, or reputation score.
 
 ---
 
-## Privacy and safety rules
+## Privacy baseline
 
-- Do not ingest full conversations by default.
-- Tokens never live on `ActivityEvent`; hash or secret-store only.
-- `/api/*` is not gated by page middleware — every new route must authenticate (human session or OAuth connection).
-- Demo mode must not write real receipts for a real user.
-- Memory and ledger stay separate: correcting a preference must not rewrite history.
-- Never present inferred or agent-reported information as verified.
-
----
-
-## Honest scope
-
-| Horizon | Realistic? |
-|---|---|
-| Private beta of the Cursor ↔ Sync ↔ GitHub loop | Yes |
-| ChatGPT + Cursor + GitHub on one account | Yes, host-limited |
-| Cross-platform trust with several integrations | Difficult, cooperation-required |
-| Universally recognized AI identity / passport | Long-term ecosystem bet |
-
-The opportunity now is **the trustworthy bridge that stops every agent from starting blind, repeating work, or acting with unclear authority** — not owning everyone’s AI identity.
+Adults-only, US-first. Government-ID proofing optional. No advertising-data business. Specialist processor for IDs/biometrics; Sync must not store raw IDs, selfies, templates, document numbers, or SSNs. Counsel review is a **launch blocker**. See `docs/SYNC_PRIVACY_LEGAL_CHECKLIST.md`.

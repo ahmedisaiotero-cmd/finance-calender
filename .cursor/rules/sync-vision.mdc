@@ -9,9 +9,9 @@ Read `SYNC_TRUST_LAYER.md`, `SYNC_VISION.md`, `SYNC_ENGINE_MANIFESTO.md`, and `A
 
 ## What Sync is
 
-Sync is a **user-controlled trust layer** between a person and AI systems.
-The product is **trust** (provenance and permission).
-One Sync account; MCP/OAuth plugins are doorways. Connecting a host is not omniscience.
+Sync is the **user-controlled identity, permission, and provenance layer** between a person and their AI agents.
+Human identity assurance and event provenance are separate scales.
+One Sync account; official OAuth/MCP/A2A only. Connecting a host is not omniscience. No session scraping.
 
 The website is a quiet control center. `/sync-lab` teaches the engine.
 

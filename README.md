@@ -2,7 +2,7 @@
 
 Sync is a **user-controlled trust layer** between a person and AI systems — permission, provenance, and action receipts. It is not a chatbot, dashboard, planner, or AI reputation score.
 
-Canonical direction: [`SYNC_TRUST_LAYER.md`](./SYNC_TRUST_LAYER.md).
+Canonical direction: [`SYNC_TRUST_LAYER.md`](./SYNC_TRUST_LAYER.md). Identity vs provenance: [`docs/adr/001-two-trust-scales.md`](./docs/adr/001-two-trust-scales.md).
 
 The intelligence pipeline stays as internal machinery:
 

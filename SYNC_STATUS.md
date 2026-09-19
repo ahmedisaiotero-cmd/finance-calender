@@ -36,6 +36,8 @@ Last reviewed from repository inspection on the current `main` branch.
 ## Documentation vs code
 
 - Authoritative product direction: `SYNC_TRUST_LAYER.md`
+- Two trust scales: `docs/adr/001-two-trust-scales.md`
+- Domain contracts (not persisted): `lib/agent-trust/`
 - Authoritative sequencing: `SYNC_ENGINE_ROADMAP.md`
 - Repository map: `SYNC_REPOSITORY.md`
 - Root README previously drifted to create-next-app boilerplate; replaced with Sync-accurate guidance

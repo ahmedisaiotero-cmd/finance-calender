@@ -2,7 +2,9 @@
 
 Before making changes, read:
 
-- **SYNC_TRUST_LAYER.md** — current product direction
+- **SYNC_TRUST_LAYER.md** — current product mission
+- **docs/adr/001-two-trust-scales.md** — identity assurance vs event provenance
+- **docs/SYNC_PRIVACY_LEGAL_CHECKLIST.md** — launch blockers
 - **AGENTS.md** — engine-first rules, pipeline, forbidden moves
 - **SYNC_WORKFLOW.md** — workflow guardrails
 - **SYNC_ENGINE_MANIFESTO.md** — mission, constitution, philosophy

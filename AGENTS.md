@@ -1,6 +1,8 @@
 # Sync Intelligence System
 
-Sync is a **user-controlled trust layer** between a person and AI systems — identity, permission, provenance, and action receipts. It is not a planner, dashboard, chatbot, or universal AI reputation score.
+Sync is the **user-controlled identity, permission, and provenance layer** that binds a verified person to their AI agents, tells each agent what it may know or do, and records trustworthy receipts. It is not a planner, dashboard, chatbot, or universal AI reputation score.
+
+Human identity assurance and event provenance are **separate scales** (`docs/adr/001-two-trust-scales.md`). Do not store them in one field.
 
 The reusable intelligence layer remains the long-term product. The Sync website is the account and control center; MCP/OAuth plugins are doorways into that account. Life briefing surfaces stay in the repo as a proving ground, not the north star.
 

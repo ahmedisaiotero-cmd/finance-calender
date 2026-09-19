@@ -1,127 +1,46 @@
 # Sync Engine Roadmap
 
-This roadmap defines how Sync becomes a trusted permission, context, and action-receipt layer.
+This roadmap sequences Sync as the identity, permission, and provenance layer for AI agents.
 
-It supersedes product-expansion sequencing in `ROADMAP.md` when the two conflict. Canonical product direction: `SYNC_TRUST_LAYER.md`.
+Canonical mission: `SYNC_TRUST_LAYER.md`. ADRs: `docs/adr/`. Legal/privacy: `docs/SYNC_PRIVACY_LEGAL_CHECKLIST.md`. Next slice: `SYNC_GITHUB_VERTICAL_SLICE.md`.
 
-Read alongside `SYNC_ENGINE_MANIFESTO.md`, `SYNC_REASONING_SPEC.md`, `SYNC_ACTIVITY_PASSPORT.md`, and `SYNC_EVALUATION.md`.
+Today / Daily Brief is an **optional** later output. It is not the product gate.
 
 ---
 
 ## North Star
 
-**Never-fabricated verification** plus a working **Cursor ↔ Sync ↔ GitHub** loop (then ChatGPT on the same account).
-
-Do not expand life dashboards, reputation scores, or a custom identity protocol. Briefing TDR work may continue as engine tests; it is not the product gate.
+A verified person can connect a supported agent, grant narrow permissions, and see evidence-labeled receipts — with **In Sync** only when identity, connection, permission, and health are all valid.
 
 ---
 
-## Approved Build Sequence
+## Completed
 
-This sequence is authoritative.
+| Phase | Commit | Notes |
+|---|---|---|
+| Direction lock | `104db32` | Trust-layer docs |
+| T1 Evidence ledger | `5012a9b` | Append-only `ActivityEvent` |
+| T1.1 Verification hardening | `acb37ce` | Public POST cannot mint `source_confirmed` |
+| Agent-identity mission lock | this change | Two trust scales, contracts, legal checklist |
 
-0. **Direction lock** — `SYNC_TRUST_LAYER.md` and agent rules (done when those docs are current)
-1. **Persist the Activity + Passport contracts** — append-only ledger, OAuth clients, agent connections (reuse `lib/activity`, `lib/passport`; do not dump into `SyncProfile.data`)
-2. **Permission engine** — narrow, expiring grants; human confirmation for sensitive actions
-3. **GitHub verification connector** — first `source_confirmed` path
-4. **MCP adapter** — thin tools over the same account; no parallel brain
-5. **Cursor connection**
-6. **ChatGPT Sync app** (same OAuth account)
-7. **Quiet control center** — connections, approvals, receipts, revoke
-8. **Signed receipts** — after the loop works
-9. **Additional platforms** — only with a concrete use case and enough API access
-
-Legacy sequence (Life Graph, briefing TDR, goals, consumer Today polish) is **frozen** unless it unblocks this loop.
-
-Integrations are no longer “step 7 after TDR ≥ 85%.” GitHub + MCP **are** the product path. Calendar/bank/health APIs remain deferred.
+Ledger migration `20260915000000_activity_event_ledger` is **not** applied to Neon.
 
 ---
 
-## Phase T1: Evidence ledger
+## Next (authoritative)
 
-**Goal:** Activity events survive a process restart without claiming extra verification.
+1. Isolated Postgres via `SYNC_TEST_DATABASE_URL` (blocked until a local test DB exists).
+2. Apply the ledger migration **only** to that isolated DB.
+3. GitHub OAuth read-only → `appendSourceConfirmedActivityEvent` (`SYNC_GITHUB_VERTICAL_SLICE.md`).
+4. Permission persist + revoke UI (quiet control center).
+5. MCP doorway for Cursor/ChatGPT against the same grants.
+6. Passkeys/MFA and optional identity-proofing **after** counsel + vendor review.
+7. Portable Sync-issued attestations (VC/OpenID4VC) only when a receiver exists.
 
-- Prisma insert-only rows matching `ActivityEvent`
-- Writes only through `createActivityEvent`
-- Corrections = new events (`correlationId`, supersede in detail)
-- Tests: persist + never-upgrade + redaction
-
-**Exit:** events round-trip; agent-reported cannot become `source_confirmed` in place.
-
----
-
-## Phase T2: OAuth + permission grants
-
-**Goal:** A host can Sign in with Sync and receive a narrow, expiring grant.
-
-- Human login stays Supabase
-- Sync-issued OAuth authorize/token for plugins
-- `PermissionState` + scopes on `AgentConnection`
-- Minimal pending-approval UI (not a dashboard)
-
-**Exit:** grant, expire, revoke recorded as activity events.
+Frozen: briefing redesign, finance/health dashboards, desktop rewrite, EU identity-proofing launch.
 
 ---
 
-## Phase T3: GitHub confirmation
+## Current position
 
-**Goal:** An outside system can upgrade a *new* event to `source_confirmed`.
-
-**Exit:** Cursor-reported “tests passed” stays agent-reported until GitHub checks confirm.
-
----
-
-## Phase T4: MCP + Cursor
-
-**Goal:** Cursor calls Sync tools against the same account.
-
-Tools: context, permission, approval, record instruction, report action, verify outcome, previous task state.
-
-**Exit:** closed loop without ChatGPT still counts.
-
----
-
-## Phase T5: ChatGPT app + revocation
-
-**Goal:** Second host retrieves a limited verified summary; user revokes both from the website.
-
-**Exit:** the demonstration in `SYNC_TRUST_LAYER.md`.
-
----
-
-## Explicitly deprioritized
-
-- New main tabs, analytics, streaks, reputation scores
-- Sync Health / Sync Money standalone apps
-- Custom cryptographic protocol or blockchain
-- Ten shallow integrations
-- Chatbot-first UI (`/api/chat` is not the protocol)
-- Today / Daily Brief redesign
-- Ingesting full conversation histories by default
-
----
-
-## Current Position
-
-| Phase | Status |
-|---|---|
-| Direction lock | **In progress** (docs) |
-| Activity + Passport contracts | **Done** (pure TS, not persisted) |
-| Phase T1: Evidence ledger | Next |
-| Phase T2–T5 | Not started |
-| Legacy briefing phases 1–5 | Frozen unless they unblock T1–T5 |
-
-**Immediate focus:** persist `ActivityEvent`, then OAuth-bound MCP, then GitHub as the only external verifier.
-
----
-
-## How This Relates to `ROADMAP.md`
-
-`ROADMAP.md` describes historical MVP and intelligence architecture work. This document plus `SYNC_TRUST_LAYER.md` define **what comes next**.
-
-When planning work:
-
-1. Read `SYNC_TRUST_LAYER.md` for product direction
-2. Read `SYNC_ENGINE_ROADMAP.md` for sequencing
-3. Read `ROADMAP.md` for module status and completed milestones
-4. If conflict: **never-fabricated verification and the closed loop win over briefing expansion**
+Foundation of the identity/permission product exists. The complete connection → permission → receipt user flow does **not**. Human identity tiers, agent bindings, OAuth connections, and signed cards are designed, not shipped.
