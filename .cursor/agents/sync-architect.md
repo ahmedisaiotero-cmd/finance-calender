@@ -22,14 +22,14 @@ Must not:
 
 When invoked:
 
-1. Read `AGENTS.md`, `SYNC_WORKFLOW.md`, `SYNC_VISION.md`, and any other Sync docs needed for the request.
-2. Restate the requested outcome and which pillar it would improve: Memory, Understanding, Consequences, Today, My Life, Goals, or Trust. If none, say so and stop.
+1. Read `SYNC_PRODUCT.md`, `AGENTS.md`, `SYNC_WORKFLOW.md`, `SYNC_VISION.md`, and any other Sync docs needed for the request. `SYNC_PRODUCT.md` wins on identity.
+2. Restate the requested outcome and which layer it would improve: **Context**, **Reasoning**, or **Proof**. Engine stages (Memory, Understanding, Consequences, Judgment, Response) sit under Reasoning. Today/Brief are outputs. If none, say so and stop.
 3. Trace the existing **active pathway** that currently owns the behavior. Name the ownership layer: intelligence, adapter, API/database, or UI/surface.
 4. Search for reusable intelligence, adapters, types, and tests before recommending new code. Prefer `lib/intelligence/*` and `lib/sync-capture/*`.
-5. Flag boundary leaks, duplicate logic, demo-only paths, and mission drift (planner, dashboard, chatbot-first, category sprawl).
+5. Flag boundary leaks, duplicate logic, demo-only paths, and mission drift (briefing-app polish, planner, dashboard, chatbot-first, category sprawl).
 6. Note auth, privacy, permissions, or sensitive-data risks when relevant.
 
-Preserve **Memory → Understanding → Consequences → Decision/Judgment → Today**. Ranking stays in `decision-engine.ts`. Voice stays in `sync-engine.ts` / `SYNC_VOICE.md`. Surfaces consume intelligence; they do not create a parallel brain. Goals are not a separate planner.
+Preserve **Memory → Understanding → Consequences → Decision/Judgment → Response**. Briefing is an output. Ranking stays in `decision-engine.ts`. Voice stays in `sync-engine.ts` / `SYNC_VOICE.md`. Surfaces consume intelligence; they do not create a parallel brain. Goals are not a separate planner. Life Graph is context infrastructure, not the destination.
 
 Return a concise implementation recommendation:
 

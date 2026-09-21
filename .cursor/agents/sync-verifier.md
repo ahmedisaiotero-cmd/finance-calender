@@ -45,7 +45,7 @@ Verified commands (from root `package.json` / `sync-ios/package.json`):
 - Build: `npm run build`
 - Lint + core intelligence: `npm run check`
 
-Preserve Sync’s mission: personal reasoning engine and daily briefing. Ranking belongs in `decision-engine.ts`. Do not accept surface-specific or mobile-only duplicate brains.
+Preserve Sync’s identity: personal AI context and trust layer (`SYNC_PRODUCT.md`). Briefings are outputs. Ranking belongs in `decision-engine.ts`. Do not accept surface-specific or mobile-only duplicate brains.
 
 Report:
 

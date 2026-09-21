@@ -2,6 +2,8 @@
 
 Last reviewed from repository inspection on the current `main` branch.
 
+**Identity:** See `SYNC_PRODUCT.md`. Honest position: Sync has parts of the context and reasoning foundation, plus the beginning of the proof layer — those pieces have not yet been unified into the current product vision. This file describes **what the code does today**, not what Sync is becoming.
+
 ## Working and tested
 
 - Capture → memory → meaning → consequences → Decision Engine → Today/Brief adapters
@@ -34,6 +36,7 @@ Last reviewed from repository inspection on the current `main` branch.
 
 ## Documentation vs code
 
+- Authoritative identity: `SYNC_PRODUCT.md`
 - Authoritative sequencing: `SYNC_ENGINE_ROADMAP.md`
 - Repository map: `SYNC_REPOSITORY.md`
 - Root README previously drifted to create-next-app boilerplate; replaced with Sync-accurate guidance

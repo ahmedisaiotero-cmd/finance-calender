@@ -4,8 +4,10 @@ Use before merging intelligence or surface changes.
 
 ## Gate
 
-- [ ] Does this improve Sync’s ability to make trustworthy decisions?
-- [ ] Which stage? Memory / Understanding / Consequences / Judgment / Response / Briefing / Safety / Trust
+- [ ] Does this strengthen Sync as a personal AI context and trust layer? (`SYNC_PRODUCT.md`)
+- [ ] Which layer? Context / Reasoning / Proof
+- [ ] Which engine stage if Reasoning? Memory / Understanding / Consequences / Judgment / Response / Safety / Trust
+- [ ] If this is a Today/Brief change: is it required as an **output**, or is it briefing-app drift?
 
 ## Boundaries
 

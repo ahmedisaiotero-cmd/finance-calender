@@ -21,12 +21,12 @@ Read `AGENTS.md`, `SYNC_WORKFLOW.md`, and `SYNC_VISION.md` first. Reuse existing
 1. Check `git status`. Preserve all existing user changes. Never overwrite unrelated work.
 2. Understand the requested outcome.
 3. Inspect relevant existing code before proposing new code. Search shared intelligence and adapters first (`lib/intelligence/*`, `lib/sync-capture/*`).
-4. Identify which Sync product pillar the change improves: Memory, Understanding, Consequences, Today, My Life, Goals, or Trust.
+4. Identify which Sync layer the change improves: **Context**, **Reasoning**, or **Proof** (see `SYNC_PRODUCT.md`). Engine stages (Memory, Understanding, Consequences, Judgment, Response) sit under Reasoning. Today/Brief are outputs.
 5. Identify the active pathway that currently owns the behavior.
 6. State important risks or ambiguity.
-7. If the change does not clearly support Sync’s mission, pause and explain rather than forcing implementation.
+7. If the change does not clearly support Sync’s identity as a personal AI context and trust layer, pause and explain rather than forcing implementation.
 
-Sync is a personal reasoning engine and daily briefing, not a planner, generic dashboard, or chatbot-first product. Preserve **Memory → Understanding → Consequences → Decision/Judgment → Today**. Goals stay deferred as a product surface until `SYNC_ENGINE_ROADMAP.md` reaches that phase.
+Sync is a personal AI context and trust layer, not a briefing app, planner, generic dashboard, or chatbot-first product. Preserve **Memory → Understanding → Consequences → Decision/Judgment → Response**. Briefing is an output of that pipeline, not the product. Goals stay deferred as a product surface until `SYNC_ENGINE_ROADMAP.md` reaches that phase.
 
 ## Phase B — Decide whether delegation helps
 
