@@ -5,6 +5,7 @@ This document maps the repository structure for the Sync Foundation Release and 
 For mission, trust rules, and sequencing, read:
 
 - `SYNC_PRODUCT.md` (product identity — authoritative)
+- `SYNC_STANDARDS.md` (technical trust and integrations)
 - `SYNC_VISION.md`
 - `SYNC_WORKFLOW.md`
 - `SYNC_INTELLIGENCE.md`

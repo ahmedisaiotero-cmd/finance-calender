@@ -4,7 +4,7 @@ Status: **foundation only** (contracts, pure pipeline, tests). No connectors, no
 network, no schema changes. This document explains the new layer and how it reuses the
 existing Sync intelligence.
 
-Read alongside `AGENTS.md`, `SYNC_WORKFLOW.md`, `SYNC_VISION.md`, and `SYNC_REASONING_SPEC.md`.
+Read alongside `SYNC_PRODUCT.md`, `SYNC_STANDARDS.md`, `AGENTS.md`, `SYNC_WORKFLOW.md`, `SYNC_VISION.md`, and `SYNC_REASONING_SPEC.md`.
 
 ## Why this exists
 

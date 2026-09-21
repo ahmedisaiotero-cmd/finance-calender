@@ -1,8 +1,8 @@
 # SYNC: Vision & Design Principles
 
-**Product identity is `SYNC_PRODUCT.md`.** This file still governs voice, surfaces, and design stance. Surfaces here are **outputs**, not the product.
+**Product identity is `SYNC_PRODUCT.md`.** Technical trust is `SYNC_STANDARDS.md`. This file governs the **experience contract**, voice, and surfaces. Surfaces here are **outputs**, not the product.
 
-For mission and sequencing, read `SYNC_PRODUCT.md`, then `SYNC_ENGINE_MANIFESTO.md` and `SYNC_ENGINE_ROADMAP.md`.
+For mission and sequencing, read `SYNC_PRODUCT.md`, then `SYNC_STANDARDS.md`, `SYNC_ENGINE_MANIFESTO.md`, and `SYNC_ENGINE_ROADMAP.md`.
 
 Also read: `SYNC_WORKFLOW.md`, `SYNC_REASONING_SPEC.md`, `SYNC_EVALUATION.md`, `AGENTS.md`, `.cursor/rules/sync-vision.mdc`, `.cursor/rules/sync-product-workflow.mdc`.
 
@@ -55,6 +55,23 @@ Sync is **not**:
 - a motivational coach
 
 If a feature turns Sync into something on this list, stop and rethink it.
+
+---
+
+## Experience contract
+
+This is how Sync should feel. Technical trust rules live in `SYNC_STANDARDS.md`. This contract is **appearance and interaction**, not a dashboard spec.
+
+1. **Calm, minimal, text-first.** Prefer readable sentences over cards, charts, and control panels.
+2. **Important before comprehensive.** Show what matters; keep the rest available on inspect, not on the first screen.
+3. **Progressive reveal, not dashboards.** Details unfold when the user asks. Do not tile life into widgets.
+4. **Every claim is inspectable and correctable.** The user can see what Sync thinks, why, and can edit or delete it.
+5. **Label epistemic status clearly.** Distinguish **known**, **inferred**, **unverified**, and **confirmed**. Do not dress inferences as facts.
+6. **Context and proof should be understandable.** Receipts and claims are for the person, not developer logs. Lab/debug may show internals; normal UI may not.
+7. **Today is one useful output.** It is not the homepage’s entire identity and not the product.
+8. **No enterprise-security aesthetic, widget sprawl, or generic chatbot interface.** Sync should not look like a CISO console, a productivity suite, or a chat app with extra tabs.
+
+If a UI change violates this contract, it is not a design improvement.
 
 ---
 

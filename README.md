@@ -4,7 +4,11 @@ Sync is becoming a **personal AI context and trust layer** — not a chatbot, da
 
 It builds an accurate, user-controlled understanding of a life, helps AI make better decisions, and keeps a verifiable record of what AI systems saw, decided, and did.
 
-Authoritative identity: [`SYNC_PRODUCT.md`](./SYNC_PRODUCT.md). Older roadmap language is subordinate.
+- Identity: [`SYNC_PRODUCT.md`](./SYNC_PRODUCT.md)
+- Trust / integrations: [`SYNC_STANDARDS.md`](./SYNC_STANDARDS.md)
+- Experience: [`SYNC_VISION.md`](./SYNC_VISION.md)
+
+Older roadmap language is subordinate. Articles are supporting evidence only.
 
 ```text
 Context (Life Graph + memory)
@@ -48,6 +52,8 @@ Root TypeScript and ESLint intentionally exclude `sync-ios`. Do not add React Na
 Read before changing intelligence:
 
 - `SYNC_PRODUCT.md`
+- `SYNC_STANDARDS.md`
+- `SYNC_VISION.md`
 - `AGENTS.md`
 - `SYNC_WORKFLOW.md`
 - `SYNC_ENGINE_MANIFESTO.md`

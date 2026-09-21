@@ -14,7 +14,7 @@ Repository development workflow only. Do not add agents, SDKs, model APIs, n8n, 
 
 The main Cursor Agent is the only implementation owner. Subagents inspect or verify; they do not edit. Do not invoke them merely because they exist.
 
-Read `AGENTS.md`, `SYNC_WORKFLOW.md`, and `SYNC_VISION.md` first. Reuse existing Sync rules; do not contradict them.
+Read `AGENTS.md`, `SYNC_PRODUCT.md`, `SYNC_STANDARDS.md`, `SYNC_WORKFLOW.md`, and `SYNC_VISION.md` first. Reuse existing Sync rules; do not contradict them. Articles are evidence only.
 
 ## Phase A — Preflight
 

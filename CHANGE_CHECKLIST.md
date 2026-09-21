@@ -8,6 +8,8 @@ Use before merging intelligence or surface changes.
 - [ ] Which layer? Context / Reasoning / Proof
 - [ ] Which engine stage if Reasoning? Memory / Understanding / Consequences / Judgment / Response / Safety / Trust
 - [ ] If this is a Today/Brief change: is it required as an **output**, or is it briefing-app drift?
+- [ ] Trust/integrations: obey `SYNC_STANDARDS.md` (deny-by-default, official access only, no article-as-spec)
+- [ ] UI: obey the experience contract in `SYNC_VISION.md`
 
 ## Boundaries
 

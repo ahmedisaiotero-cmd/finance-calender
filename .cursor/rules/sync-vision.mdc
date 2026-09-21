@@ -5,9 +5,9 @@ alwaysApply: true
 
 # Sync Vision (required reading)
 
-Read `SYNC_PRODUCT.md` first, then `SYNC_VISION.md`, `SYNC_ENGINE_MANIFESTO.md`, and `AGENTS.md`.
+Read `SYNC_PRODUCT.md` first (identity), `SYNC_STANDARDS.md` (trust/integrations), then `SYNC_VISION.md` (experience), `SYNC_ENGINE_MANIFESTO.md`, and `AGENTS.md`.
 
-`SYNC_PRODUCT.md` is the current product identity. Older “briefing app” / “Today is the product” language is subordinate.
+`SYNC_PRODUCT.md` is the current product identity. Articles are supporting evidence only. Older “briefing app” / “Today is the product” language is subordinate.
 
 ## What Sync is
 
@@ -76,6 +76,18 @@ Name Context, Reasoning, or Proof. Do not start from “make the briefing better
 
 Product/UI expansion is **deferred**. See `SYNC_PRODUCT.md` and `SYNC_ENGINE_ROADMAP.md`.
 
+## Experience (from `SYNC_VISION.md`)
+
+- Calm, minimal, text-first
+- Important before comprehensive
+- Progressive reveal, not dashboards
+- Claims inspectable and correctable; label known / inferred / unverified / confirmed
+- Context and proof in human language, not developer logs
+- Today is one output, not the homepage identity
+- No CISO aesthetic, widget sprawl, or generic chatbot UI
+
+Technical trust: `SYNC_STANDARDS.md`. Do not treat articles as specs.
+
 ## Product truth
 
 Sync should **own trusted context, reasoning, and proof** — not merely store information, rank a Today list, or accumulate features.
@@ -83,4 +95,4 @@ Integrations are optional user-approved plugins/sources, never forced defaults o
 
 ## When requests conflict with this vision
 
-Do not silently comply. Explain the conflict using `SYNC_PRODUCT.md`, then propose a simpler alternative that strengthens Context, Reasoning, or Proof.
+Do not silently comply. Explain the conflict using `SYNC_PRODUCT.md`, `SYNC_STANDARDS.md`, and the experience contract in `SYNC_VISION.md`. Propose a simpler alternative that strengthens Context, Reasoning, or Proof.

@@ -5,9 +5,9 @@ alwaysApply: true
 
 # Sync Product Workflow
 
-Read `SYNC_PRODUCT.md`, `SYNC_WORKFLOW.md`, `SYNC_ENGINE_MANIFESTO.md`, `SYNC_REASONING_SPEC.md`, and `AGENTS.md` before implementing.
+Read `SYNC_PRODUCT.md` (identity), `SYNC_STANDARDS.md` (trust/integrations), `SYNC_VISION.md` (experience), `SYNC_WORKFLOW.md`, `SYNC_REASONING_SPEC.md`, and `AGENTS.md` before implementing.
 
-`SYNC_PRODUCT.md` is authoritative for product identity. Do not optimize the briefing app because that is what most of the current code represents.
+`SYNC_PRODUCT.md` is authoritative for product identity. Do not optimize the briefing app because that is what most of the current code represents. Do not paste articles into the product; translate them into `SYNC_STANDARDS.md` rules if they earn a place.
 
 ## Gate question
 

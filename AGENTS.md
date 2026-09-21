@@ -8,17 +8,29 @@ Context, Reasoning, and Proof are the product. Briefing/Today, Life Graph, and t
 
 The current codebase has parts of context and reasoning, plus the beginning of proof. Those pieces are **not yet unified** into this identity. Do not describe existing briefing surfaces as if they were the product.
 
+## Where to look (do not mix these up)
+
+| Question | Authority |
+|---|---|
+| What is Sync becoming? | **`SYNC_PRODUCT.md`** |
+| Technical trust, permissions, integrations | **`SYNC_STANDARDS.md`** |
+| Appearance and interaction | **`SYNC_VISION.md`** (experience contract) and `SYNC_VOICE.md` |
+| How one input is reasoned about | **`SYNC_REASONING_SPEC.md`**, manifesto, evaluation, existing intelligence modules |
+| What to build next (sequence) | `SYNC_ENGINE_ROADMAP.md` (subordinate to product identity) |
+| Articles, vendors, interviews | **Supporting evidence only** — translate into a rule in `SYNC_STANDARDS.md` if needed; never paste them in as product authority |
+
 Before making changes, read:
 
-- **SYNC_PRODUCT.md** — current product identity (supersedes older “briefing app” / “Today is the product” framing)
+- **SYNC_PRODUCT.md** — product identity
+- **SYNC_STANDARDS.md** — technical trust and integration rules
+- **SYNC_VISION.md** — experience contract, voice, surfaces as outputs
 - SYNC_WORKFLOW.md
 - **SYNC_ENGINE_MANIFESTO.md**
 - **SYNC_REASONING_SPEC.md**
 - **SYNC_EVALUATION.md**
 - **SYNC_ENGINE_ROADMAP.md** — sequencing; subordinate to `SYNC_PRODUCT.md` for identity
-- SYNC_VISION.md — voice and surfaces; surfaces are outputs
 - SYNC_PRINCIPLES.md
-- SYNC_VOICE.md when communication or user-facing language is involved
+- SYNC_VOICE.md when communication language is involved
 - ROADMAP.md when relevant (module status only)
 
 ## Gate question
@@ -41,7 +53,7 @@ Then specify Context, Reasoning, or Proof; a messy real-life example; and the te
 
 ## Cursor Agent workflow
 
-This is a **repository development workflow** only. Do not add agents to the Sync application runtime, install an AI SDK, call an external model API, add n8n, or add MCP servers as part of agent setup.
+This is a **repository development workflow** only. Do not add agents to the Sync application runtime, install an AI SDK, call an external model API, add n8n, or add MCP servers as part of agent setup. Future *product* integrations, when approved, follow `SYNC_STANDARDS.md` (OAuth/MCP as permissioned access) — that is not permission to add those runtimes now.
 
 The main Cursor Agent is the **only implementation owner**. Follow `.cursor/skills/sync-change/SKILL.md` for modification requests. Invoke `/sync-change` when the complete procedure should be loaded explicitly.
 
@@ -56,7 +68,7 @@ Do not invoke subagents merely because they exist. Do not let subagents edit fil
 
 ### Operating rules
 
-- Read and follow `SYNC_PRODUCT.md`, `SYNC_WORKFLOW.md`, and `SYNC_VISION.md` before meaningful product or architecture changes.
+- Read and follow `SYNC_PRODUCT.md`, `SYNC_STANDARDS.md`, `SYNC_WORKFLOW.md`, and `SYNC_VISION.md` before meaningful product or architecture changes. Do not paste articles into the repo or treat them as specs.
 - Treat Sync as a personal AI context and trust layer, not a briefing app, planner, generic dashboard, or chatbot-first product. Briefings are one output.
 - Preserve the intelligence sequence **Memory → Understanding → Consequences → Decision/Judgment → Response**. Briefing Effect is an output of that pipeline, not the product. The full pipeline in `SYNC_REASONING_SPEC.md` implements this sequence; do not fork it.
 - A requested product change must improve **Context, Reasoning, or Proof** (or Trust/Safety around them). Today, My Life, and Brief are outputs — if none of the three layers apply, pause and explain. Goals remain a deferred product surface until `SYNC_ENGINE_ROADMAP.md` reaches that phase — do not build a Goals planner.

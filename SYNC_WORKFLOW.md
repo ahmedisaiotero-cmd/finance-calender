@@ -1,6 +1,6 @@
 # Sync Workflow Guardrails
 
-Read this before making changes. Also read `SYNC_PRODUCT.md` first, then `SYNC_VISION.md`, `SYNC_PRINCIPLES.md`, `SYNC_VOICE.md` when language is involved, and `.cursor/rules/sync-product-workflow.mdc`.
+Read this before making changes. Also read `SYNC_PRODUCT.md` first (identity), `SYNC_STANDARDS.md` (trust), then `SYNC_VISION.md` (experience), `SYNC_PRINCIPLES.md`, `SYNC_VOICE.md` when language is involved, and `.cursor/rules/sync-product-workflow.mdc`.
 
 ## Before building
 
@@ -139,6 +139,8 @@ Do not rebuild around an abstract platform at the cost of unifying the existing 
 **Other sources of truth:**
 
 - `SYNC_PRODUCT.md` — product identity
+- `SYNC_STANDARDS.md` — technical trust (articles are evidence only)
+- `SYNC_VISION.md` — experience contract
 - `SYNC_ENGINE_MANIFESTO.md` — constitution
 - `SYNC_REASONING_SPEC.md` — required reasoning pipeline per input
 - `SYNC_EVALUATION.md` — trust metrics and weekly review

@@ -4,7 +4,13 @@
 
 When older docs, roadmaps, comments, or code comments describe Sync as a daily briefing, planner-adjacent life app, or “personal reasoning engine for Today,” this file wins.
 
-Read this first. Then read `SYNC_ENGINE_MANIFESTO.md`, `SYNC_REASONING_SPEC.md`, and `SYNC_ENGINE_ROADMAP.md` for constitution, pipeline, and sequencing. Those remain in force **except** where they treat a briefing surface, Life Graph, or the existing app as the product.
+Read this first. Then:
+
+- `SYNC_STANDARDS.md` — technical trust and integration rules
+- `SYNC_VISION.md` — experience contract (how it should feel)
+- `SYNC_ENGINE_MANIFESTO.md`, `SYNC_REASONING_SPEC.md`, `SYNC_ENGINE_ROADMAP.md` — constitution, pipeline, sequencing
+
+Those remain in force **except** where they treat a briefing surface, Life Graph, or the existing app as the product. Articles are supporting evidence only; they never override this file.
 
 ---
 
@@ -109,12 +115,15 @@ Then name the layer (Context, Reasoning, or Proof), a messy real-life example, a
 | Document | Use for | Subordinate when |
 |---|---|---|
 | **This file (`SYNC_PRODUCT.md`)** | Product identity, hierarchy, current position | — |
-| `SYNC_ENGINE_MANIFESTO.md` | Constitution, trust rules | It frames “the product” as a briefing or Today |
+| **`SYNC_STANDARDS.md`** | Technical trust, permissions, integrations | It is used as a reason to ship integrations early |
+| **`SYNC_VISION.md`** | Experience contract, voice, surfaces as outputs | Surfaces are described as the product |
+| `SYNC_ENGINE_MANIFESTO.md` | Constitution | It frames “the product” as a briefing or Today |
 | `SYNC_REASONING_SPEC.md` | Required pipeline per input | Never fork; identity does not replace the pipeline |
 | `SYNC_ENGINE_ROADMAP.md` | Sequencing (lab, TDR, alpha) | It treats UI surfaces as the thing being built |
-| `SYNC_VISION.md` / `SYNC_VOICE.md` | Voice, surface design | Surfaces are described as the product |
+| `SYNC_VOICE.md` | Spoken/written voice | — |
 | `ROADMAP.md` | Historical module status | Sequencing or identity |
 | Code and comments | What is implemented today | They describe what Sync *is becoming* |
+| Articles / vendors | Evidence for a standard | They are treated as product authority |
 
 ---
 

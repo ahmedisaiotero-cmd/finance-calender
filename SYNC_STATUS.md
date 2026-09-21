@@ -37,6 +37,8 @@ Last reviewed from repository inspection on the current `main` branch.
 ## Documentation vs code
 
 - Authoritative identity: `SYNC_PRODUCT.md`
+- Technical trust: `SYNC_STANDARDS.md`
+- Experience: `SYNC_VISION.md`
 - Authoritative sequencing: `SYNC_ENGINE_ROADMAP.md`
 - Repository map: `SYNC_REPOSITORY.md`
 - Root README previously drifted to create-next-app boilerplate; replaced with Sync-accurate guidance

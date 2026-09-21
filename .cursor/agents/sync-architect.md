@@ -22,7 +22,7 @@ Must not:
 
 When invoked:
 
-1. Read `SYNC_PRODUCT.md`, `AGENTS.md`, `SYNC_WORKFLOW.md`, `SYNC_VISION.md`, and any other Sync docs needed for the request. `SYNC_PRODUCT.md` wins on identity.
+1. Read `SYNC_PRODUCT.md` (identity), `SYNC_STANDARDS.md` (trust/integrations), `AGENTS.md`, `SYNC_WORKFLOW.md`, `SYNC_VISION.md` (experience). `SYNC_PRODUCT.md` wins on identity. Articles are evidence only.
 2. Restate the requested outcome and which layer it would improve: **Context**, **Reasoning**, or **Proof**. Engine stages (Memory, Understanding, Consequences, Judgment, Response) sit under Reasoning. Today/Brief are outputs. If none, say so and stop.
 3. Trace the existing **active pathway** that currently owns the behavior. Name the ownership layer: intelligence, adapter, API/database, or UI/surface.
 4. Search for reusable intelligence, adapters, types, and tests before recommending new code. Prefer `lib/intelligence/*` and `lib/sync-capture/*`.
