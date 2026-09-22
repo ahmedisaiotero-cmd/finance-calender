@@ -106,6 +106,7 @@ async function main() {
       userId: "user-attacker",
       ownerId: "owner-attacker",
       email: "attacker@example.com",
+      headers: { "x-workspace-id": "ws-header-attacker" },
     }),
     "ws-trusted",
   );

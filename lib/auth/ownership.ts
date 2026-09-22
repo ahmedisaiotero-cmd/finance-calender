@@ -4,14 +4,15 @@
  */
 export function trustedWorkspaceId(
   identity: { workspace: { id: string } },
-  clientBody?: {
+  untrusted?: {
     workspaceId?: unknown;
     userId?: unknown;
     ownerId?: unknown;
     email?: unknown;
+    headers?: unknown;
   },
 ): string {
-  void clientBody;
+  void untrusted;
   return identity.workspace.id;
 }
 

@@ -1,8 +1,6 @@
 # Sync Activity + Passport Foundation
 
-Status: **foundation only** (contracts, pure pipeline, tests). No connectors, no OAuth, no
-network, no schema changes. This document explains the new layer and how it reuses the
-existing Sync intelligence.
+Status: **active pathway** (contracts exist; persistence, OAuth, MCP, and GitHub verification are next). See `SYNC_TRUST_LAYER.md` for product direction.
 
 Read alongside `SYNC_PRODUCT.md`, `SYNC_STANDARDS.md`, `AGENTS.md`, `SYNC_WORKFLOW.md`, `SYNC_VISION.md`, and `SYNC_REASONING_SPEC.md`.
 
@@ -119,25 +117,22 @@ claims never participate in the live Passport.
   `sync-consequences.ts`.
 - **Voice**: next-step copy is calm, specific, and non-dramatic per `SYNC_VOICE.md`.
 
-## Where future connectors will attach
+## Where connectors attach
 
-1. A permissioned connector authenticates **outside this layer** (real OAuth is intentionally
-   not built here) and holds tokens in a secure store — never in an `ActivityEvent`.
-2. On each action or import, the connector calls `createActivityEvent(...)` with a
-   provider-neutral `source.service`, an opaque `connectionId`, redacted summaries, and the
-   appropriate `verification` and `permission` state.
-3. Existing adapters (Home/Today/Brief) can later call `buildActivitySnapshot` to fold the
-   day's activity into the briefing, and `deriveClaimCandidatesFromEvents` +
-   `reconcilePassportClaims` to keep the Passport current.
-4. UI stays thin and is out of scope here: no dashboard, no new tabs.
+1. A permissioned connector authenticates **outside** the pure contract (OAuth / MCP session) and holds tokens in a secure store — never in an `ActivityEvent`.
+2. On each action or import, the connector calls `createActivityEvent(...)` with a provider-neutral `source.service`, an opaque `connectionId`, redacted summaries, and the appropriate `verification` and `permission` state. Agent self-reports stay `self_reported` with actor `assistant`. Only the source (e.g. GitHub) may emit `source_confirmed`.
+3. Do **not** write agent context into `CapturedSyncItem` as if it were user memory. Derive Passport candidates via `deriveClaimCandidatesFromEvents`.
+4. UI stays thin: pending approvals + recent receipts. No activity dashboard.
 
-## Explicitly not done (by design)
+## Explicitly not done yet (next slices, in order)
 
-- No real OAuth or provider integrations.
-- No dashboard or new UI surface.
-- No replacement of Memory, Understanding, Consequence, Decision, or Sync Engine modules.
-- No production database schema change (nothing here touches Prisma models).
-- No raw secrets or provider tokens stored anywhere.
+- Persist ActivityEvent (append-only Prisma). **Do this next.**
+- Real OAuth clients and agent connections.
+- GitHub as the first `source_confirmed` verifier.
+- Product MCP adapter (thin; no ranking in handlers).
+- Quiet control-center UI.
+
+Still forbidden: storing raw secrets on events, upgrading verification in place, treating `lib/sync-connections.ts` as real verification.
 
 ## Tests
 

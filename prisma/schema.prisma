@@ -34,13 +34,18 @@ enum RecurringRuleType {
 }
 
 model User {
-  id          String       @id @default(uuid())
-  email       String       @unique
-  name        String?
-  timezone    String       @default("UTC")
-  createdAt   DateTime     @default(now())
-  workspaces  Workspace[]
-  syncProfile SyncProfile?
+  id             String                @id @default(uuid())
+  email          String                @unique
+  name           String?
+  timezone       String                @default("UTC")
+  createdAt      DateTime              @default(now())
+  workspaces      Workspace[]
+  syncProfile     SyncProfile?
+  activityEvents  ActivityEventRecord[]
+  tokenVaults     TokenVaultRecord[]
+  connections     ConnectionRecord[]
+  permissionGrants PermissionGrantRecord[]
+  githubHandshakes GithubOAuthHandshake[]
 }
 
 model SyncProfile {
@@ -81,17 +86,127 @@ enum TimelineItemStatus {
 }
 
 model Workspace {
-  id             String          @id @default(uuid())
+  id             String                @id @default(uuid())
   ownerId        String
-  owner          User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner          User                  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   name           String
-  createdAt      DateTime        @default(now())
+  createdAt      DateTime              @default(now())
   categories     Category[]
   events         Event[]
   transactions   Transaction[]
   recurringRules RecurringRule[]
   budgets        Budget[]
-  timelineItems  TimelineItem[]
+  timelineItems    TimelineItem[]
+  activityEvents   ActivityEventRecord[]
+  tokenVaults      TokenVaultRecord[]
+  connections      ConnectionRecord[]
+  permissionGrants PermissionGrantRecord[]
+}
+
+/// Append-only evidence ledger. Ordinary app code must not update or delete rows.
+/// Account deletion / legal purge may cascade via User/Workspace, outside the event API.
+model ActivityEventRecord {
+  id                 String    @id
+  schemaVersion      Int
+  userId             String
+  workspaceId        String
+  kind               String
+  verification       String
+  actorKind          String
+  actorId            String?
+  sourceService      String
+  sourceConnectionId String?
+  sourceExternal     Boolean   @default(false)
+  /// When the source says the event happened (domain `timestamp`).
+  occurredAt         DateTime
+  /// Server-controlled insert time. Never taken from the client.
+  recordedAt         DateTime
+  correlationId      String?
+  priorEventId       String?
+  sourceRef          String?
+  /// Required. Combined with workspaceId + userId for duplicate-delivery protection.
+  idempotencyKey     String
+  /// Normalized, redacted ActivityEvent JSON. Never tokens or secrets.
+  payload            Json
+  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace          Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  priorEvent         ActivityEventRecord? @relation("ActivityEventPrior", fields: [priorEventId], references: [id], onDelete: SetNull)
+  laterEvents        ActivityEventRecord[] @relation("ActivityEventPrior")
+
+  @@unique([workspaceId, userId, idempotencyKey])
+  @@index([workspaceId, userId, recordedAt, id])
+  @@index([workspaceId, occurredAt])
+  @@index([workspaceId, correlationId])
+}
+
+/// AES-GCM ciphertext only. Destroy on revoke. Never copy onto ActivityEvent.
+model TokenVaultRecord {
+  id          String    @id
+  userId      String
+  workspaceId String
+  ciphertext  String
+  createdAt   DateTime  @default(now())
+  destroyedAt DateTime?
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, userId])
+}
+
+model ConnectionRecord {
+  id                 String                  @id
+  userId             String
+  workspaceId        String
+  provider           String
+  adapter            String
+  protocol           String
+  status             String
+  externalSubjectId  String?
+  grantedScopes      Json
+  tokenVaultId       String?
+  lastVerifiedAt     DateTime?
+  expiresAt          DateTime?
+  revokedAt          DateTime?
+  createdAt          DateTime                @default(now())
+  user               User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace          Workspace               @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  grants             PermissionGrantRecord[]
+
+  @@index([workspaceId, userId, provider])
+}
+
+model PermissionGrantRecord {
+  id               String           @id
+  userId           String
+  workspaceId      String
+  connectionId     String
+  agentId          String
+  resource         String
+  actions          Json
+  purpose          String
+  issuedAt         DateTime
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  consentVersion   String
+  syncEnforced     Boolean          @default(true)
+  providerEnforced Boolean          @default(false)
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace        Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  connection       ConnectionRecord @relation(fields: [connectionId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, userId, connectionId])
+}
+
+model GithubOAuthHandshake {
+  state              String   @id
+  userId             String
+  workspaceId        String
+  codeVerifierCipher String
+  redirectUri        String
+  expiresAt          DateTime
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
 }
 
 model TimelineItem {

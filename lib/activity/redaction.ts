@@ -41,13 +41,20 @@ const VALUE_PATTERNS: Array<{ pattern: RegExp; replace: string }> = [
  * Redact obvious secret material from free text. Returns the input unchanged
  * when nothing sensitive is detected.
  */
+const GIT_SHA_PLACEHOLDER = /__GITSHA(\d+)__/g;
+const GIT_SHA = /\b[0-9a-f]{40}\b/gi;
+
 export function redactSecrets(text: string): string {
   if (!text) return text;
-  let out = text;
+  const saved: string[] = [];
+  let out = text.replace(GIT_SHA, (match) => {
+    saved.push(match);
+    return `__GITSHA${saved.length - 1}__`;
+  });
   for (const { pattern, replace } of VALUE_PATTERNS) {
     out = out.replace(pattern, replace);
   }
-  return out;
+  return out.replace(GIT_SHA_PLACEHOLDER, (_, index) => saved[Number(index)] ?? "");
 }
 
 /** True when a string still appears to contain credential-like material. */
