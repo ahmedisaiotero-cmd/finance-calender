@@ -1,12 +1,12 @@
 # SYNC Roadmap
 
-**Sequencing:** `SYNC_ENGINE_ROADMAP.md` **supersedes this document** for what to build next. This file records module status, completed milestones, and historical context.
+**Identity:** `SYNC_PRODUCT.md` **supersedes this document** for what Sync is becoming. **Sequencing:** `SYNC_ENGINE_ROADMAP.md` **supersedes this document** for what to build next. This file records module status, completed milestones, and historical context.
 
-Every item should pass the **Sync Test** in `SYNC_VISION.md` and the gate question in `SYNC_ENGINE_MANIFESTO.md`:
+Every item should pass the gate in `SYNC_PRODUCT.md`:
 
-> Does this improve the Sync Engine's ability to make trustworthy decisions?
+> Does this strengthen Sync as a personal AI context and trust layer?
 
-Default prompt prefix: **Improve the Sync Engine's ability to make trustworthy decisions by…**
+Default prompt prefix: **Improve Sync as a personal AI context and trust layer by…**
 
 Build slowly. Choose trust over features. Choose calm over clever.
 
@@ -14,7 +14,7 @@ Build slowly. Choose trust over features. Choose calm over clever.
 
 ## Active direction
 
-Sync is a **personal reasoning engine**. The product is **trust**.
+Sync is becoming a **personal AI context and trust layer**. Briefing/Today is one output. Life Graph is context infrastructure. See `SYNC_PRODUCT.md`.
 
 | Surface | Role |
 |---|---|

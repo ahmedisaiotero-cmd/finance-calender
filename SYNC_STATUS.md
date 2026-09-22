@@ -2,6 +2,8 @@
 
 Last reviewed from repository inspection on the current `main` branch.
 
+**Identity:** See `SYNC_PRODUCT.md`. Honest position: Sync has parts of the context and reasoning foundation, plus the beginning of the proof layer — those pieces have not yet been unified into the current product vision. This file describes **what the code does today**, not what Sync is becoming.
+
 ## Working and tested
 
 - Capture → memory → meaning → consequences → Decision Engine → Today/Brief adapters
@@ -27,17 +29,16 @@ Last reviewed from repository inspection on the current `main` branch.
 
 ## Placeholder / deferred
 
-- Persist ActivityEvent ledger + OAuth/MCP (next; see `SYNC_TRUST_LAYER.md`)
-- Full Goals product loop
-- Calendar/bank/health APIs (not GitHub — GitHub is in-scope as verifier)
+- Full Goals product loop (roadmap after Decision/Life Graph trust)
+- Forced integrations (calendar/bank/health APIs)
 - Supabase `timeline_items` owner column + RLS (currently disabled on `/api/timeline`)
 - Applying `ChatRateLimitWindow` migration in production (committed as `20260813000000_chat_rate_limit_window`; not applied by this repo change)
 
 ## Documentation vs code
 
-- Authoritative product direction: `SYNC_TRUST_LAYER.md`
-- Two trust scales: `docs/adr/001-two-trust-scales.md`
-- Domain contracts (not persisted): `lib/agent-trust/`
+- Authoritative identity: `SYNC_PRODUCT.md`
+- Technical trust: `SYNC_STANDARDS.md`
+- Experience: `SYNC_VISION.md`
 - Authoritative sequencing: `SYNC_ENGINE_ROADMAP.md`
 - Repository map: `SYNC_REPOSITORY.md`
 - Root README previously drifted to create-next-app boilerplate; replaced with Sync-accurate guidance

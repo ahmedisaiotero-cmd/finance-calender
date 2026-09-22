@@ -4,11 +4,12 @@ Repository layout and file ownership map: `SYNC_REPOSITORY.md`.
 
 ## 1. Sync's intelligence purpose
 
-Sync exists to make trustworthy attention decisions from real life evidence over time.  
-The product is trust, not feature volume.  
-The reusable intelligence layer is Sync's long-term product.
-The Sync app is the first product surface and proving ground for this intelligence.
-The core question remains: what does this mean in the context of the user's life over time?
+Product identity: `SYNC_PRODUCT.md`. This file maps intelligence modules.
+
+Sync exists to make trustworthy attention decisions from real life evidence over time, as the **Reasoning** layer of a personal AI context and trust layer.
+The product is trusted context, reasoning, and proof — not feature volume and not a briefing screen.
+The Sync app is a proving-ground **output**.
+The core questions are: what is true about this person, what does it mean over time, and what did AI see or do?
 
 ## 2. Core architecture
 

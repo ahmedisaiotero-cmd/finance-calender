@@ -2,28 +2,28 @@
 
 Before making changes, read:
 
-- **SYNC_TRUST_LAYER.md** — current product mission
-- **docs/adr/001-two-trust-scales.md** — identity assurance vs event provenance
-- **docs/SYNC_PRIVACY_LEGAL_CHECKLIST.md** — launch blockers
-- **AGENTS.md** — engine-first rules, pipeline, forbidden moves
+- **SYNC_PRODUCT.md** — what Sync is becoming
+- **SYNC_STANDARDS.md** — technical trust, permissions, integrations (articles are evidence only)
+- **SYNC_VISION.md** — experience contract, appearance, interaction
+- **AGENTS.md** — routing, pipeline, forbidden moves
 - **SYNC_WORKFLOW.md** — workflow guardrails
-- **SYNC_ENGINE_MANIFESTO.md** — mission, constitution, philosophy
+- **SYNC_ENGINE_MANIFESTO.md** — constitution
 - **SYNC_REASONING_SPEC.md** — required reasoning pipeline per input
-- **SYNC_EVALUATION.md** — trust metrics
-- **SYNC_ENGINE_ROADMAP.md** — phased sequencing (**supersedes ROADMAP.md**)
-- **SYNC_VISION.md** — voice, surfaces, design stance
-- **SYNC_ACTIVITY_PASSPORT.md** — activity + claim contracts
+- **SYNC_EVALUATION.md** — Trustworthy Decision Rate
+- **SYNC_ENGINE_ROADMAP.md** — sequencing (not identity)
 - **SYNC_PRINCIPLES.md**, **SYNC_VOICE.md** when language is involved
-- **ROADMAP.md** — module status and historical milestones only
+- **ROADMAP.md** — module status only
 
 ## Gate question
 
-> **Does this improve Sync’s ability to verify identity, permission, provenance, or action receipts without fabricating trust?**
+> **Does this strengthen Sync as a personal AI context and trust layer?**
+
+Then: Context, Reasoning, or Proof — and trustworthy decisions.
 
 ## Default prompt prefix
 
-> **Improve Sync’s trust layer by…**
+> **Improve Sync as a personal AI context and trust layer by…**
 
-Sync is a **user-controlled trust layer** (one account, OAuth/MCP doorways, evidence ledger). The product is **trust**. `/sync-lab` teaches the engine. Do not present agent-reported information as verified.
+Sync is becoming a **personal AI context and trust layer**. Briefings, Life Graph, and the app are supporting systems. The UI (`/sync-lab`, mobile prototype) exists to test, teach, and expose that layer — not as the product itself.
 
-See **AGENTS.md** for full engineering rules.
+See **SYNC_PRODUCT.md** and **AGENTS.md**.

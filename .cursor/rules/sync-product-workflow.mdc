@@ -5,65 +5,84 @@ alwaysApply: true
 
 # Sync Product Workflow
 
-Read `SYNC_TRUST_LAYER.md`, `SYNC_WORKFLOW.md`, `SYNC_ENGINE_MANIFESTO.md`, `SYNC_REASONING_SPEC.md`, and `AGENTS.md` before implementing.
+Read `SYNC_PRODUCT.md` (identity), `SYNC_STANDARDS.md` (trust/integrations), `SYNC_VISION.md` (experience), `SYNC_WORKFLOW.md`, `SYNC_REASONING_SPEC.md`, and `AGENTS.md` before implementing.
+
+`SYNC_PRODUCT.md` is authoritative for product identity. Do not optimize the briefing app because that is what most of the current code represents. Do not paste articles into the product; translate them into `SYNC_STANDARDS.md` rules if they earn a place.
 
 ## Gate question
 
 Every change must begin from:
 
-> **Does this improve Sync’s ability to verify identity, permission, provenance, or action receipts without fabricating trust?**
+> **Does this strengthen Sync as a personal AI context and trust layer?**
 
 Default prompt prefix:
 
-> **Improve Sync’s trust layer by…**
+> **Improve Sync as a personal AI context and trust layer by…**
 
-If the answer is no, do not implement it yet.
+If the answer is no — or the work only polishes Today/Home/Brief — do not implement it yet.
 
 ## Before implementing any change
 
-### 1. Identify which reasoning stage it improves
+### 1. Identify which layer it improves
 
-- Memory / evidence
-- Understanding / claims
-- Consequences (sharing or acting risk)
-- Judgment (allow / deny / limit / ask)
-- Response
-- Safety / Privacy
-- Trust / Activity / Passport
+Product layers (from `SYNC_PRODUCT.md`):
 
-Legacy surfaces (Today, Memory, My Life) are **frozen** unless they unblock the trust loop.
+- **Context** — what is true; Life Graph and memory as infrastructure
+- **Reasoning** — Memory Decision, Understanding, Consequences, Judgment, Response
+- **Proof** — Activity / Passport
+- **Safety / Privacy / Trust** — inspect, correct, delete
+
+Briefing Effect, Today, Memory, and My Life **display** those layers. Improve them only when the layer requires it or when explicitly requested.
+
+Do not treat the Sync app as the product; it is a proving-ground output.
 
 ### 2. Search for existing shared Sync logic first
 
 Prefer reusing:
 
-- `lib/activity/*` (`createActivityEvent`, redaction, snapshot)
-- `lib/passport/*` (`isVerifiedClaim`, reconcile)
-- `decision-engine.ts` (approval/sharing risk — do not fork ranking)
-- `sync-engine.ts` (voice)
-- `requireRequestIdentity` / ownership helpers
-- capture/meaning modules only for user-confirmed memory, not the ledger
+- `meaning-engine`
+- `sync-consequences`
+- `decision-engine`
+- `sync-engine`
+- `importance-scoring`
+- `resolve-timeline`
+- `sync-time-blocks`
+- `briefing-composer`
+- `memory-understanding`
+- `capture-action-resolver`
+- `apply-capture-input`
+- ambiguity detection
+- duplicate detection
 
-**Do not** create duplicate evidence types in MCP handlers.
+**Do not** create duplicate client-only intelligence if shared logic exists.
 
 ### 3. Evaluate the change
 
 Answer:
 
-- Does this improve identity, permission, provenance, or receipts?
-- Can we still distinguish agent-reported from source-confirmed?
-- Does this reduce unclear agent authority?
-- Does this improve Trust, Activity, Passport, or Safety?
+- Does this strengthen Context, Reasoning, or Proof?
+- Does this improve trustworthy decisions?
+- How does this reduce mental load?
+- What real-life behavior becomes easier?
 
-**If none apply: do not build it.**
+**If none apply: do not build it.** Do not count “better Today copy” as a product improvement.
 
 ### 4. Add tests
 
-Prefer messy real-life input: duplicate deliveries, conflicting success/failure, revoked grants, agent claiming tests passed without GitHub. See `SYNC_EVALUATION.md`.
+Prefer messy real-life input. Failed decisions should become test cases **before** production fixes whenever possible. See `SYNC_EVALUATION.md`.
 
 ### 5. Preserve Sync voice
 
-Calm, observant, concise, trustworthy. Receipts over slogans.
+Sync should sound: **calm, observant, concise, trustworthy.**
+
+Avoid: corporate SaaS language, productivity coaching, motivational slogans, generic AI wording.
+
+Prefer specific phrases:
+
+- Rent is due Friday.
+- Flight at 6:00 AM.
+- Tomorrow starts early.
+- Work begins at 11:00 AM after a busy morning.
 
 ## Reasoning pipeline
 
@@ -76,66 +95,67 @@ Input → Understanding → Memory Decision → Consequence Reasoning
 
 ## Build order
 
-1. Shared activity/passport + persistence
+1. Shared intelligence / reasoning layer
 2. Tests
-3. OAuth + MCP adapter
-4. GitHub verifier
-5. Minimal control-center UI
-6. ChatGPT app (after Cursor loop)
-7. Polish (deferred)
+3. Lab + mobile client integration
+4. Minimal UI
+5. Polish (deferred until trust milestones)
 
-Never build UI first if the ledger and permission model do not exist.
+Never build UI first if the intelligence does not exist.
 
 ## Surfaces
 
-- **Control center** — grants, receipts, revoke
-- **`/sync-lab`** — teaching/evaluation
-- **MCP / host apps** — doorways
-- Legacy Home / My Life / Capture — frozen
+- **`/sync-lab`** — teaching/evaluation surface, not the product
+- **Home / Today** — briefing output, not the product
+- **My Life** — inspectable context
+- **Life Timeline** — when it matters
+- **Capture** — how Sync learns
+- **Area views** — focused outputs from shared intelligence
 
-Product sequencing: `SYNC_ENGINE_ROADMAP.md` and `SYNC_TRUST_LAYER.md`.
+Product/UI work is **lower priority** until trust is proven. `SYNC_ENGINE_ROADMAP.md` supersedes `ROADMAP.md` for sequencing.
 
 ## Do not build unless explicitly approved
 
-- new main tabs, dashboards, analytics, charts, reputation scores
-- productivity pages, task manager UI, full chatbot UI
-- standalone calendar, finance, or health products
-- custom identity protocol or blockchain
-- ten shallow integrations
-- ingesting full conversation histories by default
-- consumer UI polish ahead of the Cursor ↔ Sync ↔ GitHub loop
-
-GitHub verification, product MCP, and OAuth for host plugins **are approved** by the trust-layer direction.
+- new main tabs
+- dashboards, analytics, charts
+- productivity pages, task manager UI
+- full chatbot UI
+- standalone calendar, finance, or health **products**
+- Sync Health, Sync Money, onboarding, themes
+- integrations (calendar sync, bank sync, health APIs)
+- social features, gamification, streak systems
+- consumer UI polish ahead of trust milestones
 
 ## Red flag list
 
-Stop and explain before implementation:
+If a proposed change includes any of the following, **stop and explain why** before implementation:
 
-- dashboards, analytics, charts, productivity or life scores, reputation scores
+- dashboards, analytics, charts, productivity scores, life scores
 - streak systems, habit tracking, leaderboards, social feeds, gamification
-- finance/health/calendar dashboard pages as product expansion
-- chatbot-first experiences (`/api/chat` as the protocol)
-- claiming “verified” without `source_confirmed`
-- Today redesign without explicit request
+- finance/health/calendar **dashboard pages** as product expansion
+- chatbot-first experiences
+- Today redesign or feature playground work without explicit request
 
 ## Definition of done
 
 A change is **not complete** unless:
 
-- it improves identity, permission, provenance, or receipts without fabricating trust
-- it reuses `lib/activity` / `lib/passport` where possible
+- it improves Context, Reasoning, or Proof (or Trust/Safety around them)
+- briefing/Today changes are justified as outputs, not as the product
+- it reuses shared intelligence where possible
 - it includes tests
-- it does not turn Sync into a dashboard
-- agent-reported stays distinguishable from source-confirmed
+- it reduces clutter
+- it does not turn Sync into a dashboard or a briefing app
 
 ## Current priority
 
-Persist the evidence ledger, then OAuth-bound MCP, then GitHub as the first external verifier.
+Make Sync **trustworthy as a context and proof layer** before making it bigger.
 
-Design of legacy briefing is good enough. **Do not redesign Today** unless explicitly requested.
+Focus: unify Context (Life Graph + memory), Reasoning (judgment/consequences), and Proof (Activity/Passport). Weekly evaluation reviews, lab stability, messy real-life stress testing.
+
+Do not spend the next cycle finishing the briefing app. Design is currently good enough. **Do not redesign** unless fixing clarity or explicitly requested.
 
 ## Integration rule
 
-Host plugins are doorways into one Sync account. They are not omniscient observers.
-Do not force account connections. Do not assume hidden external data access.
-`lib/sync-connections.ts` is **not** verification.
+Integrations are optional user-approved plugins/sources that feed Sync Intelligence.
+Do not force account connections, and do not assume hidden external data access.

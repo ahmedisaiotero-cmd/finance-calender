@@ -1,6 +1,8 @@
 # SYNC: Vision & Design Principles
 
-This document defines Sync's voice, surfaces, and design stance. For mission and sequencing, read `SYNC_ENGINE_MANIFESTO.md` and `SYNC_ENGINE_ROADMAP.md` first.
+**Product identity is `SYNC_PRODUCT.md`.** Technical trust is `SYNC_STANDARDS.md`. This file governs the **experience contract**, voice, and surfaces. Surfaces here are **outputs**, not the product.
+
+For mission and sequencing, read `SYNC_PRODUCT.md`, then `SYNC_STANDARDS.md`, `SYNC_ENGINE_MANIFESTO.md`, and `SYNC_ENGINE_ROADMAP.md`.
 
 Also read: `SYNC_WORKFLOW.md`, `SYNC_REASONING_SPEC.md`, `SYNC_EVALUATION.md`, `AGENTS.md`, `.cursor/rules/sync-vision.mdc`, `.cursor/rules/sync-product-workflow.mdc`.
 
@@ -8,28 +10,33 @@ Also read: `SYNC_WORKFLOW.md`, `SYNC_REASONING_SPEC.md`, `SYNC_EVALUATION.md`, `
 
 ## What Sync Is
 
-Sync is the **user-controlled identity, permission, and provenance layer** that binds a verified person to their AI agents.
+Sync is becoming a **personal AI context and trust layer**.
 
-It records who the person is (identity assurance), what an agent may do, what was shared, and what an outside system actually confirmed (event provenance). Those are two different scales.
+It builds an accurate, user-controlled understanding of a life, helps AI make better decisions, and keeps a verifiable record of what AI systems saw, decided, and did.
 
-**The product is trust** — not a reputation score and not a daily briefing.
+**The product is trusted personal context** — Context, Reasoning, and Proof — not a briefing screen.
 
-Canonical direction: `SYNC_TRUST_LAYER.md`.
+The reusable intelligence layer is how that product is implemented.
+The Sync app is a proving-ground **output**: it can show the value of that layer. It is not what Sync is becoming.
 
-The reusable intelligence layer remains the long-term product. The Sync website is a quiet control center. ChatGPT, Cursor, and other hosts connect to the **same** account through OAuth/MCP. They do not get a private copy of Sync, and connecting is not the same as observing everything on that host.
+**Core questions:**
 
-**Core question:** *Did this agent have permission, and what is the evidence?*
+- What is true about me?
+- What does it mean?
+- What did AI see and do?
+
+“What do I need to know right now?” remains a valid **briefing** question. It is not the product definition.
 
 **Core loop:**
 
-1. An agent or the user requests context, permission, or to record an action.
-2. Sync understands the claim and its evidence level.
-3. Sync decides allow, deny, limit, or ask.
-4. Sync appends an evidence record (never silently upgrades verification).
-5. Sync may later expose a minimum-necessary receipt or claim to another agent.
-6. The user can inspect, revoke, correct, or delete without rewriting history.
+1. Tell Sync what happened or what is coming.
+2. Sync understands it.
+3. Sync decides whether to remember, ask, surface later, or stay quiet.
+4. Sync organizes the consequences.
+5. Sync judges what deserves attention.
+6. Sync helps the user understand the moment clearly and calmly.
 
-Life briefing (Home, Capture, My Life) remains as a proving ground. Do not grow it as the product.
+The value of Sync is **trusted context, reasoning, and proof**, not storage, feature breadth, or a polished briefing.
 
 ---
 
@@ -46,26 +53,41 @@ Sync is **not**:
 - a habit tracker
 - a finance app, fitness app, or collection of widgets
 - a motivational coach
-- a universal AI reputation score
-- a custom identity protocol or blockchain
 
 If a feature turns Sync into something on this list, stop and rethink it.
 
 ---
 
-## Surfaces (Teaching & Output)
+## Experience contract
 
-### Sync website — control center (quiet, not opaque)
+This is how Sync should feel. Technical trust rules live in `SYNC_STANDARDS.md`. This contract is **appearance and interaction**, not a dashboard spec.
 
-The authenticated site is where the human manages the trust layer:
+1. **Calm, minimal, text-first.** Prefer readable sentences over cards, charts, and control panels.
+2. **Important before comprehensive.** Show what matters; keep the rest available on inspect, not on the first screen.
+3. **Progressive reveal, not dashboards.** Details unfold when the user asks. Do not tile life into widgets.
+4. **Every claim is inspectable and correctable.** The user can see what Sync thinks, why, and can edit or delete it.
+5. **Label epistemic status clearly.** Distinguish **known**, **inferred**, **unverified**, and **confirmed**. Do not dress inferences as facts.
+6. **Context and proof should be understandable.** Receipts and claims are for the person, not developer logs. Lab/debug may show internals; normal UI may not.
+7. **Today is one useful output.** It is not the homepage’s entire identity and not the product.
+8. **No enterprise-security aesthetic, widget sprawl, or generic chatbot interface.** Sync should not look like a CISO console, a productivity suite, or a chat app with extra tabs.
 
-- connected agents and services
-- pending approvals and narrow grants
-- recent receipts with evidence labels
-- revoke, correct, delete, export
-- “Why does this agent know that?”
+If a UI change violates this contract, it is not a design improvement.
 
-Do not turn this into a daily dashboard. Legacy Home / My Life / Capture / Timeline / area views stay in the repo; freeze them unless they unblock the trust loop.
+---
+
+## Surfaces (outputs & teaching)
+
+### Sync app — proving-ground output, not the product
+
+The current app shows whether context, reasoning, and proof are working. Its screens are consumers:
+
+- **Home / Today** — one briefing output of judgment
+- **My Life** — inspectable context (what Sync knows)
+- **Life Timeline** — when it matters
+- **Capture** — how Sync learns
+- **Area views** — focused views powered by shared intelligence
+
+Do not optimize these as if they were the product. Improve them only when they prove Context, Reasoning, or Proof.
 
 ### `/sync-lab` — teaching/evaluation surface
 
@@ -77,11 +99,11 @@ Debug explainability belongs here — not in normal user replies.
 
 The mobile prototype is a current shell for the first app surface. Do not delete it. Do not treat it as a feature playground — it validates trustworthy decisions in a minimal shell.
 
-### Today — frozen briefing output (not the north star)
+### Today — briefing output of judgment
 
-**Legacy:** what matters now, as decided by the Judgment stage (`decision-engine.ts`). Do not expand this surface unless it unblocks the trust loop.
+**What matters now** — as decided by the Judgment stage (`decision-engine.ts`).
 
-Today is a **life briefing**, not a reporting engine or design canvas. It displays:
+Today is **one output**, not the product. It is a life briefing that displays:
 
 - 1 primary + max 2 supporting lines (Judgment output)
 - load context when relevant (forecast, not a substitute for specific primaries)
@@ -118,13 +140,13 @@ Work schedule, priorities (Money, Health, Family, Work, etc.), and profile conte
 
 Before any change, ask:
 
-> **Does this improve the Sync Engine's ability to make trustworthy decisions?**
+> **Does this strengthen Sync as a personal AI context and trust layer?**
 
 Default prompt prefix:
 
-> **Improve the Sync Engine's ability to make trustworthy decisions by…**
+> **Improve Sync as a personal AI context and trust layer by…**
 
-Product/UI expansion is **deferred until trust improves** — see `SYNC_ENGINE_ROADMAP.md`. **`SYNC_ENGINE_ROADMAP.md` supersedes `ROADMAP.md` for sequencing.**
+Product/UI expansion is **deferred until context, reasoning, and proof are unified enough to trust** — see `SYNC_PRODUCT.md` and `SYNC_ENGINE_ROADMAP.md`. **`SYNC_PRODUCT.md` supersedes older identity language. `SYNC_ENGINE_ROADMAP.md` supersedes `ROADMAP.md` for sequencing.**
 
 ---
 

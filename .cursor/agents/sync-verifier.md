@@ -45,7 +45,7 @@ Verified commands (from root `package.json` / `sync-ios/package.json`):
 - Build: `npm run build`
 - Lint + core intelligence: `npm run check`
 
-Preserve Sync’s mission: user-controlled trust layer (permission, provenance, receipts) per `SYNC_TRUST_LAYER.md`. Ranking and allow/deny belong in `decision-engine.ts`. Evidence types belong in `lib/activity` / `lib/passport`. Do not accept MCP-handler brains or fabricated `source_confirmed`. Documentation-only direction updates do not require a full build.
+Preserve Sync’s identity: personal AI context and trust layer (`SYNC_PRODUCT.md`). Briefings are outputs. Ranking belongs in `decision-engine.ts`. Do not accept surface-specific or mobile-only duplicate brains.
 
 Report:
 

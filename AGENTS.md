@@ -1,47 +1,59 @@
 # Sync Intelligence System
 
-Sync is the **user-controlled identity, permission, and provenance layer** that binds a verified person to their AI agents, tells each agent what it may know or do, and records trustworthy receipts. It is not a planner, dashboard, chatbot, or universal AI reputation score.
+**Product identity:** `SYNC_PRODUCT.md` is authoritative. Older docs in this file still describe the reasoning pipeline and engineering rules; they do not redefine the product.
 
-Human identity assurance and event provenance are **separate scales** (`docs/adr/001-two-trust-scales.md`). Do not store them in one field.
+Sync is becoming a **personal AI context and trust layer**. It builds an accurate, user-controlled understanding of a life, helps AI make better decisions, and keeps a verifiable record of what AI systems saw, decided, and did.
 
-The reusable intelligence layer remains the long-term product. The Sync website is the account and control center; MCP/OAuth plugins are doorways into that account. Life briefing surfaces stay in the repo as a proving ground, not the north star.
+Context, Reasoning, and Proof are the product. Briefing/Today, Life Graph, and the existing app are supporting systems — outputs or infrastructure, not the destination.
 
-Canonical product direction: **`SYNC_TRUST_LAYER.md`**. Activity + Passport contracts: **`SYNC_ACTIVITY_PASSPORT.md`**.
+The current codebase has parts of context and reasoning, plus the beginning of proof. Those pieces are **not yet unified** into this identity. Do not describe existing briefing surfaces as if they were the product.
+
+## Where to look (do not mix these up)
+
+| Question | Authority |
+|---|---|
+| What is Sync becoming? | **`SYNC_PRODUCT.md`** |
+| Technical trust, permissions, integrations | **`SYNC_STANDARDS.md`** |
+| Appearance and interaction | **`SYNC_VISION.md`** (experience contract) and `SYNC_VOICE.md` |
+| How one input is reasoned about | **`SYNC_REASONING_SPEC.md`**, manifesto, evaluation, existing intelligence modules |
+| What to build next (sequence) | `SYNC_ENGINE_ROADMAP.md` (subordinate to product identity) |
+| Articles, vendors, interviews | **Supporting evidence only** — translate into a rule in `SYNC_STANDARDS.md` if needed; never paste them in as product authority |
 
 Before making changes, read:
 
-- **SYNC_TRUST_LAYER.md**
+- **SYNC_PRODUCT.md** — product identity
+- **SYNC_STANDARDS.md** — technical trust and integration rules
+- **SYNC_VISION.md** — experience contract, voice, surfaces as outputs
 - SYNC_WORKFLOW.md
 - **SYNC_ENGINE_MANIFESTO.md**
 - **SYNC_REASONING_SPEC.md**
 - **SYNC_EVALUATION.md**
-- **SYNC_ENGINE_ROADMAP.md**
-- SYNC_VISION.md
+- **SYNC_ENGINE_ROADMAP.md** — sequencing; subordinate to `SYNC_PRODUCT.md` for identity
 - SYNC_PRINCIPLES.md
-- SYNC_VOICE.md when communication or user-facing language is involved
-- ROADMAP.md when relevant (module status; sequencing defers to `SYNC_ENGINE_ROADMAP.md`)
+- SYNC_VOICE.md when communication language is involved
+- ROADMAP.md when relevant (module status only)
 
 ## Gate question
 
 Every change must begin from:
 
-> **Does this improve Sync’s ability to verify identity, permission, provenance, or action receipts without fabricating trust?**
+> **Does this strengthen Sync as a personal AI context and trust layer?**
 
-If the answer is no, do not implement it yet.
+Then: does it improve **Context**, **Reasoning**, or **Proof** — or the user’s ability to inspect, correct, and delete them? Trustworthy decisions (`SYNC_EVALUATION.md`) remain the quality metric.
+
+If the work only polishes Today, Home, or Daily Brief, do not implement it yet.
 
 ## Default prompt prefix
 
 Future work should be framed as:
 
-> **Improve Sync’s trust layer by…**
+> **Improve Sync as a personal AI context and trust layer by…**
 
-Then specify the reasoning stage (evidence, claims, sharing risk, allow/deny/approval), a messy real-life example, and the test that proves the improvement.
+Then specify Context, Reasoning, or Proof; a messy real-life example; and the test that proves the improvement.
 
 ## Cursor Agent workflow
 
-This is a **repository development workflow** only. Do not add Cursor-runtime agents, extra model SDKs, n8n, or editor MCP servers as application scaffolding.
-
-**Product MCP/OAuth is in scope:** Sync may host a remote MCP server and OAuth so ChatGPT, Cursor, and other hosts attach to the trust layer. Do not install n8n or a parallel agent runtime inside the app. Do not treat `/api/chat` as the agent protocol.
+This is a **repository development workflow** only. Do not add agents to the Sync application runtime, install an AI SDK, call an external model API, add n8n, or add MCP servers as part of agent setup. Future *product* integrations, when approved, follow `SYNC_STANDARDS.md` (OAuth/MCP as permissioned access) — that is not permission to add those runtimes now.
 
 The main Cursor Agent is the **only implementation owner**. Follow `.cursor/skills/sync-change/SKILL.md` for modification requests. Invoke `/sync-change` when the complete procedure should be loaded explicitly.
 
@@ -56,10 +68,10 @@ Do not invoke subagents merely because they exist. Do not let subagents edit fil
 
 ### Operating rules
 
-- Read and follow `SYNC_WORKFLOW.md` and `SYNC_VISION.md` before meaningful product or architecture changes.
-- Treat Sync as a trust layer (permission, provenance, receipts), not a planner, generic dashboard, or chatbot-first product. ChatGPT/Cursor apps are **clients** of that layer, not a chatbot product.
-- Preserve the intelligence sequence **Memory → Understanding → Consequences → Decision/Judgment**. Map it to evidence, claims, sharing risk, and allow/deny/approval. Do not fork a second brain. Today/briefing is an optional later output, not the product question.
-- A requested product change must improve at least one of: **Trust, Activity, Passport, Safety**, or the internal stages Memory, Understanding, Consequences, Judgment. If none apply, pause and explain. Do not grow Today/My Life unless it unblocks the trust loop. Goals remain deferred — do not build a Goals planner.
+- Read and follow `SYNC_PRODUCT.md`, `SYNC_STANDARDS.md`, `SYNC_WORKFLOW.md`, and `SYNC_VISION.md` before meaningful product or architecture changes. Do not paste articles into the repo or treat them as specs.
+- Treat Sync as a personal AI context and trust layer, not a briefing app, planner, generic dashboard, or chatbot-first product. Briefings are one output.
+- Preserve the intelligence sequence **Memory → Understanding → Consequences → Decision/Judgment → Response**. Briefing Effect is an output of that pipeline, not the product. The full pipeline in `SYNC_REASONING_SPEC.md` implements this sequence; do not fork it.
+- A requested product change must improve **Context, Reasoning, or Proof** (or Trust/Safety around them). Today, My Life, and Brief are outputs — if none of the three layers apply, pause and explain. Goals remain a deferred product surface until `SYNC_ENGINE_ROADMAP.md` reaches that phase — do not build a Goals planner.
 - Reuse shared intelligence and adapters before creating surface-specific or mobile-only logic.
 - Keep UI minimal. Avoid dashboards, productivity-page sprawl, unnecessary category tabs, excessive debug panels, and disconnected demo logic.
 - Add or update messy real-life tests for behavior changes.
@@ -93,7 +105,7 @@ Canonical remote: `https://github.com/ahmedisaiotero-cmd/finance-calender.git` (
 
 - If uncommitted local work could conflict, stop. Do not reset, discard, or overwrite unrelated changes.
 - Do not push secrets or `.env` files.
-- Do not add n8n, extra model SDKs, or Cursor-only agent runtimes to the Sync **application**. A product MCP server and OAuth for external agents **are allowed** (see `SYNC_TRUST_LAYER.md`). GitHub, Vercel, and editor plugins belong in the agent environment, not as a parallel app brain.
+- Do not add MCP servers, AI SDKs, n8n, or bots to the Sync **application**. GitHub, Vercel, and editor plugins belong in the agent environment, not in app runtime.
 - Do not change Vercel production settings or deploy unless the user explicitly asks. Linked deploy project: `finance-calender-g6ay` on Vercel team `ahmedisaiotero-cmds-projects` (GitHub org `ahmedisaiotero-cmd`).
 
 ## Working approach (main-first)
@@ -110,13 +122,12 @@ Supervised Sync development happens **directly on `main`**.
 
 ## Engine-first priorities
 
-- **Trust before features** — evidence and permission beat new surfaces
-- **Never upgrade verification** — agent-reported is not source-confirmed
+- **Trust before features** — judgment quality beats new surfaces
+- **Product/UI work is lower priority** until context, reasoning, and proof are unified enough to trust (see `SYNC_PRODUCT.md` and `SYNC_ENGINE_ROADMAP.md` Phase 3)
 - **`/sync-lab` is the teaching/evaluation surface**, not the product
-- **The Sync website is a quiet control center** — connections, grants, receipts, revoke, correct — not a daily dashboard
-- **Today is frozen** unless it unblocks the trust loop — do not redesign it unless explicitly requested
-- **Failed trust decisions become tests** before production fixes whenever possible (see `SYNC_EVALUATION.md`)
-- Sequencing: `SYNC_TRUST_LAYER.md` and `SYNC_ENGINE_ROADMAP.md`
+- **Today / Home / Brief are outputs**, not the product — do not redesign or expand them unless they prove Context, Reasoning, or Proof
+- Improve shared intelligence (context, reasoning, proof) rather than adding page-local brains
+- **Failed decisions become evaluation/test cases before production fixes** whenever possible (see `SYNC_EVALUATION.md`)
 
 ## Product identity
 
@@ -127,27 +138,32 @@ Sync is not:
 - a chatbot
 - a productivity app with endless tabs
 - a habit tracker, finance app, health app, notes app, or calendar skin
-- a universal AI-user score or custom identity blockchain
 
-Sync is:
+Sync is becoming:
 
-- a user-owned permission, context, and action-receipt layer for connected AI tools
-- an evidence ledger that distinguishes user-confirmed, observed, agent-reported, externally verified, and inferred information
-- a judgment engine that allows, denies, limits, or asks before an agent acts
+- a personal AI context and trust layer
+- a user-controlled record of what is true about someone’s life
+- a reasoning system that decides what that information means and what matters
+- a proof layer for what AI saw, decided, and did
+- a source of outputs (briefing, advice, actions, other AIs) — not a briefing product
+
+The older engine still fits as supporting machinery: Life Graph organizes context; the reasoning pipeline determines meaning; Activity Passport proves access and action; Today/Brief show value.
 
 ## Layered architecture (current direction)
 
-1. **Sync Intelligence** — activity events, passport claims, memory, consequence/sharing-risk, allow/deny judgment
-2. **Adapters** — MCP tools, OAuth, GitHub (and later) connectors, thin view models
-3. **Surfaces** — Sync website control center; ChatGPT/Cursor/other hosts as doorways; lab for inspection
-4. **Integrations** — user-approved connectors that **confirm** outcomes (GitHub first). Host plugins are not omniscient observers.
+1. **Context** — user-controlled understanding (memory + Life Graph as infrastructure)
+2. **Reasoning** — meaning, consequences, judgment, response (`lib/intelligence/*`, `lib/sync-capture/*`)
+3. **Proof** — Activity / Passport (`lib/activity/*`, `lib/passport/*`)
+4. **Adapters** — translate those layers into outputs (Home, My Life, Timeline, Capture, future other AIs)
+5. **Surfaces** — web, mobile, iOS shells that present outputs; they are not the product
+6. **Integrations** — optional connectors that feed context or carry trusted context to other AIs — consent only, deferred
 
 Rules:
 
-- Intelligence should not be trapped inside UI components or MCP handlers.
-- App pages and MCP tools consume intelligence; they do not create their own brains.
-- Connecting an account is not the same as verifying everything that host does.
-- No hidden external data usage, no full-conversation scrape by default, no forced account connections.
+- Intelligence should not be trapped inside UI components.
+- App pages consume intelligence; they do not create their own brains.
+- Integrations enrich Sync only after user approval.
+- No hidden external data usage and no forced account connections.
 
 ## Core rule
 
@@ -155,20 +171,14 @@ Prefer intelligence over UI.
 
 Do not add pages, dashboards, category sprawl, chatbot framing, or extra widgets unless **explicitly requested**.
 
-Every change must improve at least one engine stage:
+Every change must improve at least one of:
 
-- Memory (evidence)
-- Understanding (claims)
-- Consequences (sharing/acting risk)
-- Judgment (allow / deny / limit / ask)
-- Safety
-- Trust
-- Activity
-- Passport
+- **Context** (what is true; user-controlled)
+- **Reasoning** (what it means; Memory, Understanding, Consequences, Judgment, Response)
+- **Proof** (what AI saw, decided, did — Activity / Passport)
+- **Safety / Trust** (inspect, correct, delete; no invented facts)
 
-A requested **product** change must improve Trust, Activity, Passport, or Safety (or the internal stages above). Do not expand briefing UI as the product. Goals remain deferred.
-
-Legacy surfaces Today and My Life consume engine output — improve them only when trust work requires it.
+A requested **product** change must serve that hierarchy. Improving Today, My Life, or Brief is allowed only as an output of those layers. Goals product expansion waits until the intelligence foundation is stable (`SYNC_ENGINE_ROADMAP.md`).
 
 ## Reasoning pipeline
 
@@ -237,7 +247,7 @@ The Sync Engine does **not** own memory storage, memory classification, conseque
 
 ## Engineering rules
 
-- **Reuse intelligence** — search `lib/activity/*`, `lib/passport/*`, `lib/intelligence/*`, and `lib/sync-capture/*` before adding logic
+- **Reuse intelligence** — search `lib/intelligence/*` and `lib/sync-capture/*` before adding logic
 - **Never duplicate ranking** — all prioritization belongs in `decision-engine.ts`
 - **Never create another communication layer** — user-facing language flows through Sync Engine + `SYNC_VOICE.md`
 - **Never invent facts** — evidence-based interpretation only
@@ -389,15 +399,13 @@ Good tests include:
 Do not unless **explicitly requested**:
 
 - add dashboards, tabs, or domain products (Sync Health, Sync Money, etc.)
-- add onboarding, themes, analytics, charts, streaks, gamification, or a reputation score
-- invent a custom identity protocol or blockchain
-- claim activity is “verified” when it is only imported, inferred, or agent-reported
-- scrape full AI conversations by default
+- add onboarding, themes, analytics, charts, streaks, or gamification
 - redesign `/sync-lab`, Today, or Daily Brief
-- polish consumer UI ahead of the Cursor ↔ Sync ↔ GitHub loop
+- polish consumer UI ahead of trust milestones
 - create finance/calendar/health agents as separate intelligence layers
-- force integrations by default or assume a host gives Sync omniscience
+- force integrations by default or assume external data access without clear user consent
 - turn Sync into a dashboard
-- turn capture or MCP into a chatbot
-- fork ranking or evidence types into MCP handlers or page-specific modules
-- extend `/api/chat` into the trust protocol
+- turn capture into a chatbot
+- bury Today under widgets
+- make the UI louder to compensate for weak intelligence
+- fork ranking logic into mobile-only or page-specific modules when it belongs in `lib/intelligence/`

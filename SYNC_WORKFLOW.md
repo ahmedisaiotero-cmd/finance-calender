@@ -1,23 +1,17 @@
 # Sync Workflow Guardrails
 
-Read this before making changes. Also read `SYNC_VISION.md`, `SYNC_PRINCIPLES.md`, `SYNC_VOICE.md` when language is involved, and `.cursor/rules/sync-product-workflow.mdc`.
+Read this before making changes. Also read `SYNC_PRODUCT.md` first (identity), `SYNC_STANDARDS.md` (trust), then `SYNC_VISION.md` (experience), `SYNC_PRINCIPLES.md`, `SYNC_VOICE.md` when language is involved, and `.cursor/rules/sync-product-workflow.mdc`.
 
 ## Before building
 
 Every change must improve at least one of:
 
-- **Trust**
-- **Activity**
-- **Passport**
-- **Safety**
-- **Memory** (evidence)
-- **Understanding** (claims)
-- **Consequences** (sharing/acting risk)
-- **Judgment** (allow / deny / limit / ask)
+- **Context** (what is true about the user; user-controlled)
+- **Reasoning** (Memory, Understanding, Consequences, Judgment, Response)
+- **Proof** (Activity, Passport — what AI saw, decided, did)
+- **Trust / Safety** (inspect, correct, delete)
 
-If it does not improve one of these, **do not build it.**
-
-Do not grow Today / My Life / Capture as the product. ChatGPT and Cursor apps are clients of the trust layer, not a chatbot product.
+Today, My Life, and Briefings are **outputs**. If the change only improves those screens, **do not build it** unless it proves one of the layers above.
 
 1. Reuse existing Sync intelligence before creating new logic.
 2. Test with messy real-life examples.
@@ -25,13 +19,14 @@ Do not grow Today / My Life / Capture as the product. ChatGPT and Cursor apps ar
 
 ## Core promise
 
-**One Sync account. Narrow permission. Evidence-labeled receipts.**
+**Sync is a personal AI context and trust layer.**
 
-Sync is a user-controlled trust layer between a person and AI systems.
-The website is the account and control center. MCP/OAuth plugins are doorways into that account.
-Connecting a host is not the same as verifying everything that host does.
+It builds an accurate, user-controlled understanding of your life, helps AI make better decisions, and keeps a verifiable record of what AI systems saw, decided, and did.
 
-Canonical direction: `SYNC_TRUST_LAYER.md`.
+The app may present a calm briefing as one output. That briefing is not the product.
+Sync is not a planner, journal, notes app, productivity tool, or database.
+
+The value of Sync should **increase as more life is captured and as proof of AI action becomes inspectable**. The goal is trusted context, not storage and not a better Today page.
 
 ## Intelligence pipeline
 
@@ -44,11 +39,9 @@ Canonical direction: `SYNC_TRUST_LAYER.md`.
 | Sync Intelligence | memory, life graph, reasoning, consequence detection, pattern intelligence, prioritization, narrative context | Core reusable product layer |
 | Adapters | translation for Home, Life Timeline, My Life, Capture, area views, and future outputs (chat/voice/domain) | Keep thin and explicit |
 | Surfaces | web app, mobile app, iOS shell, future dedicated apps | Present intelligence; do not re-rank |
-| Integrations | OAuth/MCP doorways and outcome verifiers (GitHub first), auth/permissions, privacy boundaries | User-approved; not omniscient host observers |
+| Integrations | optional external connectors (calendar, finance, health, email/messages), auth/permissions, privacy boundaries | User-approved plugins/sources only |
 
-Integration rule: connecting Sync inside a host requires that host’s app model. Sync must remain useful from its own site (grants, receipts, revoke) even when a host sends little.
-
-**Next major milestone:** Phase T1 evidence ledger — persist `ActivityEvent` — then OAuth + GitHub + MCP per `SYNC_ENGINE_ROADMAP.md`.
+Integration rule: external sources are optional. Sync must remain useful through manual capture alone.
 
 | Layer | Question | Primary modules | Status |
 |-------|----------|-----------------|--------|
@@ -58,25 +51,36 @@ Integration rule: connecting Sync inside a host requires that host’s app model
 | Decision | What matters today? | `decision-engine.ts`, `build-home-priorities.ts` adapter | V1.5 implemented |
 | Sync Engine | How should Sync help the user understand this moment? | `sync-engine.ts` target, `SYNC_PRINCIPLES.md`, `SYNC_VOICE.md`, shared narrative/explainability rules | Next refinement |
 
-Decision Engine owns ranking and allow/deny/approval scoring. Sync Engine owns voice. Today UI is frozen.
+Decision Engine v1.5 is profile-aware, returns ranked candidate metadata, and has basic intelligence validation scripts. Decision decides what matters and must own ranking. The Sync Engine decides how Sync helps the user understand those decisions; it must preserve Decision ordering, avoid inventing facts, support continuity across days and weeks, and know when silence is better than saying more. Today UI consumes the shared Decision Engine today; Daily Brief, Pulse, and Sync Engine consolidation remain later work.
 
-**Next major milestone:** persist Activity + Passport (Phase T1). Phase 1.75 briefing refinement is frozen unless it unblocks the trust loop.
+**Next major intelligence milestone:** Phase 1.75 Intelligence Refinement — improve the brain of Sync before adding new pages or integrations.
+
+Phase 1.75 focuses on:
+
+- **Decision Quality:** reliably choose the 1–3 memories/consequences that matter most today from many possible inputs.
+- **Universal Understanding:** recognize events, tasks, worries, goals, relationships, preferences, routines, money details, health signals, family context, ideas, emotions, commitments, vague life notes, and non-calendar captures.
+- **Sync Engine:** translate Sync's intelligence into human understanding through voice, tone, confidence language, communication intent, surfacing reasons, explainability, narrative continuity, respectful coaching, silence/noise control, evidence-based personalization, and story arc.
+- **Trust and Explainability:** explain why something surfaced, why it was remembered, why it faded, why it was not shown, and confidence when unsure.
+- **Stress Testing:** validate messy real-life sets with 100+ memories, duplicates, vague notes, emotional entries, quiet weeks, overloaded weeks, cross-domain conflicts, ambiguous captures, and lightweight memories that should not surface.
 
 ## Primary user loop
 
-1. User or agent requests context, permission, or records an action.
-2. Sync labels evidence and decides allow / deny / ask.
-3. Sync appends a receipt.
-4. Another agent may receive a minimum-necessary answer.
-5. User may revoke, correct, or delete without rewriting history.
+1. User tells Sync something.
+2. Sync understands it.
+3. Sync organizes it.
+4. Sync connects it to existing context.
+5. Sync surfaces it when relevant.
+6. Sync learns patterns over time.
 
 Every feature should support this loop.
 
 ## Canonical app structure
 
-1. **Control center** — connections, grants, receipts, revoke (quiet)
-2. **`/sync-lab`** — inspect ledger and claims
-3. **Legacy Home / My Life / Timeline / Capture / area views** — frozen proving ground
+1. **Home** — what matters now
+2. **My Life** — what Sync knows
+3. **Life Timeline** — when it matters
+4. **Capture** — how Sync learns
+5. **Area views** — category-specific perspective from shared intelligence
 
 ## Build order
 
@@ -112,22 +116,32 @@ Focus: Capture, Memory, Understanding, Consequences, **Decision**, and **Sync En
 
 ## Sync Engine Direction
 
-Sync is primarily a **trust layer** (permission, provenance, receipts). The intelligence pipeline stays; the product question is no longer the daily briefing.
+**Source of truth for identity:** `SYNC_PRODUCT.md`.
+
+Sync is becoming a **personal AI context and trust layer**. The reasoning engine is a supporting system. The app is a proving-ground output, not the destination.
+
+All future Sync work must strengthen **Context, Reasoning, or Proof**, measured by **trustworthy decisions**.
 
 Before implementing any change, ask:
 
-> “Does this improve Sync’s ability to verify identity, permission, provenance, or action receipts without fabricating trust?”
+> “Does this strengthen Sync as a personal AI context and trust layer?”
 
-If not, do not implement it yet.
+If it only improves a briefing surface, do not implement it yet.
 
 Future prompts should begin with:
 
-> “Improve Sync’s trust layer by…”
+> “Improve Sync as a personal AI context and trust layer by…”
 
-**Source of truth for this direction:**
+Do not build features for their own sake.
 
-- `SYNC_TRUST_LAYER.md` — product direction
-- `SYNC_ENGINE_MANIFESTO.md` — mission, constitution, philosophy
+Do not rebuild around an abstract platform at the cost of unifying the existing pieces.
+
+**Other sources of truth:**
+
+- `SYNC_PRODUCT.md` — product identity
+- `SYNC_STANDARDS.md` — technical trust (articles are evidence only)
+- `SYNC_VISION.md` — experience contract
+- `SYNC_ENGINE_MANIFESTO.md` — constitution
 - `SYNC_REASONING_SPEC.md` — required reasoning pipeline per input
 - `SYNC_EVALUATION.md` — trust metrics and weekly review
-- `SYNC_ENGINE_ROADMAP.md` — phased roadmap
+- `SYNC_ENGINE_ROADMAP.md` — phased sequencing (subordinate to identity)

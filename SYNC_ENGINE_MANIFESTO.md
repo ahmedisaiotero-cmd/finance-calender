@@ -1,26 +1,29 @@
 # Sync Engine Manifesto
 
-This document defines what Sync is becoming. It supersedes product-first framing when the two conflict.
+This document defines the constitution of the reasoning engine. **Product identity lives in `SYNC_PRODUCT.md` and supersedes this file** wherever this file treats a briefing, Today, or the app as the product.
 
-Read alongside `SYNC_REASONING_SPEC.md`, `SYNC_EVALUATION.md`, and `SYNC_ENGINE_ROADMAP.md`.
+Read alongside `SYNC_PRODUCT.md`, `SYNC_REASONING_SPEC.md`, `SYNC_EVALUATION.md`, and `SYNC_ENGINE_ROADMAP.md`.
 
 ---
 
 ## What Sync Is
 
-Sync is a **user-controlled trust layer** for AI systems, powered by a personal reasoning engine.
+Sync is becoming a **personal AI context and trust layer**.
 
-It should:
+The reasoning engine in this manifesto is the **Reasoning** supporting system: it determines what information means and what matters. Life Graph organizes **Context**. Activity Passport is **Proof**. Briefings are **outputs**.
 
-- know who authorized an action
-- decide what an agent may access or do
-- distinguish user-confirmed, observed, agent-reported, externally verified, and inferred information
-- record what happened without rewriting history
-- stay quiet except when approval, revocation, or a receipt is needed
+Sync should:
 
-The product is **trust** (provenance and permission). Canonical direction: `SYNC_TRUST_LAYER.md`.
+- build an accurate, user-controlled understanding of a life
+- understand what happened and whether it matters
+- understand what changes because of it
+- decide whether to remember, ask, surface later, or stay quiet
+- keep a verifiable record of what AI saw, decided, and did
+- help people and other AIs make better decisions from that context
 
-The website is a quiet control center. Host plugins (ChatGPT, Cursor) are doorways, not omniscient observers. The lab exists to test and teach the engine.
+The product is **trusted personal context**, not a screen.
+
+The UI exists only to test, teach, and eventually expose that layer.
 
 ---
 
@@ -45,31 +48,31 @@ If a feature makes Sync feel like one of these, it waits.
 
 ## Core Mission
 
-**Build the most trusted permission, context, and action-receipt layer a person can put between themselves and AI agents.**
+**Build the most trusted personal AI context and trust layer.**
 
-Not the smartest assistant. Not the most feature-rich life app. Not a universal reputation score.
+Not the smartest assistant. Not the most feature-rich briefing app. The most **trustworthy** context, reasoning, and proof a person (and later other AIs) would rely on.
 
 ---
 
 ## The Villain
 
-**Unverified agency.**
+**Mental fragmentation.**
 
-Every new agent starts blind, repeats work, or acts with unclear authority. Platforms do not share a common evidence of who approved what and what actually happened.
+People have notes, calendars, reminders, messages, health apps, bank apps, ideas, worries, and obligations scattered everywhere. None of it understands how it connects.
 
-Sync exists to be the user-owned bridge — not another pile of AI chat history.
+Sync exists to connect what matters — not to add another pile of information.
 
 ---
 
 ## The Hero
 
-**Inspectable authority.**
+**Clarity and confidence.**
 
 The user should feel:
 
-> “I can see what acted in my name, and I can stop it.”
+> “I know what matters today.”
 
-Not scored. Not coached. Not watched in secret. **In control.**
+Not overwhelmed. Not coached. Not managed. **Clear.**
 
 ---
 
@@ -99,11 +102,11 @@ These principles govern all engine work:
 
 Every future change must answer:
 
-> “Does this improve Sync’s ability to verify identity, permission, provenance, or action receipts without fabricating trust?”
+> “Does this strengthen Sync as a personal AI context and trust layer?”
 
-If the answer is no, the change waits.
+If it only improves a briefing surface, the change waits.
 
-Features do not ship for their own sake. Surfaces do not expand until the engine earns trust.
+Features do not ship for their own sake. Surfaces do not expand until context, reasoning, and proof are unified enough to trust.
 
 ---
 
@@ -113,22 +116,23 @@ The implemented pipeline maps to this manifesto:
 
 | Manifesto concern | Engine stage | Primary modules |
 |---|---|---|
-| What happened | Memory / evidence | `lib/activity/*`, capture modules |
-| Why it matters | Understanding / claims | `lib/passport/*`, `meaning-engine.ts` |
-| Sharing or acting risk | Consequence | `consequence-engine.ts`, activity unresolved |
-| Allow / deny / ask | Judgment | `decision-engine.ts` |
+| What happened | Memory | `lib/sync-capture/*`, `memory-profile.ts`, `memory-aging.ts` |
+| Why it matters | Understanding | `meaning-engine.ts`, `memory-understanding.ts` |
+| What changes | Consequence | `consequence-engine.ts`, `sync-consequences.ts` |
+| What deserves attention | Judgment | `decision-engine.ts` |
 | How Sync communicates | Response | `sync-engine.ts`, `SYNC_VOICE.md` |
-| Receipts and grants | Activity + Passport | `createActivityEvent`, `isVerifiedClaim` |
+| What happens next | Future follow-up | capture actions, consequence timing |
+| What the user sees later | Briefing effect | `briefing-composer.ts`, Today adapters |
 
-The lab UI (`/sync-lab`, mobile prototype) is a **teaching surface**, not the product.
+The lab UI (`/sync-lab`, mobile prototype) and Today/Brief are **outputs and teaching surfaces**, not the product. See `SYNC_PRODUCT.md`.
 
 ---
 
 ## What Success Looks Like
 
-- A second agent can retrieve a minimum-necessary, evidence-labeled answer about a prior action without reading the first agent’s conversation.
-- GitHub (or another source) confirmation is the only path labeled externally verified.
-- Users can inspect, revoke, correct, and delete without rewriting the ledger.
-- Failed permission/provenance decisions become tests — not a louder UI.
+- A thoughtful human agrees with what Sync remembered, ignored, asked, surfaced, and stayed quiet about.
+- Messy real-life input produces calm, specific, evidence-based judgment — not database dumps.
+- Users can inspect and correct Sync’s reasoning without breaking trust.
+- Every week, failed examples become tests — not shame, not dashboards.
 
-See `SYNC_EVALUATION.md` for how trust is measured. The trust-layer demonstration is specified in `SYNC_TRUST_LAYER.md`.
+See `SYNC_EVALUATION.md` for how trust is measured.
