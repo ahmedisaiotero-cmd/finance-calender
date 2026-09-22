@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { ActivityLedgerError } from "@/lib/activity/ledger";
 import { loadRequestIdentity } from "@/lib/auth/load-request-identity";
 import { GithubConnectorError } from "@/lib/connectors/github/errors";
+import { presentGithubCommitReceipt } from "@/lib/connectors/github/receipt";
 import {
   requireTokenVaultKey,
   verifyGithubCommitForIdentity,
@@ -64,7 +65,13 @@ export async function POST(request: Request) {
       accessStore: createPrismaGithubAccessStore(prisma),
       activityStore: prismaActivityEventStore,
     });
-    return NextResponse.json(result, { status: result.reused ? 200 : 201 });
+    return NextResponse.json(
+      {
+        ...result,
+        receipt: presentGithubCommitReceipt(result.record.event),
+      },
+      { status: result.reused ? 200 : 201 },
+    );
   } catch (error) {
     if (error instanceof GithubConnectorError) {
       return NextResponse.json(

@@ -40,6 +40,8 @@ function input(partial: Partial<ActivityEventInput> = {}): ActivityEventInput {
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N";
   assert.equal(redactSecrets(jwt).includes("[redacted]"), true);
   assert.equal(redactSecrets("Authorization: Bearer abcdef1234567890XYZ").includes("[redacted]"), true);
+  const gitSha = "8156c2ac8928edc468e8a2b4bc4aca0b86a787c5";
+  assert.equal(redactSecrets(`https://github.com/acme/repo/commit/${gitSha}`).includes(gitSha), true);
 }
 
 // The factory never persists secrets and clamps/normalizes untrusted input.

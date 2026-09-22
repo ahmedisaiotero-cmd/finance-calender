@@ -3,8 +3,31 @@ import { NextResponse } from "next/server";
 import { loadRequestIdentity } from "@/lib/auth/load-request-identity";
 import { GithubConnectorError } from "@/lib/connectors/github/errors";
 import { startGithubOAuthSession } from "@/lib/connectors/github/service";
-import { putGithubOAuthHandshake } from "@/lib/db/github-access-store";
+import {
+  findLatestGithubConnection,
+  putGithubOAuthHandshake,
+} from "@/lib/db/github-access-store";
+import { ownerFromIdentity } from "@/lib/activity/ledger";
 import { isDatabaseConfigured, prisma } from "@/lib/prisma";
+
+export async function GET() {
+  const loaded = await loadRequestIdentity();
+  if (!loaded.ok) return loaded.response;
+  if (!isDatabaseConfigured()) {
+    return NextResponse.json(
+      { error: "DATABASE_URL is not configured" },
+      { status: 503 },
+    );
+  }
+  const connection = await findLatestGithubConnection(
+    prisma,
+    ownerFromIdentity(loaded.identity),
+  );
+  return NextResponse.json({
+    connected: Boolean(connection),
+    connectionId: connection?.connectionId ?? null,
+  });
+}
 
 export async function POST() {
   const loaded = await loadRequestIdentity();

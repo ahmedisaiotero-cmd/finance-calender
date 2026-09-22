@@ -10,6 +10,9 @@ export type GithubCommitRecord = {
   sha: string;
   committedAt: string | null;
   sourceRef: string;
+  apiUrl: string;
+  htmlUrl: string;
+  repoFullName: string;
 };
 
 export type GithubFetch = (
@@ -35,6 +38,11 @@ export function assertGithubCommitQuery(query: GithubCommitQuery): void {
 export function githubCommitApiUrl(query: GithubCommitQuery): string {
   assertGithubCommitQuery(query);
   return `https://api.github.com/repos/${query.repoOwner}/${query.repo}/commits/${query.sha}`;
+}
+
+export function githubCommitHtmlUrl(query: GithubCommitQuery, sha: string): string {
+  assertGithubCommitQuery({ ...query, sha });
+  return `https://github.com/${query.repoOwner}/${query.repo}/commit/${sha}`;
 }
 
 export async function fetchGithubCommit(input: {
@@ -104,9 +112,13 @@ export async function fetchGithubCommit(input: {
       ? body.commit.committer.date
       : null;
 
+  const repoFullName = `${input.query.repoOwner}/${input.query.repo}`;
   return {
     sha: body.sha,
     committedAt,
-    sourceRef: `github:${input.query.repoOwner}/${input.query.repo}/commit/${body.sha}`,
+    sourceRef: `github:${repoFullName}/commit/${body.sha}`,
+    apiUrl: githubCommitApiUrl({ ...input.query, sha: body.sha }),
+    htmlUrl: githubCommitHtmlUrl(input.query, body.sha),
+    repoFullName,
   };
 }

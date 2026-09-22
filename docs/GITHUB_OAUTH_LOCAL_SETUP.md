@@ -2,7 +2,7 @@
 
 This is a **local, temporary** OAuth App so you can connect your real GitHub account to Sync on your machine. It does **not** mean Sync already has a live product connection until you finish authorization yourself.
 
-There is **no usable Connections UI**. Use the API routes below while signed in. Do not put real secrets in this file or in git.
+The website surface is **Settings → GitHub confirmation** (`/settings`). Connect GitHub there, then confirm one public commit. API routes remain available. Do not put real secrets in this file or in git.
 
 Do **not** run this against production Neon. Live connect/verify/revoke writes to whatever `DATABASE_URL` the Next.js app uses. Use a local or other non-production database for that URL.
 
@@ -93,7 +93,9 @@ Open **http://127.0.0.1:3000** (not a different host/port unless you change the 
 
 Go to **http://127.0.0.1:3000/login** and sign in with your Sync account.
 
-Every GitHub route uses `requireRequestIdentity`. Unsigned requests get `401`. There is no connect button.
+Every GitHub route uses `requireRequestIdentity`. Unsigned requests get `401`.
+
+Use **Settings → Connect GitHub**, or the API below.
 
 ## 5. Connect GitHub
 

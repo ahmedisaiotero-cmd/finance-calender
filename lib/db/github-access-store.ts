@@ -277,6 +277,25 @@ export function createPrismaGithubAccessStore(
   };
 }
 
+export async function findLatestGithubConnection(
+  client: PrismaClient,
+  owner: ActivityOwner,
+): Promise<{ connectionId: string; status: string } | null> {
+  const row = await client.connectionRecord.findFirst({
+    where: {
+      userId: owner.userId,
+      workspaceId: owner.workspaceId,
+      provider: "github",
+      revokedAt: null,
+      status: "healthy",
+    },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, status: true },
+  });
+  if (!row) return null;
+  return { connectionId: row.id, status: row.status };
+}
+
 export async function putGithubOAuthHandshake(
   client: PrismaClient,
   input: {

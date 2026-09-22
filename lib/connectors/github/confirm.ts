@@ -17,6 +17,7 @@ import type {
 import type { ActivityOwner } from "@/lib/activity/ledger-types";
 import {
   fetchGithubCommit,
+  githubCommitApiUrl,
   type GithubCommitQuery,
   type GithubFetch,
 } from "@/lib/connectors/github/client";
@@ -116,7 +117,7 @@ export async function confirmGithubCommit(input: {
       idempotencyKey: input.idempotencyKey,
       event: {
         id: `gh-confirm-${randomUUID()}`,
-        kind: "result",
+        kind: "context_access",
         actor: {
           kind: "connector",
           id: input.access.connection.id,
@@ -129,11 +130,15 @@ export async function confirmGithubCommit(input: {
         },
         timestamp: commit.committedAt ?? input.nowIso,
         affectedAreas: ["work"],
-        summary: `GitHub confirmed ${input.query.repoOwner}/${input.query.repo}@${commit.sha.slice(0, 7)}.`,
+        summary: `GitHub confirmed the referenced commit exists in ${commit.repoFullName}.`,
         evidence: [
           {
             kind: "source_record",
-            description: "Official GitHub commit API returned this SHA.",
+            description: `Official GET ${githubCommitApiUrl({
+              repoOwner: input.query.repoOwner,
+              repo: input.query.repo,
+              sha: commit.sha,
+            })} returned this SHA. This confirms only that GitHub returned the referenced resource.`,
             sourceRef: commit.sourceRef,
             capturedAt: input.nowIso,
           },
@@ -149,8 +154,12 @@ export async function confirmGithubCommit(input: {
         correlationId: input.priorEventId ?? input.access.connection.id,
         relatedEventIds: input.priorEventId ? [input.priorEventId] : undefined,
         detail: {
+          provider: "github",
+          repoFullName: commit.repoFullName,
           sha: commit.sha,
-          repo: `${input.query.repoOwner}/${input.query.repo}`,
+          htmlUrl: commit.htmlUrl,
+          apiEndpoint: commit.apiUrl,
+          confirmedAt: input.nowIso,
           grantId: input.access.grant.id,
         },
       },

@@ -11,6 +11,7 @@ import {
   confirmGithubCommit,
   revokeGithubAccess,
 } from "@/lib/connectors/github/confirm";
+import { presentGithubCommitReceipt } from "@/lib/connectors/github/receipt";
 import { GithubConnectorError } from "@/lib/connectors/github/errors";
 import { createMemoryGithubAccessStore } from "@/lib/connectors/github/memory-access-store";
 import {
@@ -146,11 +147,91 @@ test("official GitHub commit lookup writes one source_confirmed receipt", async 
 
   assert.equal(confirmed.reused, false);
   assert.equal(confirmed.record.event.verification, "source_confirmed");
+  assert.equal(confirmed.record.event.kind, "context_access");
   assert.equal(confirmed.record.event.source.service, "github");
   assert.equal(confirmed.record.priorEventId, prior.record.event.id);
   assert.equal(prior.record.event.verification, "self_reported");
+  assert.equal(confirmed.record.event.detail?.sha, SHA);
+  assert.equal(confirmed.record.event.detail?.repoFullName, "octocat/Hello-World");
+  assert.equal(
+    confirmed.record.event.detail?.htmlUrl,
+    `https://github.com/octocat/Hello-World/commit/${SHA}`,
+  );
+  assert.equal(
+    confirmed.record.event.detail?.apiEndpoint,
+    `https://api.github.com/repos/octocat/Hello-World/commits/${SHA}`,
+  );
+  assert.match(confirmed.record.event.summary, /exists/i);
+  assert.doesNotMatch(confirmed.record.event.summary, /authored|you wrote|legal identity/i);
   assert.ok(
     !JSON.stringify(confirmed.record.event).includes("gho_test_token"),
+  );
+  const receipt = presentGithubCommitReceipt(confirmed.record.event);
+  assert.equal(receipt.heading, "Confirmed by GitHub");
+  assert.equal(receipt.verification, "source_confirmed");
+  assert.match(receipt.role.read, /asked GitHub/i);
+  assert.match(receipt.role.decision, /No judgment/i);
+  assert.match(receipt.role.action, /Nothing was written/i);
+  assert.ok(receipt.doesNotClaim.some((line) => /authored/i.test(line)));
+
+  const replay = await confirmGithubCommit({
+    owner,
+    access,
+    query: { repoOwner: "octocat", repo: "Hello-World", sha: SHA.slice(0, 7) },
+    identityAssuranceAtTime: "account_verified",
+    priorEventId: prior.record.event.id,
+    idempotencyKey: "github-confirm-1",
+    nowIso: NOW,
+    store,
+    fetchImpl: githubFetchMock({}),
+  });
+  assert.equal(replay.reused, true);
+  assert.equal(replay.record.event.id, confirmed.record.event.id);
+});
+
+test("GitHub API failure creates no source_confirmed event", async () => {
+  const store = createMemoryActivityEventStore();
+  await assert.rejects(
+    () =>
+      confirmGithubCommit({
+        owner,
+        access: githubAccessFixture({ owner }),
+        query: { repoOwner: "octocat", repo: "Hello-World", sha: SHA },
+        identityAssuranceAtTime: "account_verified",
+        idempotencyKey: "github-fail-1",
+        nowIso: NOW,
+        store,
+        fetchImpl: githubFetchMock({ commitStatus: 500 }),
+      }),
+    (error: unknown) =>
+      error instanceof GithubConnectorError && error.code === "github_unreachable",
+  );
+  const page = await store.list({ owner, limit: 20 });
+  assert.equal(
+    page.some((row) => row.event.verification === "source_confirmed"),
+    false,
+  );
+});
+
+test("expired GitHub grant cannot mint a confirmed receipt", async () => {
+  const store = createMemoryActivityEventStore();
+  await assert.rejects(
+    () =>
+      confirmGithubCommit({
+        owner,
+        access: githubAccessFixture({
+          owner,
+          expiresAt: "2026-09-01T00:00:00.000Z",
+        }),
+        query: { repoOwner: "octocat", repo: "Hello-World", sha: SHA },
+        identityAssuranceAtTime: "account_verified",
+        idempotencyKey: "github-expired-1",
+        nowIso: NOW,
+        store,
+        fetchImpl: githubFetchMock({}),
+      }),
+    (error: unknown) =>
+      error instanceof GithubConnectorError && error.code === "grant_inactive",
   );
 });
 

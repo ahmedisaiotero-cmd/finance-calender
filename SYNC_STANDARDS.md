@@ -38,6 +38,13 @@ Translate outside ideas into the columns below. Do not paste source articles int
 | Login.gov pattern | Separate **authentication** (who is signed in) from **identity proofing** (who they are in the world) | Mandatory government-ID verification to use Sync |
 | Stripe Identity pattern | Optional, outsourced verification when the user chooses it | Storing biometric or government-ID payloads ourselves |
 
+### Dated evidence (not product authority)
+
+| Date | Signal | What Sync adopts | What Sync rejects |
+|---|---|---|---|
+| 2026-09-22 | Baselayer Series A / Know Your Agent, MCP business context, counterparty checks | The trust problem is real: permissioned context and verifiable activity matter | Roadmap change, enterprise dashboard, trust score, agent runtime, A2A, redesign |
+| 2026-09-22 | Credential Broker for Agents and agent-authorization research | Short-lived scoped access, policy at the moment of action, trace to a human principal, provenance, auditable evidence | Treating draft papers as shipped standards; building a generic agent-security platform |
+
 ---
 
 ## 1. Permissioned access (OAuth / MCP)

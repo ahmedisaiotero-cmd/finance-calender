@@ -53,11 +53,18 @@ export async function GET(request: Request) {
       accessStore: createPrismaGithubAccessStore(prisma),
       nowIso: new Date().toISOString(),
     });
-    return NextResponse.json({
+    const payload = {
       connectionId: access.connection.id,
       grantId: access.grant.id,
       githubUserId: access.connection.externalSubjectId,
-    });
+    };
+    const accept = request.headers.get("accept") ?? "";
+    if (accept.includes("application/json")) {
+      return NextResponse.json(payload);
+    }
+    const next = new URL("/settings", request.url);
+    next.searchParams.set("github", "connected");
+    return NextResponse.redirect(next);
   } catch (error) {
     if (error instanceof GithubConnectorError) {
       return NextResponse.json(

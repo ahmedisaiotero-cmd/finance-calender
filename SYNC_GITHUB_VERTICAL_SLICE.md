@@ -40,6 +40,14 @@ npm run db:test:migrate
 
 Private repositories need a later, narrower GitHub App permission (`contents:read` / `checks:read`). This slice confirms **public** commits after the user is bound with `read:user`.
 
+## Receipt UI
+
+Settings (`/settings`) has a text-first **GitHub confirmation** section: Connect GitHub, confirm one public commit, inspect the receipt. It is not a dashboard.
+
+A successful receipt says **Confirmed by GitHub**, what Sync read, when it was confirmed, and verification status. It distinguishes read vs decision vs action. It does **not** claim authorship, repository ownership, legal identity, or that the commit contents are true.
+
+The OAuth callback redirects a browser to `/settings?github=connected`. JSON clients that send `Accept: application/json` still receive the connection payload.
+
 ## Not in this slice
 
 ChatGPT/MCP, identity proofing, other agents, production Neon migrate, desktop rewrite.
