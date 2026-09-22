@@ -4,6 +4,8 @@ This document maps the repository structure for the Sync Foundation Release and 
 
 For mission, trust rules, and sequencing, read:
 
+- `SYNC_PRODUCT.md` (product identity — authoritative)
+- `SYNC_STANDARDS.md` (technical trust and integrations)
 - `SYNC_VISION.md`
 - `SYNC_WORKFLOW.md`
 - `SYNC_INTELLIGENCE.md`
@@ -12,8 +14,8 @@ For mission, trust rules, and sequencing, read:
 
 ## 0. Architecture framing (current naming preserved)
 
-Sync is a personal intelligence engine for life.
-The Sync app is the first product surface powered by that engine and remains the proving ground.
+Sync is becoming a personal AI context and trust layer (`SYNC_PRODUCT.md`).
+The Sync app remains a proving-ground output, not the product.
 
 Current repository organization should be read through four layers:
 

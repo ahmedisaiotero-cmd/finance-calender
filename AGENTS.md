@@ -1,40 +1,59 @@
 # Sync Intelligence System
 
-Sync is a **personal intelligence engine for life** — not primarily an app, planner, dashboard, or productivity tool.
-The long-term product is the reusable intelligence layer and the trust it earns.
-The Sync app is the **first product surface** powered by that engine. It remains the proving ground for shipping trustworthy decisions.
+**Product identity:** `SYNC_PRODUCT.md` is authoritative. Older docs in this file still describe the reasoning pipeline and engineering rules; they do not redefine the product.
+
+Sync is becoming a **personal AI context and trust layer**. It builds an accurate, user-controlled understanding of a life, helps AI make better decisions, and keeps a verifiable record of what AI systems saw, decided, and did.
+
+Context, Reasoning, and Proof are the product. Briefing/Today, Life Graph, and the existing app are supporting systems — outputs or infrastructure, not the destination.
+
+The current codebase has parts of context and reasoning, plus the beginning of proof. Those pieces are **not yet unified** into this identity. Do not describe existing briefing surfaces as if they were the product.
+
+## Where to look (do not mix these up)
+
+| Question | Authority |
+|---|---|
+| What is Sync becoming? | **`SYNC_PRODUCT.md`** |
+| Technical trust, permissions, integrations | **`SYNC_STANDARDS.md`** |
+| Appearance and interaction | **`SYNC_VISION.md`** (experience contract) and `SYNC_VOICE.md` |
+| How one input is reasoned about | **`SYNC_REASONING_SPEC.md`**, manifesto, evaluation, existing intelligence modules |
+| What to build next (sequence) | `SYNC_ENGINE_ROADMAP.md` (subordinate to product identity) |
+| Articles, vendors, interviews | **Supporting evidence only** — translate into a rule in `SYNC_STANDARDS.md` if needed; never paste them in as product authority |
 
 Before making changes, read:
 
+- **SYNC_PRODUCT.md** — product identity
+- **SYNC_STANDARDS.md** — technical trust and integration rules
+- **SYNC_VISION.md** — experience contract, voice, surfaces as outputs
 - SYNC_WORKFLOW.md
 - **SYNC_ENGINE_MANIFESTO.md**
 - **SYNC_REASONING_SPEC.md**
 - **SYNC_EVALUATION.md**
-- **SYNC_ENGINE_ROADMAP.md**
-- SYNC_VISION.md
+- **SYNC_ENGINE_ROADMAP.md** — sequencing; subordinate to `SYNC_PRODUCT.md` for identity
 - SYNC_PRINCIPLES.md
-- SYNC_VOICE.md when communication or user-facing language is involved
-- ROADMAP.md when relevant (module status; sequencing defers to `SYNC_ENGINE_ROADMAP.md`)
+- SYNC_VOICE.md when communication language is involved
+- ROADMAP.md when relevant (module status only)
 
 ## Gate question
 
 Every change must begin from:
 
-> **Does this improve the Sync Engine’s ability to make trustworthy decisions?**
+> **Does this strengthen Sync as a personal AI context and trust layer?**
 
-If the answer is no, do not implement it yet.
+Then: does it improve **Context**, **Reasoning**, or **Proof** — or the user’s ability to inspect, correct, and delete them? Trustworthy decisions (`SYNC_EVALUATION.md`) remain the quality metric.
+
+If the work only polishes Today, Home, or Daily Brief, do not implement it yet.
 
 ## Default prompt prefix
 
 Future work should be framed as:
 
-> **Improve the Sync Engine’s ability to make trustworthy decisions by…**
+> **Improve Sync as a personal AI context and trust layer by…**
 
-Then specify the reasoning stage, a messy real-life example, and the test that proves the improvement.
+Then specify Context, Reasoning, or Proof; a messy real-life example; and the test that proves the improvement.
 
 ## Cursor Agent workflow
 
-This is a **repository development workflow** only. Do not add agents to the Sync application runtime, install an AI SDK, call an external model API, add n8n, or add MCP servers as part of agent setup.
+This is a **repository development workflow** only. Do not add agents to the Sync application runtime, install an AI SDK, call an external model API, add n8n, or add MCP servers as part of agent setup. Future *product* integrations, when approved, follow `SYNC_STANDARDS.md` (OAuth/MCP as permissioned access) — that is not permission to add those runtimes now.
 
 The main Cursor Agent is the **only implementation owner**. Follow `.cursor/skills/sync-change/SKILL.md` for modification requests. Invoke `/sync-change` when the complete procedure should be loaded explicitly.
 
@@ -49,10 +68,10 @@ Do not invoke subagents merely because they exist. Do not let subagents edit fil
 
 ### Operating rules
 
-- Read and follow `SYNC_WORKFLOW.md` and `SYNC_VISION.md` before meaningful product or architecture changes.
-- Treat Sync as a personal reasoning engine and daily briefing, not a planner, generic dashboard, or chatbot-first product.
-- Preserve the intelligence sequence **Memory → Understanding → Consequences → Decision/Judgment → Today**. The full pipeline in `SYNC_REASONING_SPEC.md` implements this sequence; do not fork it.
-- A requested product change must improve at least one of: **Memory, Understanding, Consequences, Today, My Life, Trust, Activity, or Passport**. If none apply, pause and explain rather than forcing implementation. Goals remain a deferred product surface until `SYNC_ENGINE_ROADMAP.md` reaches that phase — do not build a Goals planner.
+- Read and follow `SYNC_PRODUCT.md`, `SYNC_STANDARDS.md`, `SYNC_WORKFLOW.md`, and `SYNC_VISION.md` before meaningful product or architecture changes. Do not paste articles into the repo or treat them as specs.
+- Treat Sync as a personal AI context and trust layer, not a briefing app, planner, generic dashboard, or chatbot-first product. Briefings are one output.
+- Preserve the intelligence sequence **Memory → Understanding → Consequences → Decision/Judgment → Response**. Briefing Effect is an output of that pipeline, not the product. The full pipeline in `SYNC_REASONING_SPEC.md` implements this sequence; do not fork it.
+- A requested product change must improve **Context, Reasoning, or Proof** (or Trust/Safety around them). Today, My Life, and Brief are outputs — if none of the three layers apply, pause and explain. Goals remain a deferred product surface until `SYNC_ENGINE_ROADMAP.md` reaches that phase — do not build a Goals planner.
 - Reuse shared intelligence and adapters before creating surface-specific or mobile-only logic.
 - Keep UI minimal. Avoid dashboards, productivity-page sprawl, unnecessary category tabs, excessive debug panels, and disconnected demo logic.
 - Add or update messy real-life tests for behavior changes.
@@ -104,10 +123,10 @@ Supervised Sync development happens **directly on `main`**.
 ## Engine-first priorities
 
 - **Trust before features** — judgment quality beats new surfaces
-- **Product/UI work is lower priority** until trust is proven (see `SYNC_ENGINE_ROADMAP.md` Phase 3 exit criteria)
+- **Product/UI work is lower priority** until context, reasoning, and proof are unified enough to trust (see `SYNC_PRODUCT.md` and `SYNC_ENGINE_ROADMAP.md` Phase 3)
 - **`/sync-lab` is the teaching/evaluation surface**, not the product
-- **The Sync app is the first product surface** — improve it by strengthening shared intelligence, not by adding page-local brains
-- **Today is a briefing output of judgment**, not a feature playground — do not redesign or expand it unless explicitly requested
+- **Today / Home / Brief are outputs**, not the product — do not redesign or expand them unless they prove Context, Reasoning, or Proof
+- Improve shared intelligence (context, reasoning, proof) rather than adding page-local brains
 - **Failed decisions become evaluation/test cases before production fixes** whenever possible (see `SYNC_EVALUATION.md`)
 
 ## Product identity
@@ -120,18 +139,24 @@ Sync is not:
 - a productivity app with endless tabs
 - a habit tracker, finance app, health app, notes app, or calendar skin
 
-Sync is:
+Sync is becoming:
 
-- a personal intelligence engine that captures life input, builds memory, understands meaning, reasons about consequences, detects patterns, and produces outputs
-- a system that decides what deserves attention — and when to stay quiet
-- a consequence engine with trustworthy judgment at its core
+- a personal AI context and trust layer
+- a user-controlled record of what is true about someone’s life
+- a reasoning system that decides what that information means and what matters
+- a proof layer for what AI saw, decided, and did
+- a source of outputs (briefing, advice, actions, other AIs) — not a briefing product
+
+The older engine still fits as supporting machinery: Life Graph organizes context; the reasoning pipeline determines meaning; Activity Passport proves access and action; Today/Brief show value.
 
 ## Layered architecture (current direction)
 
-1. **Sync Intelligence** — memory, life graph, reasoning, consequence detection, pattern intelligence, prioritization, narrative context
-2. **Adapters** — translate intelligence into outputs for Home, My Life, Life Timeline, Capture, area views, and future chat/voice/domain outputs
-3. **Surfaces** — web app, mobile app, iOS shell, and future dedicated apps that present outputs and handle interaction
-4. **Integrations** — optional external connectors (calendar, finance, health, email/messages) with explicit user consent, authentication, and privacy boundaries
+1. **Context** — user-controlled understanding (memory + Life Graph as infrastructure)
+2. **Reasoning** — meaning, consequences, judgment, response (`lib/intelligence/*`, `lib/sync-capture/*`)
+3. **Proof** — Activity / Passport (`lib/activity/*`, `lib/passport/*`)
+4. **Adapters** — translate those layers into outputs (Home, My Life, Timeline, Capture, future other AIs)
+5. **Surfaces** — web, mobile, iOS shells that present outputs; they are not the product
+6. **Integrations** — optional connectors that feed context or carry trusted context to other AIs — consent only, deferred
 
 Rules:
 
@@ -146,19 +171,14 @@ Prefer intelligence over UI.
 
 Do not add pages, dashboards, category sprawl, chatbot framing, or extra widgets unless **explicitly requested**.
 
-Every change must improve at least one engine stage:
+Every change must improve at least one of:
 
-- Memory
-- Understanding
-- Consequences
-- Judgment
-- Briefing
-- Safety
-- Trust
+- **Context** (what is true; user-controlled)
+- **Reasoning** (what it means; Memory, Understanding, Consequences, Judgment, Response)
+- **Proof** (what AI saw, decided, did — Activity / Passport)
+- **Safety / Trust** (inspect, correct, delete; no invented facts)
 
-A requested **product** change must improve at least one of: Memory, Understanding, Consequences, Today, My Life, Trust, Activity, or Passport. Goals product expansion waits until the intelligence foundation is stable (`SYNC_ENGINE_ROADMAP.md`).
-
-Legacy surfaces Today and My Life consume engine output — improve them only when trust work requires it.
+A requested **product** change must serve that hierarchy. Improving Today, My Life, or Brief is allowed only as an output of those layers. Goals product expansion waits until the intelligence foundation is stable (`SYNC_ENGINE_ROADMAP.md`).
 
 ## Reasoning pipeline
 

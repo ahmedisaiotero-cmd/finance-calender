@@ -1,14 +1,23 @@
 # Sync
 
-Sync is a **personal reasoning engine for daily life** — not a chatbot, dashboard, or planner.
+Sync is becoming a **personal AI context and trust layer** — not a chatbot, dashboard, planner, or briefing app.
 
-Conceptual flow:
+It builds an accurate, user-controlled understanding of a life, helps AI make better decisions, and keeps a verifiable record of what AI systems saw, decided, and did.
+
+- Identity: [`SYNC_PRODUCT.md`](./SYNC_PRODUCT.md)
+- Trust / integrations: [`SYNC_STANDARDS.md`](./SYNC_STANDARDS.md)
+- Experience: [`SYNC_VISION.md`](./SYNC_VISION.md)
+
+Older roadmap language is subordinate. Articles are supporting evidence only.
 
 ```text
-Capture → Memory → Understanding / Life Graph → Consequences → Decision Engine → Today briefing
+Context (Life Graph + memory)
+Reasoning (meaning → consequences → judgment → response)
+Proof (Activity / Passport)
+        └── outputs: briefing, advice, actions, other AIs
 ```
 
-The Sync app (`/` mobile prototype, `/sync-lab`) is the first product surface. Shared intelligence lives in `lib/`. `sync-ios/` is a separate Expo client that re-exports shared modules.
+The app (`/` mobile prototype, `/sync-lab`) is a proving-ground **output**. Shared intelligence lives in `lib/`. `sync-ios/` is a separate Expo client that re-exports shared modules.
 
 ## Quick start
 
@@ -35,13 +44,16 @@ Root TypeScript and ESLint intentionally exclude `sync-ios`. Do not add React Na
 ## Architecture boundaries
 
 - **Decision Engine** owns prioritization/ranking (`lib/intelligence/decision-engine.ts`).
-- **Life Graph** is a deterministic projection/context layer, not primary storage.
+- **Life Graph** is context infrastructure (deterministic projection), not the product destination.
 - Vague / low-confidence input should clarify instead of becoming unreliable memory.
 - Surfaces consume shared intelligence; they do not invent ranking or Sync voice.
-- Goals product work waits until the intelligence foundation is stable (`SYNC_ENGINE_ROADMAP.md`).
+- Briefing/Today is an output. Do not treat it as the thing being built (`SYNC_PRODUCT.md`).
 
 Read before changing intelligence:
 
+- `SYNC_PRODUCT.md`
+- `SYNC_STANDARDS.md`
+- `SYNC_VISION.md`
 - `AGENTS.md`
 - `SYNC_WORKFLOW.md`
 - `SYNC_ENGINE_MANIFESTO.md`

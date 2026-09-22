@@ -4,7 +4,7 @@ Status: **foundation only** (contracts, pure pipeline, tests). No connectors, no
 network, no schema changes. This document explains the new layer and how it reuses the
 existing Sync intelligence.
 
-Read alongside `AGENTS.md`, `SYNC_WORKFLOW.md`, `SYNC_VISION.md`, and `SYNC_REASONING_SPEC.md`.
+Read alongside `SYNC_PRODUCT.md`, `SYNC_STANDARDS.md`, `AGENTS.md`, `SYNC_WORKFLOW.md`, `SYNC_VISION.md`, and `SYNC_REASONING_SPEC.md`.
 
 ## Why this exists
 
@@ -16,14 +16,14 @@ trustworthily:
 - *What changed, what was only read, and what is still unresolved?*
 - *What does Sync claim to know about me, and how strongly is each claim supported?*
 
-This is a **Trust and Safety** improvement first. It gives the engine a provider-neutral way
-to record activity and provenance without inventing verification, storing secrets, or
-building a dashboard.
+This is the start of the **Proof** layer in `SYNC_PRODUCT.md`. It is not a dashboard and
+not the whole product. It gives the engine a provider-neutral way to record activity and
+provenance without inventing verification, storing secrets, or building a briefing app.
 
 ## Gate check
 
-> **Improve the Sync Engine's ability to make trustworthy decisions by** giving it a
-> provider-neutral, secret-safe record of AI activity and identity claims, so future
+> **Improve Sync as a personal AI context and trust layer by** giving it a
+> provider-neutral, secret-safe **proof** record of AI activity and identity claims, so future
 > permissioned actions can be summarized, reversed, and trusted.
 
 Engine stages improved: **Trust**, **Safety**, **Consequences** (unresolved items and next

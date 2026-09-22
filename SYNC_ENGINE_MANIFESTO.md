@@ -1,28 +1,29 @@
 # Sync Engine Manifesto
 
-This document defines what Sync is becoming. It supersedes product-first framing when the two conflict.
+This document defines the constitution of the reasoning engine. **Product identity lives in `SYNC_PRODUCT.md` and supersedes this file** wherever this file treats a briefing, Today, or the app as the product.
 
-Read alongside `SYNC_REASONING_SPEC.md`, `SYNC_EVALUATION.md`, and `SYNC_ENGINE_ROADMAP.md`.
+Read alongside `SYNC_PRODUCT.md`, `SYNC_REASONING_SPEC.md`, `SYNC_EVALUATION.md`, and `SYNC_ENGINE_ROADMAP.md`.
 
 ---
 
 ## What Sync Is
 
-Sync is a **personal reasoning engine**.
+Sync is becoming a **personal AI context and trust layer**.
 
-It helps people make better day-to-day decisions by understanding context, consequences, memory, and timing.
+The reasoning engine in this manifesto is the **Reasoning** supporting system: it determines what information means and what matters. Life Graph organizes **Context**. Activity Passport is **Proof**. Briefings are **outputs**.
 
 Sync should:
 
-- understand what happened
-- decide whether it matters
+- build an accurate, user-controlled understanding of a life
+- understand what happened and whether it matters
 - understand what changes because of it
 - decide whether to remember, ask, surface later, or stay quiet
-- help the user know what deserves attention
+- keep a verifiable record of what AI saw, decided, and did
+- help people and other AIs make better decisions from that context
 
-The product is **trust**.
+The product is **trusted personal context**, not a screen.
 
-The UI exists only to test, teach, and eventually expose the engine.
+The UI exists only to test, teach, and eventually expose that layer.
 
 ---
 
@@ -47,9 +48,9 @@ If a feature makes Sync feel like one of these, it waits.
 
 ## Core Mission
 
-**Build the most trusted personal reasoning engine.**
+**Build the most trusted personal AI context and trust layer.**
 
-Not the smartest assistant. Not the most feature-rich life app. The most **trustworthy** reasoning system a person would rely on for day-to-day judgment.
+Not the smartest assistant. Not the most feature-rich briefing app. The most **trustworthy** context, reasoning, and proof a person (and later other AIs) would rely on.
 
 ---
 
@@ -101,11 +102,11 @@ These principles govern all engine work:
 
 Every future change must answer:
 
-> “Does this improve the Sync Engine’s ability to make trustworthy decisions?”
+> “Does this strengthen Sync as a personal AI context and trust layer?”
 
-If the answer is no, the change waits.
+If it only improves a briefing surface, the change waits.
 
-Features do not ship for their own sake. Surfaces do not expand until the engine earns trust.
+Features do not ship for their own sake. Surfaces do not expand until context, reasoning, and proof are unified enough to trust.
 
 ---
 
@@ -123,7 +124,7 @@ The implemented pipeline maps to this manifesto:
 | What happens next | Future follow-up | capture actions, consequence timing |
 | What the user sees later | Briefing effect | `briefing-composer.ts`, Today adapters |
 
-The lab UI (`/sync-lab`, mobile prototype) is a **teaching surface**, not the product.
+The lab UI (`/sync-lab`, mobile prototype) and Today/Brief are **outputs and teaching surfaces**, not the product. See `SYNC_PRODUCT.md`.
 
 ---
 

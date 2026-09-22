@@ -1,19 +1,26 @@
 ---
-description: Sync engine vision — personal reasoning engine; required before any design or implementation
+description: Sync engine vision — personal AI context and trust layer; required before any design or implementation
 alwaysApply: true
 ---
 
 # Sync Vision (required reading)
 
-Read `SYNC_VISION.md`, `SYNC_ENGINE_MANIFESTO.md`, and `AGENTS.md` for full guidance.
+Read `SYNC_PRODUCT.md` first (identity), `SYNC_STANDARDS.md` (trust/integrations), then `SYNC_VISION.md` (experience), `SYNC_ENGINE_MANIFESTO.md`, and `AGENTS.md`.
+
+`SYNC_PRODUCT.md` is the current product identity. Articles are supporting evidence only. Older “briefing app” / “Today is the product” language is subordinate.
 
 ## What Sync is
 
-Sync is a **personal intelligence engine for life**. The product is **trust**.
-The reusable intelligence layer is the long-term product.
-The Sync app is the first product surface powered by that engine.
+Sync is becoming a **personal AI context and trust layer**.
+It builds an accurate, user-controlled understanding of a life, helps AI make better decisions, and keeps a verifiable record of what AI systems saw, decided, and did.
 
-The UI exists to test, teach, and eventually expose the engine.
+- **Life Graph** organizes context (infrastructure, not the destination).
+- **Reasoning engine** determines meaning and what matters.
+- **Activity Passport** proves what AI read, suggested, or did.
+- **Briefing / Today** is one output showing the value of that intelligence.
+- **Integrations** may later carry that trusted context to other AIs.
+
+The UI exists to test, teach, and eventually expose that layer — not as the product.
 
 ## What Sync is not
 
@@ -25,48 +32,67 @@ The UI exists to test, teach, and eventually expose the engine.
 - a calendar clone
 - a habit tracker
 - a finance app, health app, or widget collection
+- a briefing app whose job is to finish Today
 
 ## Gate question
 
 Before any change:
 
-> **Does this improve the Sync Engine's ability to make trustworthy decisions?**
+> **Does this strengthen Sync as a personal AI context and trust layer?**
 
 Default prompt prefix:
 
-> **Improve the Sync Engine's ability to make trustworthy decisions by…**
+> **Improve Sync as a personal AI context and trust layer by…**
 
-## Core question
+Name Context, Reasoning, or Proof. Do not start from “make the briefing better.”
 
-**"What do I need to know right now?"**
+## Core questions
+
+- What is true about me?
+- What does it mean?
+- What did AI see and do?
+
+“What do I need to know right now?” is a briefing question, not the product definition.
 
 ## Core loop
 
 1. Tell Sync what happened or what is coming.
-2. Sync understands it.
+2. Sync understands it and updates user-controlled context.
 3. Sync decides whether to remember, ask, surface later, or stay quiet.
 4. Sync organizes the consequences.
 5. Sync judges what deserves attention.
-6. Sync communicates calmly when it matters.
+6. Sync records proof of what was seen, decided, or done — and communicates calmly when it matters.
 
-## Surfaces
+## Surfaces (outputs)
 
 | Surface | Role |
 |---|---|
 | **`/sync-lab`** | Teaching/evaluation — not the product |
-| **Home** | What matters now |
-| **My Life** | What Sync knows — text-first, not a dashboard |
+| **Home / Today** | One briefing output |
+| **My Life** | Inspectable context |
 | **Life Timeline** | When it matters |
 | **Capture** | How Sync learns |
 | **Area views** | Focused outputs from shared intelligence |
 
-Product/UI expansion is **deferred** until trust improves. See `SYNC_ENGINE_ROADMAP.md` (supersedes `ROADMAP.md` for sequencing).
+Product/UI expansion is **deferred**. See `SYNC_PRODUCT.md` and `SYNC_ENGINE_ROADMAP.md`.
+
+## Experience (from `SYNC_VISION.md`)
+
+- Calm, minimal, text-first
+- Important before comprehensive
+- Progressive reveal, not dashboards
+- Claims inspectable and correctable; label known / inferred / unverified / confirmed
+- Context and proof in human language, not developer logs
+- Today is one output, not the homepage identity
+- No CISO aesthetic, widget sprawl, or generic chatbot UI
+
+Technical trust: `SYNC_STANDARDS.md`. Do not treat articles as specs.
 
 ## Product truth
 
-Sync should **understand life and judge trustworthy** — not simply store information or accumulate features.
+Sync should **own trusted context, reasoning, and proof** — not merely store information, rank a Today list, or accumulate features.
 Integrations are optional user-approved plugins/sources, never forced defaults or hidden data assumptions.
 
 ## When requests conflict with this vision
 
-Do not silently comply. Explain the conflict using these principles, then propose a simpler alternative that aligns with the Sync Engine direction.
+Do not silently comply. Explain the conflict using `SYNC_PRODUCT.md`, `SYNC_STANDARDS.md`, and the experience contract in `SYNC_VISION.md`. Propose a simpler alternative that strengthens Context, Reasoning, or Proof.

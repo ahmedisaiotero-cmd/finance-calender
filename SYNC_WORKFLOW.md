@@ -1,22 +1,17 @@
 # Sync Workflow Guardrails
 
-Read this before making changes. Also read `SYNC_VISION.md`, `SYNC_PRINCIPLES.md`, `SYNC_VOICE.md` when language is involved, and `.cursor/rules/sync-product-workflow.mdc`.
+Read this before making changes. Also read `SYNC_PRODUCT.md` first (identity), `SYNC_STANDARDS.md` (trust), then `SYNC_VISION.md` (experience), `SYNC_PRINCIPLES.md`, `SYNC_VOICE.md` when language is involved, and `.cursor/rules/sync-product-workflow.mdc`.
 
 ## Before building
 
 Every change must improve at least one of:
 
-- **Memory**
-- **Understanding**
-- **Consequences**
-- **Today**
-- **My Life**
-- **Trust**
-- **Activity**
-- **Passport**
-- **Sync Engine**
+- **Context** (what is true about the user; user-controlled)
+- **Reasoning** (Memory, Understanding, Consequences, Judgment, Response)
+- **Proof** (Activity, Passport — what AI saw, decided, did)
+- **Trust / Safety** (inspect, correct, delete)
 
-If it does not improve one of these, **do not build it.**
+Today, My Life, and Briefings are **outputs**. If the change only improves those screens, **do not build it** unless it proves one of the layers above.
 
 1. Reuse existing Sync intelligence before creating new logic.
 2. Test with messy real-life examples.
@@ -24,13 +19,14 @@ If it does not improve one of these, **do not build it.**
 
 ## Core promise
 
-**Tell Sync what happened. Sync Intelligence understands what it means.**
+**Sync is a personal AI context and trust layer.**
 
-Sync is a personal intelligence engine for life.
-The Sync app is the first product surface powered by that engine, presenting understanding as a calm daily life briefing.
+It builds an accurate, user-controlled understanding of your life, helps AI make better decisions, and keeps a verifiable record of what AI systems saw, decided, and did.
+
+The app may present a calm briefing as one output. That briefing is not the product.
 Sync is not a planner, journal, notes app, productivity tool, or database.
 
-The value of Sync should **increase as more life is captured**. The goal is understanding, not storage.
+The value of Sync should **increase as more life is captured and as proof of AI action becomes inspectable**. The goal is trusted context, not storage and not a better Today page.
 
 ## Intelligence pipeline
 
@@ -120,27 +116,32 @@ Focus: Capture, Memory, Understanding, Consequences, **Decision**, and **Sync En
 
 ## Sync Engine Direction
 
-Sync is now primarily a **personal intelligence engine for life**. The reusable intelligence layer is the long-term product; the Sync app is the first and most important proving ground.
+**Source of truth for identity:** `SYNC_PRODUCT.md`.
 
-All future Sync work must prioritize improving the Sync Engine’s ability to make **trustworthy decisions**.
+Sync is becoming a **personal AI context and trust layer**. The reasoning engine is a supporting system. The app is a proving-ground output, not the destination.
+
+All future Sync work must strengthen **Context, Reasoning, or Proof**, measured by **trustworthy decisions**.
 
 Before implementing any change, ask:
 
-> “Does this improve Memory, Understanding, Consequences, Judgment, Briefing, Safety, or Trust?”
+> “Does this strengthen Sync as a personal AI context and trust layer?”
 
-If not, do not implement it yet.
+If it only improves a briefing surface, do not implement it yet.
 
 Future prompts should begin with:
 
-> “Improve the Sync Engine’s ability to make trustworthy decisions by…”
+> “Improve Sync as a personal AI context and trust layer by…”
 
 Do not build features for their own sake.
 
-Do not rebuild around an abstract platform at the cost of shipping the app.
+Do not rebuild around an abstract platform at the cost of unifying the existing pieces.
 
-**Source of truth for this direction:**
+**Other sources of truth:**
 
-- `SYNC_ENGINE_MANIFESTO.md` — mission, constitution, philosophy
+- `SYNC_PRODUCT.md` — product identity
+- `SYNC_STANDARDS.md` — technical trust (articles are evidence only)
+- `SYNC_VISION.md` — experience contract
+- `SYNC_ENGINE_MANIFESTO.md` — constitution
 - `SYNC_REASONING_SPEC.md` — required reasoning pipeline per input
 - `SYNC_EVALUATION.md` — trust metrics and weekly review
-- `SYNC_ENGINE_ROADMAP.md` — phased engine-first roadmap
+- `SYNC_ENGINE_ROADMAP.md` — phased sequencing (subordinate to identity)

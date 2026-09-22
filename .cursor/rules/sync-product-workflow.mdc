@@ -5,35 +5,36 @@ alwaysApply: true
 
 # Sync Product Workflow
 
-Read `SYNC_WORKFLOW.md`, `SYNC_ENGINE_MANIFESTO.md`, `SYNC_REASONING_SPEC.md`, and `AGENTS.md` before implementing.
+Read `SYNC_PRODUCT.md` (identity), `SYNC_STANDARDS.md` (trust/integrations), `SYNC_VISION.md` (experience), `SYNC_WORKFLOW.md`, `SYNC_REASONING_SPEC.md`, and `AGENTS.md` before implementing.
+
+`SYNC_PRODUCT.md` is authoritative for product identity. Do not optimize the briefing app because that is what most of the current code represents. Do not paste articles into the product; translate them into `SYNC_STANDARDS.md` rules if they earn a place.
 
 ## Gate question
 
 Every change must begin from:
 
-> **Does this improve the Sync Engine's ability to make trustworthy decisions?**
+> **Does this strengthen Sync as a personal AI context and trust layer?**
 
 Default prompt prefix:
 
-> **Improve the Sync Engine's ability to make trustworthy decisions by…**
+> **Improve Sync as a personal AI context and trust layer by…**
 
-If the answer is no, do not implement it yet.
+If the answer is no — or the work only polishes Today/Home/Brief — do not implement it yet.
 
 ## Before implementing any change
 
-### 1. Identify which reasoning stage it improves
+### 1. Identify which layer it improves
 
-- Memory (Memory Decision)
-- Understanding
-- Consequences (Consequence Reasoning)
-- Judgment
-- Response
-- Briefing (Briefing Effect)
-- Safety / Privacy
-- Trust
+Product layers (from `SYNC_PRODUCT.md`):
 
-Legacy surfaces (Today, Memory, My Life) **display** engine output — improve them only when trust work requires it or when explicitly requested.
-The Sync app is the first product surface; keep shipping it as the proving ground for shared intelligence.
+- **Context** — what is true; Life Graph and memory as infrastructure
+- **Reasoning** — Memory Decision, Understanding, Consequences, Judgment, Response
+- **Proof** — Activity / Passport
+- **Safety / Privacy / Trust** — inspect, correct, delete
+
+Briefing Effect, Today, Memory, and My Life **display** those layers. Improve them only when the layer requires it or when explicitly requested.
+
+Do not treat the Sync app as the product; it is a proving-ground output.
 
 ### 2. Search for existing shared Sync logic first
 
@@ -59,12 +60,12 @@ Prefer reusing:
 
 Answer:
 
+- Does this strengthen Context, Reasoning, or Proof?
 - Does this improve trustworthy decisions?
 - How does this reduce mental load?
 - What real-life behavior becomes easier?
-- Does this improve Memory, Understanding, Consequences, Judgment, Briefing, Safety, Trust, Activity, or Passport?
 
-**If none apply: do not build it.**
+**If none apply: do not build it.** Do not count “better Today copy” as a product improvement.
 
 ### 4. Add tests
 
@@ -105,8 +106,8 @@ Never build UI first if the intelligence does not exist.
 ## Surfaces
 
 - **`/sync-lab`** — teaching/evaluation surface, not the product
-- **Home** — what matters now
-- **My Life** — what Sync knows
+- **Home / Today** — briefing output, not the product
+- **My Life** — inspectable context
 - **Life Timeline** — when it matters
 - **Capture** — how Sync learns
 - **Area views** — focused outputs from shared intelligence
@@ -139,20 +140,20 @@ If a proposed change includes any of the following, **stop and explain why** bef
 
 A change is **not complete** unless:
 
-- it improves trustworthy decisions
-- it improves Memory, Understanding, Consequences, Today, My Life, Trust, Activity, or Passport
+- it improves Context, Reasoning, or Proof (or Trust/Safety around them)
+- briefing/Today changes are justified as outputs, not as the product
 - it reuses shared intelligence where possible
 - it includes tests
 - it reduces clutter
-- it does not turn Sync into a dashboard
+- it does not turn Sync into a dashboard or a briefing app
 
 ## Current priority
 
-Make Sync **trustworthy** before making it bigger.
+Make Sync **trustworthy as a context and proof layer** before making it bigger.
 
-Focus: judgment quality, memory decision quality, consequence reasoning, Sync Engine response, trust/edit/delete, weekly evaluation reviews, lab stability, messy real-life stress testing.
+Focus: unify Context (Life Graph + memory), Reasoning (judgment/consequences), and Proof (Activity/Passport). Weekly evaluation reviews, lab stability, messy real-life stress testing.
 
-Design is currently good enough. **Do not redesign** unless fixing clarity or explicitly requested.
+Do not spend the next cycle finishing the briefing app. Design is currently good enough. **Do not redesign** unless fixing clarity or explicitly requested.
 
 ## Integration rule
 

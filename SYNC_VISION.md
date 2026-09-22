@@ -1,6 +1,8 @@
 # SYNC: Vision & Design Principles
 
-This document defines Sync's voice, surfaces, and design stance. For mission and sequencing, read `SYNC_ENGINE_MANIFESTO.md` and `SYNC_ENGINE_ROADMAP.md` first.
+**Product identity is `SYNC_PRODUCT.md`.** Technical trust is `SYNC_STANDARDS.md`. This file governs the **experience contract**, voice, and surfaces. Surfaces here are **outputs**, not the product.
+
+For mission and sequencing, read `SYNC_PRODUCT.md`, then `SYNC_STANDARDS.md`, `SYNC_ENGINE_MANIFESTO.md`, and `SYNC_ENGINE_ROADMAP.md`.
 
 Also read: `SYNC_WORKFLOW.md`, `SYNC_REASONING_SPEC.md`, `SYNC_EVALUATION.md`, `AGENTS.md`, `.cursor/rules/sync-vision.mdc`, `.cursor/rules/sync-product-workflow.mdc`.
 
@@ -8,17 +10,22 @@ Also read: `SYNC_WORKFLOW.md`, `SYNC_REASONING_SPEC.md`, `SYNC_EVALUATION.md`, `
 
 ## What Sync Is
 
-Sync is a **personal intelligence engine for life**.
+Sync is becoming a **personal AI context and trust layer**.
 
-It helps people make better day-to-day decisions by understanding context, consequences, memory, and timing.
+It builds an accurate, user-controlled understanding of a life, helps AI make better decisions, and keeps a verifiable record of what AI systems saw, decided, and did.
 
-**The product is trust.**
+**The product is trusted personal context** — Context, Reasoning, and Proof — not a briefing screen.
 
-The reusable intelligence layer is the long-term product.
-The Sync app is the first product surface powered by that layer, presenting understanding as a calm daily life briefing.
-UI work should ship that intelligence clearly — not compete with planners, dashboards, or domain apps.
+The reusable intelligence layer is how that product is implemented.
+The Sync app is a proving-ground **output**: it can show the value of that layer. It is not what Sync is becoming.
 
-**Core question:** *What do I need to know right now?*
+**Core questions:**
+
+- What is true about me?
+- What does it mean?
+- What did AI see and do?
+
+“What do I need to know right now?” remains a valid **briefing** question. It is not the product definition.
 
 **Core loop:**
 
@@ -29,7 +36,7 @@ UI work should ship that intelligence clearly — not compete with planners, das
 5. Sync judges what deserves attention.
 6. Sync helps the user understand the moment clearly and calmly.
 
-The value of Sync is **trustworthy judgment**, not storage or feature breadth.
+The value of Sync is **trusted context, reasoning, and proof**, not storage, feature breadth, or a polished briefing.
 
 ---
 
@@ -51,17 +58,36 @@ If a feature turns Sync into something on this list, stop and rethink it.
 
 ---
 
-## Surfaces (Teaching & Output)
+## Experience contract
 
-### Sync app — first product surface
+This is how Sync should feel. Technical trust rules live in `SYNC_STANDARDS.md`. This contract is **appearance and interaction**, not a dashboard spec.
 
-The current app is the primary proving ground for Sync Intelligence. Its core surfaces are:
+1. **Calm, minimal, text-first.** Prefer readable sentences over cards, charts, and control panels.
+2. **Important before comprehensive.** Show what matters; keep the rest available on inspect, not on the first screen.
+3. **Progressive reveal, not dashboards.** Details unfold when the user asks. Do not tile life into widgets.
+4. **Every claim is inspectable and correctable.** The user can see what Sync thinks, why, and can edit or delete it.
+5. **Label epistemic status clearly.** Distinguish **known**, **inferred**, **unverified**, and **confirmed**. Do not dress inferences as facts.
+6. **Context and proof should be understandable.** Receipts and claims are for the person, not developer logs. Lab/debug may show internals; normal UI may not.
+7. **Today is one useful output.** It is not the homepage’s entire identity and not the product.
+8. **No enterprise-security aesthetic, widget sprawl, or generic chatbot interface.** Sync should not look like a CISO console, a productivity suite, or a chat app with extra tabs.
 
-- **Home** — what matters now
-- **My Life** — what Sync knows
+If a UI change violates this contract, it is not a design improvement.
+
+---
+
+## Surfaces (outputs & teaching)
+
+### Sync app — proving-ground output, not the product
+
+The current app shows whether context, reasoning, and proof are working. Its screens are consumers:
+
+- **Home / Today** — one briefing output of judgment
+- **My Life** — inspectable context (what Sync knows)
 - **Life Timeline** — when it matters
 - **Capture** — how Sync learns
 - **Area views** — focused views powered by shared intelligence
+
+Do not optimize these as if they were the product. Improve them only when they prove Context, Reasoning, or Proof.
 
 ### `/sync-lab` — teaching/evaluation surface
 
@@ -77,7 +103,7 @@ The mobile prototype is a current shell for the first app surface. Do not delete
 
 **What matters now** — as decided by the Judgment stage (`decision-engine.ts`).
 
-Today is a **life briefing**, not a reporting engine or design canvas. It displays:
+Today is **one output**, not the product. It is a life briefing that displays:
 
 - 1 primary + max 2 supporting lines (Judgment output)
 - load context when relevant (forecast, not a substitute for specific primaries)
@@ -114,13 +140,13 @@ Work schedule, priorities (Money, Health, Family, Work, etc.), and profile conte
 
 Before any change, ask:
 
-> **Does this improve the Sync Engine's ability to make trustworthy decisions?**
+> **Does this strengthen Sync as a personal AI context and trust layer?**
 
 Default prompt prefix:
 
-> **Improve the Sync Engine's ability to make trustworthy decisions by…**
+> **Improve Sync as a personal AI context and trust layer by…**
 
-Product/UI expansion is **deferred until trust improves** — see `SYNC_ENGINE_ROADMAP.md`. **`SYNC_ENGINE_ROADMAP.md` supersedes `ROADMAP.md` for sequencing.**
+Product/UI expansion is **deferred until context, reasoning, and proof are unified enough to trust** — see `SYNC_PRODUCT.md` and `SYNC_ENGINE_ROADMAP.md`. **`SYNC_PRODUCT.md` supersedes older identity language. `SYNC_ENGINE_ROADMAP.md` supersedes `ROADMAP.md` for sequencing.**
 
 ---
 

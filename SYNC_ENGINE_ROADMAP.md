@@ -1,10 +1,12 @@
 # Sync Engine Roadmap
 
-This roadmap defines how Sync becomes a trusted personal reasoning engine.
+This roadmap defines sequencing. **Product identity is `SYNC_PRODUCT.md` and supersedes this file** wherever this file treats the lab, Today, or a briefing app as the thing being built.
 
-It supersedes product-expansion sequencing in `ROADMAP.md` when the two conflict. Consumer surfaces wait until trust is earned.
+Sync is becoming a trusted **personal AI context and trust layer**. This roadmap is how the existing parts get unified — not a plan to finish a briefing product.
 
-Read alongside `SYNC_ENGINE_MANIFESTO.md`, `SYNC_REASONING_SPEC.md`, and `SYNC_EVALUATION.md`.
+It supersedes product-expansion sequencing in `ROADMAP.md` when the two conflict. Consumer surfaces wait until context, reasoning, and proof can be trusted.
+
+Read alongside `SYNC_PRODUCT.md`, `SYNC_ENGINE_MANIFESTO.md`, `SYNC_REASONING_SPEC.md`, and `SYNC_EVALUATION.md`.
 
 ---
 
@@ -135,15 +137,18 @@ Do not revisit Phase 5 until Phase 3 exit criteria are met.
 
 | Phase | Status |
 |---|---|
-| Phase 1: Stabilize the Lab | **In progress** |
+| Product identity (`SYNC_PRODUCT.md`) | **Authoritative** — codebase not yet unified to it |
+| Phase 1: Stabilize the Lab | **In progress** (lab is a teaching output) |
 | Phase 2: Teach the Engine | Starting (weekly reviews, stress tests) |
 | Phase 3: Evaluate Trust | Partial (`test:intelligence:all`, decision-stress 100-memory) |
 | Phase 4: Private Alpha | Not started |
 | Phase 5: Product Surface | Deferred |
 
-**Approved sequence position:** Steps 1–4 are the active foundation. Step 5 (goal-directed loop) waits for Life Graph continuity and Consequence/Decision stabilization. Steps 7–8 (integrations and beta) remain deferred.
+**Honest identity position:** Sync has parts of the context and reasoning foundation, plus the beginning of the proof layer — but those pieces have not yet been unified into the current product vision.
 
-**Immediate focus:** lock current behavior, finish Life Graph continuity, stabilize consequence and Decision quality, and convert failed real-life examples into tests before production fixes.
+**Approved sequence position:** Steps 1–4 are the active foundation (lock behavior, Life Graph as **context infrastructure**, stabilize consequence/Decision, start proof). Step 5 (goal-directed loop) waits. Steps 7–8 (integrations across other AIs, beta) remain deferred.
+
+**Immediate focus:** unify Context, Reasoning, and Proof in shared intelligence. Do not optimize briefing UI as if it were the product. Convert failed real-life examples into tests before production fixes.
 
 ---
 
@@ -153,6 +158,7 @@ Do not revisit Phase 5 until Phase 3 exit criteria are met.
 
 When planning work:
 
-1. Read `SYNC_ENGINE_ROADMAP.md` for sequencing
-2. Read `ROADMAP.md` for module status and completed milestones
-3. If conflict: **engine trust wins over product expansion**
+1. Read `SYNC_PRODUCT.md` for **what Sync is becoming**
+2. Read `SYNC_ENGINE_ROADMAP.md` for sequencing
+3. Read `ROADMAP.md` for module status and completed milestones
+4. If conflict: **product identity (`SYNC_PRODUCT.md`) wins over briefing-app language; engine trust wins over product expansion**

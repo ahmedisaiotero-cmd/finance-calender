@@ -2,7 +2,7 @@
 
 Trustworthy Decision Rate (TDR) reviews for the Sync Brain.
 
-Read first: `SYNC_EVALUATION.md`, `SYNC_ENGINE_MANIFESTO.md`, `AGENTS.md`.
+Read first: `SYNC_PRODUCT.md`, `SYNC_EVALUATION.md`, `SYNC_ENGINE_MANIFESTO.md`, `AGENTS.md`.
 
 ---
 
@@ -160,7 +160,7 @@ i don't want to forget to cancel Uber
 ## Next steps after each review
 
 1. File the completed `YYYY-MM-DD.md`.
-2. Open a task: **Improve the Sync Engine's ability to make trustworthy decisions by…** (cite failed stage + input).
+2. Open a task: **Improve Sync as a personal AI context and trust layer by…** (cite Context / Reasoning / Proof + failed stage + input).
 3. Add regression test for first wrong item.
 4. Re-run `npm run test:intelligence:all`.
 5. Do not expand product UI until TDR trends up for two consecutive weeks (`SYNC_ENGINE_ROADMAP.md` Phase 3).

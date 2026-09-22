@@ -2,9 +2,11 @@
 
 This document defines the required reasoning pipeline for every user input.
 
-It is the engineering contract for the Sync Engine. All capture, memory, consequence, judgment, and briefing logic should align with these stages.
+It is the engineering contract for the **Reasoning** supporting system. Do not fork it. Product identity is `SYNC_PRODUCT.md` — this spec does not make briefing the product.
 
-Read alongside `SYNC_ENGINE_MANIFESTO.md` and `SYNC_EVALUATION.md`.
+All capture, memory, consequence, judgment, and briefing logic should align with these stages.
+
+Read alongside `SYNC_PRODUCT.md`, `SYNC_ENGINE_MANIFESTO.md`, and `SYNC_EVALUATION.md`.
 
 ---
 

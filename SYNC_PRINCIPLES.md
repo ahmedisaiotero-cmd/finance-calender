@@ -2,9 +2,11 @@
 
 This document defines the permanent product principles for Sync.
 
+**Identity:** `SYNC_PRODUCT.md` is authoritative. These principles still bind voice, trust, and implementation habits.
+
 These principles should guide every future agent, Cursor task, Codex task, product decision, and implementation.
 
-Sync exists to reduce mental load by helping people understand what matters in their life, when it matters.
+Sync exists to reduce mental load by holding trusted personal context, reasoning about what it means, and proving what AI saw and did.
 
 ---
 

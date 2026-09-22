@@ -2,9 +2,9 @@
 
 This document defines how we measure whether the Sync Engine is improving.
 
-The goal is not feature velocity. The goal is **trustworthy decisions**.
+The goal is not feature velocity. The goal is **trustworthy decisions** inside the product defined by `SYNC_PRODUCT.md` (context, reasoning, proof).
 
-Read alongside `SYNC_ENGINE_MANIFESTO.md` and `SYNC_REASONING_SPEC.md`.
+Read alongside `SYNC_PRODUCT.md`, `SYNC_ENGINE_MANIFESTO.md`, and `SYNC_REASONING_SPEC.md`.
 
 ---
 
