@@ -2,6 +2,10 @@
 
 **This is the current product definition.**
 
+**v1 planning note:** `SYNC_V1.md` is the current owner-only v1 pivot plan for
+capturing AI activity across ChatGPT, Grok, Claude, Cursor, and Gemini. This file
+remains authoritative for product identity and trust-layer principles.
+
 When older docs, roadmaps, comments, or code comments describe Sync as a daily briefing, planner-adjacent life app, or “personal reasoning engine for Today,” this file wins.
 
 Read this first. Then:

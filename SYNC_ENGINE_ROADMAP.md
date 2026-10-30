@@ -1,5 +1,10 @@
 # Sync Engine Roadmap
 
+**v1 planning note:** `SYNC_V1.md` supersedes this file for the owner-only v1
+implementation plan around browser-extension AI activity capture. This roadmap
+still governs existing reasoning-engine sequencing where it does not conflict
+with that v1 plan.
+
 This roadmap defines sequencing. **Product identity is `SYNC_PRODUCT.md` and supersedes this file** wherever this file treats the lab, Today, or a briefing app as the thing being built.
 
 Sync is becoming a trusted **personal AI context and trust layer**. This roadmap is how the existing parts get unified — not a plan to finish a briefing product.
