@@ -1,5 +1,9 @@
 # SYNC Roadmap
 
+**v1 planning note:** `SYNC_V1.md` supersedes this file for the owner-only v1
+implementation plan around browser-extension AI activity capture. This file is
+historical module status and legacy roadmap context.
+
 **Identity:** `SYNC_PRODUCT.md` **supersedes this document** for what Sync is becoming. **Sequencing:** `SYNC_ENGINE_ROADMAP.md` **supersedes this document** for what to build next. This file records module status, completed milestones, and historical context.
 
 Every item should pass the gate in `SYNC_PRODUCT.md`:
