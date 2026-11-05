@@ -34,13 +34,18 @@ enum RecurringRuleType {
 }
 
 model User {
-  id          String       @id @default(uuid())
-  email       String       @unique
-  name        String?
-  timezone    String       @default("UTC")
-  createdAt   DateTime     @default(now())
-  workspaces  Workspace[]
-  syncProfile SyncProfile?
+  id               String            @id @default(uuid())
+  email            String            @unique
+  name             String?
+  timezone         String            @default("UTC")
+  createdAt        DateTime          @default(now())
+  workspaces       Workspace[]
+  syncProfile      SyncProfile?
+  aiCaptureSources AiCaptureSource[]
+  aiConversations  AiConversation[]
+  aiActivityEvents AiActivityEvent[]
+  aiArtifacts      AiArtifact[]
+  aiLinks          AiLink[]
 }
 
 model SyncProfile {
@@ -204,4 +209,166 @@ model BudgetLine {
   limitCents Int
 
   @@unique([budgetId, categoryId])
+}
+
+model AiProvider {
+  id               String            @id @default(uuid())
+  slug             String            @unique
+  displayName      String
+  supportedOrigins Json
+  createdAt        DateTime          @default(now())
+  sources          AiCaptureSource[]
+  conversations    AiConversation[]
+  activityEvents   AiActivityEvent[]
+  artifacts        AiArtifact[]
+}
+
+model AiCaptureSource {
+  id              String            @id @default(uuid())
+  ownerId         String
+  owner           User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  kind            String
+  providerId      String
+  provider        AiProvider        @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  external        Boolean           @default(false)
+  connectionId    String
+  permissionState String
+  lastSeenAt      DateTime?
+  createdAt       DateTime          @default(now())
+  revokedAt       DateTime?
+  conversations   AiConversation[]
+  activityEvents  AiActivityEvent[]
+
+  @@unique([ownerId, providerId, kind, connectionId])
+  @@index([ownerId, permissionState])
+}
+
+model AiConversation {
+  id                      String            @id @default(uuid())
+  ownerId                 String
+  owner                   User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  providerId              String
+  provider                AiProvider        @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  sourceId                String
+  source                  AiCaptureSource   @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  providerConversationRef String
+  idempotencyKey          String?
+  title                   String?
+  origin                  String
+  startedAt               DateTime?
+  lastMessageAt           DateTime?
+  capturedAt              DateTime
+  captureMethod           String
+  visibility              String
+  rawTextRef              String?
+  summary                 String?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  messages                AiMessage[]
+  activityEvents          AiActivityEvent[]
+  artifacts               AiArtifact[]
+
+  @@unique([ownerId, providerId, providerConversationRef])
+  @@unique([ownerId, providerId, idempotencyKey])
+  @@index([ownerId, capturedAt])
+}
+
+model AiMessage {
+  id                 String         @id @default(uuid())
+  conversationId     String
+  conversation       AiConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  providerMessageRef String
+  role               String
+  text               String
+  redactedText       String
+  redactionStatus    String
+  sentAt             DateTime?
+  capturedAt         DateTime
+  confidence         Float
+  visibility         String
+  metadata           Json?
+  activityEvents     AiActivityEvent[]
+
+  @@unique([conversationId, providerMessageRef])
+  @@index([conversationId, sentAt])
+}
+
+model AiActivityEvent {
+  id              String          @id @default(uuid())
+  ownerId         String
+  owner           User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  conversationId  String
+  conversation    AiConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  messageId       String?
+  message         AiMessage?      @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  kind            String
+  actorKind       String
+  actorId         String?
+  actorLabel      String?
+  providerId      String
+  provider        AiProvider      @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  sourceId        String
+  source          AiCaptureSource @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  timestamp       DateTime
+  summary         String
+  affectedAreas   Json
+  evidence        Json
+  verification    String
+  confidence      Float
+  reversibility   String
+  permissionScope String
+  permissionState String
+  visibility      String
+  correlationId   String?
+  relatedEventIds Json?
+  detail          Json?
+  createdAt       DateTime        @default(now())
+  artifacts       AiArtifact[]
+  outgoingLinks   AiLink[]        @relation("AiLinkFromEvent")
+  incomingLinks   AiLink[]        @relation("AiLinkToEvent")
+
+  @@unique([ownerId, providerId, correlationId])
+  @@index([ownerId, timestamp])
+  @@index([conversationId, timestamp])
+}
+
+model AiArtifact {
+  id              String           @id @default(uuid())
+  ownerId         String
+  owner           User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  providerId      String
+  provider        AiProvider       @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  conversationId  String
+  conversation    AiConversation   @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  activityEventId String?
+  activityEvent   AiActivityEvent? @relation(fields: [activityEventId], references: [id], onDelete: SetNull)
+  kind            String
+  title           String
+  summary         String?
+  artifactRef     String?
+  createdAt       DateTime         @default(now())
+  visibility      String
+
+  @@index([ownerId, createdAt])
+  @@index([conversationId])
+}
+
+model AiLink {
+  id           String          @id @default(uuid())
+  ownerId      String
+  owner        User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  fromEventId  String
+  fromEvent    AiActivityEvent @relation("AiLinkFromEvent", fields: [fromEventId], references: [id], onDelete: Cascade)
+  toEventId    String
+  toEvent      AiActivityEvent @relation("AiLinkToEvent", fields: [toEventId], references: [id], onDelete: Cascade)
+  relationship String
+  confidence   Float
+  basis        String
+  evidence     Json
+  createdAt    DateTime        @default(now())
+  confirmedAt  DateTime?
+  rejectedAt   DateTime?
+
+  @@unique([ownerId, fromEventId, toEventId, relationship])
+  @@index([ownerId, createdAt])
 }
