@@ -14,6 +14,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Separate Expo app — validate under sync-ios, not root web lint.
     "sync-ios/**",
+    "extensions/sync-chrome/**",
   ]),
   {
     files: ["scripts/**/*.js"],

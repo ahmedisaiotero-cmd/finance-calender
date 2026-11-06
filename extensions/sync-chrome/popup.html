@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sync</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main>
+      <p class="brand">SYNC</p>
+      <p id="provider">Checking this page…</p>
+      <p id="pairing" class="muted"></p>
+      <p id="queue" class="muted"></p>
+      <button id="save" type="button" disabled>Save this conversation</button>
+      <div class="row">
+        <button id="flush" type="button">Retry queue</button>
+        <button id="clear" type="button">Clear queue</button>
+      </div>
+      <p id="status" class="status"></p>
+      <a href="options.html" target="_blank" rel="noreferrer">Options</a>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

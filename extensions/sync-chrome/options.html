@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Sync capture options</title>
+    <link rel="stylesheet" href="popup.css" />
+    <style>
+      main {
+        width: min(520px, calc(100vw - 32px));
+        margin: 32px auto;
+      }
+      label {
+        display: grid;
+        gap: 6px;
+        margin: 14px 0;
+        color: rgba(244, 241, 232, 0.55);
+      }
+      input {
+        border: 1px solid rgba(244, 241, 232, 0.14);
+        border-radius: 10px;
+        background: rgba(244, 241, 232, 0.04);
+        padding: 10px 12px;
+        color: inherit;
+        font: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="brand">SYNC</p>
+      <p>Connect this unpacked extension to your Sync site. Prefer a pairing code from /sync-lab/activity.</p>
+      <label>
+        Sync site URL
+        <input id="siteUrl" type="url" placeholder="http://localhost:3000" />
+      </label>
+      <label>
+        Pairing code
+        <input id="code" type="text" placeholder="ABCD-EFGH" autocomplete="off" />
+      </label>
+      <button id="pair" type="button">Claim pairing code</button>
+      <label>
+        Owner secret fallback
+        <input id="ownerSecret" type="password" autocomplete="off" />
+      </label>
+      <button id="saveSecret" type="button">Save site and secret</button>
+      <button id="unpair" type="button">Clear pairing</button>
+      <p id="status" class="status"></p>
+    </main>
+    <script src="options.js"></script>
+  </body>
+</html>

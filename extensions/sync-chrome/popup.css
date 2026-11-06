@@ -1,0 +1,57 @@
+body {
+  margin: 0;
+  background: #0f100d;
+  color: #f4f1e8;
+  font: 13px/1.45 system-ui, sans-serif;
+}
+
+main {
+  width: 280px;
+  padding: 16px;
+}
+
+.brand {
+  margin: 0 0 8px;
+  letter-spacing: 0.14em;
+  font-weight: 600;
+}
+
+.muted,
+.status {
+  color: rgba(244, 241, 232, 0.52);
+}
+
+.status {
+  min-height: 2.6em;
+}
+
+button,
+a {
+  color: inherit;
+}
+
+button {
+  width: 100%;
+  margin: 8px 0 0;
+  border: 1px solid rgba(244, 241, 232, 0.16);
+  border-radius: 999px;
+  background: transparent;
+  padding: 8px 12px;
+  font: inherit;
+}
+
+button:disabled {
+  opacity: 0.45;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+a {
+  display: inline-block;
+  margin-top: 12px;
+  color: rgba(244, 241, 232, 0.7);
+}
