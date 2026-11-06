@@ -1,41 +1,12 @@
 import type { Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { AI_PROVIDER_DETAILS } from "@/lib/ai-activity/providers";
 import { prepareAiCaptureForPersistence } from "@/lib/ai-activity/prepare-capture";
 import type {
   AiProviderSlug,
   ValidatedAiConversationCapturePayload,
 } from "@/lib/ai-activity/types";
-
-const PROVIDER_DETAILS: Record<
-  AiProviderSlug,
-  { displayName: string; supportedOrigins: string[] }
-> = {
-  chatgpt: {
-    displayName: "ChatGPT",
-    supportedOrigins: ["https://chatgpt.com", "https://chat.openai.com"],
-  },
-  claude: {
-    displayName: "Claude",
-    supportedOrigins: ["https://claude.ai"],
-  },
-  grok: {
-    displayName: "Grok",
-    supportedOrigins: ["https://grok.com", "https://x.com"],
-  },
-  cursor: {
-    displayName: "Cursor",
-    supportedOrigins: ["https://cursor.com"],
-  },
-  gemini: {
-    displayName: "Gemini",
-    supportedOrigins: ["https://gemini.google.com"],
-  },
-  paste_import: {
-    displayName: "Paste import",
-    supportedOrigins: ["https://sync.local"],
-  },
-};
 
 export type AiOwnerIdentity = {
   ownerId: string;
@@ -58,7 +29,19 @@ export function aiActivityEventOwnerWhere(ownerId: string, eventId: string) {
   return { id: eventId, ownerId };
 }
 
-async function ensureOwnerUser(owner: AiOwnerIdentity) {
+export async function listAiActivityTimelineForOwner(ownerId: string) {
+  return prisma.aiConversation.findMany({
+    where: { ownerId },
+    orderBy: { capturedAt: "desc" },
+    take: 40,
+    include: {
+      provider: { select: { slug: true, displayName: true } },
+      _count: { select: { messages: true, activityEvents: true } },
+    },
+  });
+}
+
+export async function ensureOwnerUser(owner: AiOwnerIdentity) {
   return prisma.user.upsert({
     where: { id: owner.ownerId },
     update: {
@@ -73,7 +56,7 @@ async function ensureOwnerUser(owner: AiOwnerIdentity) {
 }
 
 async function ensureProvider(slug: AiProviderSlug) {
-  const details = PROVIDER_DETAILS[slug];
+  const details = AI_PROVIDER_DETAILS[slug];
   return prisma.aiProvider.upsert({
     where: { slug },
     update: {

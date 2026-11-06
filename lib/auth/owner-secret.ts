@@ -8,7 +8,7 @@ export type OwnerSecretAuthResult =
   | { ok: true; ownerId: string; ownerEmail: string }
   | { ok: false; status: 401 | 503; error: string };
 
-function readPresentedSecret(request: Request): string | null {
+export function readPresentedSecret(request: Request): string | null {
   const authorization = request.headers.get("authorization");
   if (authorization?.toLowerCase().startsWith("bearer ")) {
     return authorization.slice("bearer ".length).trim();

@@ -41,11 +41,13 @@ model User {
   createdAt        DateTime          @default(now())
   workspaces       Workspace[]
   syncProfile      SyncProfile?
-  aiCaptureSources AiCaptureSource[]
-  aiConversations  AiConversation[]
-  aiActivityEvents AiActivityEvent[]
-  aiArtifacts      AiArtifact[]
-  aiLinks          AiLink[]
+  aiCaptureSources     AiCaptureSource[]
+  aiConversations      AiConversation[]
+  aiActivityEvents     AiActivityEvent[]
+  aiArtifacts          AiArtifact[]
+  aiLinks              AiLink[]
+  aiExtensionDevices   AiExtensionDevice[]
+  aiPairingCodes       AiPairingCode[]
 }
 
 model SyncProfile {
@@ -371,4 +373,33 @@ model AiLink {
 
   @@unique([ownerId, fromEventId, toEventId, relationship])
   @@index([ownerId, createdAt])
+}
+
+model AiExtensionDevice {
+  id              String    @id @default(uuid())
+  ownerId         String
+  owner           User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  connectionId    String
+  tokenHash       String    @unique
+  label           String?
+  permissionState String
+  createdAt       DateTime  @default(now())
+  lastSeenAt      DateTime?
+  expiresAt       DateTime?
+  revokedAt       DateTime?
+
+  @@unique([ownerId, connectionId])
+  @@index([ownerId, permissionState])
+}
+
+model AiPairingCode {
+  id         String    @id @default(uuid())
+  ownerId    String
+  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  codeHash   String    @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([ownerId, expiresAt])
 }

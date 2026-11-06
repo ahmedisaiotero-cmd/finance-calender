@@ -744,6 +744,135 @@
   padding-left: 18px;
 }
 
+.activityGrid {
+  display: grid;
+  width: min(960px, calc(100vw - 32px));
+  margin: 0 auto 48px;
+  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  gap: 28px;
+}
+
+.activityCard,
+.activityTimeline {
+  min-width: 0;
+}
+
+.activityCard {
+  border: 1px solid rgba(244, 241, 232, 0.1);
+  border-radius: 18px;
+  padding: 22px;
+}
+
+.activityCard h2,
+.activityTimeline h2 {
+  margin: 0 0 14px;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.activityCard label {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+  color: rgba(244, 241, 232, 0.5);
+  font-size: 12px;
+}
+
+.activityCard input,
+.activityCard select,
+.activityCard textarea {
+  width: 100%;
+  border: 1px solid rgba(244, 241, 232, 0.12);
+  border-radius: 12px;
+  background: rgba(244, 241, 232, 0.04);
+  padding: 10px 12px;
+  color: inherit;
+  font: inherit;
+  font-size: 14px;
+}
+
+.activityCard textarea {
+  min-height: 180px;
+  resize: vertical;
+}
+
+.activityHint,
+.activityStatus {
+  margin: 0 0 14px;
+  color: rgba(244, 241, 232, 0.5);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.activityStatus {
+  margin-top: 14px;
+  color: rgba(244, 241, 232, 0.78);
+}
+
+.pairingCode {
+  display: grid;
+  gap: 4px;
+  margin: 16px 0;
+  font-size: 22px;
+  letter-spacing: 0.08em;
+}
+
+.pairingCode span {
+  color: rgba(244, 241, 232, 0.45);
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.deviceList,
+.activityTimeline ol {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.deviceList li,
+.activityTimeline li {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid rgba(244, 241, 232, 0.08);
+  padding-top: 12px;
+}
+
+.deviceList strong,
+.activityTimeline strong {
+  display: block;
+  font-weight: 500;
+}
+
+.deviceList em,
+.activityTimeline span,
+.activityTimeline em {
+  display: block;
+  margin-top: 4px;
+  color: rgba(244, 241, 232, 0.45);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.deviceList button {
+  border: 1px solid rgba(244, 126, 126, 0.24);
+  border-radius: 999px;
+  background: transparent;
+  padding: 6px 10px;
+  color: rgba(255, 174, 174, 0.86);
+  font: inherit;
+  font-size: 12px;
+}
+
+.activityTimeline {
+  width: min(960px, calc(100vw - 32px));
+  margin: 0 auto 72px;
+}
+
 @media (max-width: 760px) {
   .header {
     padding-inline: 18px;
@@ -762,6 +891,7 @@
   }
 
   .decisionRow,
+  .activityGrid,
   .managementGrid,
   .memoryRows button {
     grid-template-columns: 1fr;

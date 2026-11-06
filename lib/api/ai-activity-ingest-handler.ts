@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 
+import { withAiActivityCors } from "@/lib/api/ai-activity-cors";
 import {
   AI_CAPTURE_MAX_BODY_BYTES,
   validateAiConversationCapturePayload,
 } from "@/lib/ai-activity/validation";
-import { authenticateOwnerSecret } from "@/lib/auth/owner-secret";
+import { authenticateAiActivityRequest } from "@/lib/auth/ai-activity-auth";
+import type { AiPairingStore } from "@/lib/ai-activity/pairing";
 import {
   persistAiConversationCapture,
   type AiOwnerIdentity,
@@ -14,6 +16,7 @@ import type { ValidatedAiConversationCapturePayload } from "@/lib/ai-activity/ty
 
 export type AiActivityIngestDeps = {
   env?: NodeJS.ProcessEnv | Record<string, string | undefined>;
+  pairingStore?: AiPairingStore;
   persistCapture?: (input: {
     owner: AiOwnerIdentity;
     payload: ValidatedAiConversationCapturePayload;
@@ -62,27 +65,71 @@ async function readJsonBodyWithLimit(
   }
 }
 
+function json(
+  request: Request,
+  body: unknown,
+  status: number,
+): NextResponse {
+  const response =
+    status === 204
+      ? new NextResponse(null, { status })
+      : NextResponse.json(body, { status });
+  return withAiActivityCors(request, response) as NextResponse;
+}
+
+export async function handleAiActivityIngestOptions(
+  request: Request,
+): Promise<NextResponse> {
+  return json(request, null, 204);
+}
+
 export async function handleAiActivityIngestPost(
   request: Request,
   deps: AiActivityIngestDeps = {},
 ): Promise<NextResponse> {
-  const auth = authenticateOwnerSecret(request, deps.env ?? process.env);
+  const env = deps.env ?? process.env;
+  const auth = await authenticateAiActivityRequest(
+    request,
+    env,
+    deps.pairingStore,
+  );
   if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+    return json(request, { error: auth.error }, auth.status);
   }
 
   const body = await readJsonBodyWithLimit(request, AI_CAPTURE_MAX_BODY_BYTES);
   if (!body.ok) {
-    return NextResponse.json(
-      { error: body.error },
-      { status: body.status },
-    );
+    return json(request, { error: body.error }, body.status);
   }
 
-  const validated = validateAiConversationCapturePayload(body.value);
+  const rawBody = body.value;
+  const requestBody =
+    auth.authKind === "device_token" &&
+    rawBody &&
+    typeof rawBody === "object" &&
+    !Array.isArray(rawBody)
+      ? {
+          ...rawBody,
+          captureMethod: "extension",
+          proof: {
+            ...("proof" in rawBody &&
+            rawBody.proof &&
+            typeof rawBody.proof === "object" &&
+            !Array.isArray(rawBody.proof)
+              ? rawBody.proof
+              : {}),
+            sourceKind: "chrome_extension",
+            connectionId: auth.connectionId,
+          },
+        }
+      : rawBody;
+
+  const validated = validateAiConversationCapturePayload(requestBody);
   if (!validated.ok) {
-    return NextResponse.json({ error: validated.error }, { status: 400 });
+    return json(request, { error: validated.error }, 400);
   }
+
+  const payload = validated.value;
 
   try {
     const persist = deps.persistCapture ?? persistAiConversationCapture;
@@ -91,24 +138,22 @@ export async function handleAiActivityIngestPost(
         ownerId: auth.ownerId,
         ownerEmail: auth.ownerEmail,
       },
-      payload: validated.value,
+      payload,
     });
 
-    return NextResponse.json(
+    return json(
+      request,
       {
         ok: true,
         conversationId: result.conversationId,
         activityEventId: result.activityEventId,
         messageCount: result.messageIds.length,
       },
-      { status: 201 },
+      201,
     );
   } catch (error) {
     if (error instanceof Error && error.message.includes("revoked")) {
-      return NextResponse.json(
-        { error: "Capture source is revoked" },
-        { status: 403 },
-      );
+      return json(request, { error: "Capture source is revoked" }, 403);
     }
     console.error("POST /api/ai-activity/ingest", {
       name:
@@ -116,9 +161,6 @@ export async function handleAiActivityIngestPost(
           ? String((error as { name?: unknown }).name ?? "Error")
           : "Error",
     });
-    return NextResponse.json(
-      { error: "Failed to ingest AI activity" },
-      { status: 500 },
-    );
+    return json(request, { error: "Failed to ingest AI activity" }, 500);
   }
 }
