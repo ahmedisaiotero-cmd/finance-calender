@@ -239,4 +239,17 @@ function appendTurns(
   assert.equal(result.debug.memoryDecision, "ask_follow_up");
 }
 
+{
+  const first = run("I have a dentist appointment Thursday at 3 PM.");
+  const dentistMemory = memoryFromSyncEngineResult(first, reference);
+  assert.ok(dentistMemory);
+
+  const moved = run("move it to Friday", [dentistMemory]);
+  assert.equal(moved.correctionTarget.detected, true);
+  assert.equal(moved.correctionTarget.action, "update_existing");
+  assert.equal(moved.correctionTarget.targetMemoryId, dentistMemory.id);
+  assert.equal(moved.debug.memoryDecision, "update_existing");
+  assert.equal(moved.debug.wouldCreateMemory, false);
+}
+
 console.log("sync-engine-correction-target tests passed");

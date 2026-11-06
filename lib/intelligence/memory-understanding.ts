@@ -84,12 +84,11 @@ function interpretFromProfile(
   text: string,
   days: number | null,
 ): string | null {
-  if (profile.weight === "light" && profile.type !== "routine") {
-    return interpretLightMemory(profile, text);
-  }
-
-  if (profile.type === "emotion") {
-    return interpretEmotionalMemory(text, days);
+  if (profile.type === "health_signal") {
+    if (/\bsleep|slept|night\b/i.test(text)) {
+      return "Sleep signal noted — Sync will keep this quietly in your health context.";
+    }
+    return "Health signal noted — Sync will keep this in context.";
   }
 
   if (profile.type === "concern") {
@@ -97,6 +96,14 @@ function interpretFromProfile(
       return "Money concern noted — Sync will keep this in context without treating it like a bill.";
     }
     return "Concern noted — Sync will keep this in context without turning it into a task.";
+  }
+
+  if (profile.weight === "light" && profile.type !== "routine") {
+    return interpretLightMemory(profile, text);
+  }
+
+  if (profile.type === "emotion") {
+    return interpretEmotionalMemory(text, days);
   }
 
   if (profile.type === "goal") {
@@ -111,13 +118,6 @@ function interpretFromProfile(
       return "Preference noted — morning workouts fit you better.";
     }
     return "Preference noted — Sync will use this as context.";
-  }
-
-  if (profile.type === "health_signal") {
-    if (/\bsleep|slept|night\b/i.test(text)) {
-      return "Sleep signal noted — Sync will keep this quietly in your health context.";
-    }
-    return "Health signal noted — Sync will keep this in context.";
   }
 
   if (profile.type === "family_context") {

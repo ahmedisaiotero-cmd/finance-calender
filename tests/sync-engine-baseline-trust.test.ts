@@ -301,6 +301,24 @@ function hasRelevantDestination(result: BaselineResult, expected: RegExp) {
     `safe password reminder should remain processable, got ${safeReminder.debug.memoryDecision}`,
   );
   assert.ok(safeReminder.debug.confidence > 0.3);
+
+  const budget = runSingle("budget felt tight this month");
+  expectRuntimeJudgmentExists(budget);
+  expectMemoryAction(budget, ["remember", "update_existing"]);
+  assert.ok(hasRelevantDestination(budget, /Finance/i));
+  assert.equal(budget.prepared?.destinations.includes("Health"), false);
+
+  const chest = runSingle("chest felt tight");
+  expectRuntimeJudgmentExists(chest);
+  expectMemoryAction(chest, ["remember", "update_existing"]);
+  assert.ok(hasRelevantDestination(chest, /Health/i));
+  assert.equal(chest.prepared?.destinations.includes("Goals"), false);
+
+  const passwordReset = runSingle("bank password reset tomorrow");
+  expectRuntimeJudgmentExists(passwordReset);
+  expectMemoryAction(passwordReset, ["remember", "update_existing"]);
+  assert.ok(hasRelevantDestination(passwordReset, /Finance/i));
+  assert.equal(passwordReset.prepared?.destinations.includes("Goals"), false);
 }
 
 console.log("sync-engine-baseline-trust tests passed");

@@ -88,7 +88,7 @@ function hasTimelineDestination(plan: PulsePlan) {
 }
 
 function isFinanceLanguage(plan: PulsePlan) {
-  return /\b(rent|bill|budget|payment|pay|paid|payday|income|subscription|spent|overspend|overspending|cost|money|cash|send|debt)\b/i.test(
+  return /\b(rent|bill|budget|payment|pay|paid|payday|income|subscription|spent|overspend|overspending|cost|money|cash|send|debt|bank)\b/i.test(
     plan.prompt,
   );
 }
@@ -106,7 +106,7 @@ function isRelationshipLanguage(plan: PulsePlan) {
 }
 
 function isHealthLanguage(plan: PulsePlan) {
-  return /\b(doctor|dentist|therapy|appointment|checkup|medical|hospital|gym|workout|workouts|running|run|shower|sleep|medication|medicine|sad|upset|anxious|stressed|depressed|lonely|cried|crying|feeling|weird|happy|excited|grateful)\b/i.test(
+  return /\b(doctor|dentist|therapy|appointment|checkup|medical|hospital|gym|workout|workouts|running|run|shower|sleep|medication|medicine|sad|upset|anxious|stressed|depressed|lonely|cried|crying|feeling|feel off|chest|symptom|weird|happy|excited|grateful)\b/i.test(
     plan.prompt,
   );
 }

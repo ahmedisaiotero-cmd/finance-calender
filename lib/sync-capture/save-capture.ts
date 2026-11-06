@@ -300,7 +300,8 @@ export function isSilentCaptureReady(
     if (
       kind === "financial_state" ||
       kind === "no_plan" ||
-      kind === "concern"
+      kind === "concern" ||
+      kind === "health_signal"
     ) {
       return true;
     }

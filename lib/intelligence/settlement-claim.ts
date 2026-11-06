@@ -87,7 +87,7 @@ export function classifySettlementClaim(text: string): SettlementClaim {
 
   const actor: SettlementActor = assistant
     ? "assistant"
-    : userPaid
+    : userPaid || Boolean(obligationKey)
       ? "user"
       : "unknown";
   const unverified = actor !== "user";

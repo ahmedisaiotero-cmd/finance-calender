@@ -200,3 +200,180 @@ test("duplicate chat submission does not duplicate memory", () => {
     "skip",
   );
 });
+
+test("probe corpus asks before storing vague timed placeholders", () => {
+  for (const text of [
+    "it’s tomorrow",
+    "move it to Friday",
+    "paid that",
+    "remind me later",
+    "I paid it.",
+  ]) {
+    const store = createTestCaptureStore();
+    const applied = applyChatTurn(
+      text,
+      { items: store.items, reference: august },
+      store.handlers,
+    );
+
+    assert.equal(store.items.length, 0, text);
+    assert.equal(applied.results.length, 1, text);
+    assert.ok(
+      applied.results[0]?.status === "needs_clarification" ||
+        applied.results[0]?.status === "too_vague",
+      `${text}: expected ask/quiet, got ${applied.results[0]?.status}`,
+    );
+  }
+});
+
+test("tight money language remains money context, not a health symptom", () => {
+  const store = createTestCaptureStore();
+  applyChatTurn(
+    "budget felt tight this month",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const item = store.items[0];
+
+  assert.ok(item);
+  assert.equal(item.destinations.includes("Finance"), true);
+  assert.equal(item.destinations.includes("Health"), false);
+});
+
+test("probe corpus stores symptom-like health notes as health context", () => {
+  for (const text of ["chest felt tight", "I feel off lately"]) {
+    const store = createTestCaptureStore();
+    const applied = applyChatTurn(
+      text,
+      { items: store.items, reference: august },
+      store.handlers,
+    );
+    const item = store.items[0];
+
+    assert.equal(applied.results[0]?.status, "saved", text);
+    assert.ok(item, text);
+    assert.equal(item.destinations.includes("Health"), true, text);
+    assert.equal(item.destinations.includes("Goals"), false, text);
+    assert.match(item.understanding ?? "", /health signal/i, text);
+  }
+});
+
+test("password reset reminder is stored without secrets or generic goals", () => {
+  const store = createTestCaptureStore();
+  applyChatTurn(
+    "bank password reset tomorrow",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const item = store.items[0];
+
+  assert.ok(item);
+  assert.equal(item.destinations.includes("Finance"), true);
+  assert.equal(item.destinations.includes("Calendar"), true);
+  assert.equal(item.destinations.includes("Goals"), false);
+  assert.doesNotMatch(item.understanding ?? "", /secret|password is/i);
+  assert.doesNotMatch(item.prompt, /hunter2|sk-/i);
+});
+
+test("appointment move updates existing memory without adding finance", () => {
+  const store = createTestCaptureStore();
+  applyChatTurn(
+    "dentist appointment Thursday at 3pm",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const originalId = store.items[0]?.id;
+
+  const moved = applyChatTurn(
+    "move it to Friday",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const item = store.items[0];
+
+  assert.equal(moved.results[0]?.status, "saved");
+  assert.equal(moved.results[0]?.status === "saved" ? moved.results[0].kind : null, "edit");
+  assert.equal(store.items.length, 1);
+  assert.equal(item?.id, originalId);
+  assert.match(item?.title ?? "", /dentist appointment/i);
+  assert.equal(item?.destinations.includes("Health"), true);
+  assert.equal(item?.destinations.includes("Calendar"), true);
+  assert.equal(item?.destinations.includes("Finance"), false);
+  assert.equal(item?.timeline?.startDate, "2026-08-21");
+});
+
+test("work standup time correction updates existing work memory", () => {
+  const store = createTestCaptureStore();
+  applyChatTurn(
+    "work standup tomorrow at 9am",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const originalId = store.items[0]?.id;
+
+  const corrected = applyChatTurn(
+    "actually work standup is at 10am",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const item = store.items[0];
+
+  assert.equal(corrected.results[0]?.status, "saved");
+  assert.equal(corrected.results[0]?.status === "saved" ? corrected.results[0].kind : null, "edit");
+  assert.equal(store.items.length, 1);
+  assert.equal(item?.id, originalId);
+  assert.equal(item?.destinations.includes("Work"), true);
+  assert.equal(item?.destinations.includes("Calendar"), true);
+  assert.equal(item?.destinations.includes("Finance"), false);
+  assert.equal(item?.timeline?.startDate, "2026-08-21");
+  assert.equal(item?.timeline?.startTime, "10:00");
+});
+
+test("birthday date correction keeps one family memory", () => {
+  const store = createTestCaptureStore();
+  applyChatTurn(
+    "mom's birthday is July 12",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const originalId = store.items[0]?.id;
+
+  const corrected = applyChatTurn(
+    "actually mom's birthday is July 18",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const item = store.items[0];
+
+  assert.equal(corrected.results[0]?.status, "saved");
+  assert.equal(store.items.length, 1);
+  assert.equal(item?.id, originalId);
+  assert.match(item?.title ?? "", /mom's birthday/i);
+  assert.equal(item?.destinations.includes("Family"), true);
+  assert.equal(item?.destinations.includes("Finance"), false);
+  assert.equal(item?.timeline?.startDate, "2027-07-18");
+});
+
+test("work schedule change updates existing work memory instead of duplicating", () => {
+  const store = createTestCaptureStore();
+  applyChatTurn(
+    "I work Sunday through Wednesday.",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const originalId = store.items[0]?.id;
+
+  const changed = applyChatTurn(
+    "I work every Friday now.",
+    { items: store.items, reference: august },
+    store.handlers,
+  );
+  const item = store.items[0];
+
+  assert.equal(changed.results[0]?.status, "saved");
+  assert.equal(changed.results[0]?.status === "saved" ? changed.results[0].kind : null, "edit");
+  assert.equal(store.items.length, 1);
+  assert.equal(item?.id, originalId);
+  assert.equal(item?.destinations.includes("Work"), true);
+  assert.equal(item?.destinations.includes("Finance"), false);
+});
