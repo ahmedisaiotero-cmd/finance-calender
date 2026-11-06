@@ -1,3 +1,4 @@
+import { AI_PROVIDER_ORIGINS } from "@/lib/ai-activity/providers";
 import {
   AI_CAPTURE_METHODS,
   AI_MESSAGE_ROLES,
@@ -78,14 +79,6 @@ const PERMISSION_STATES: PermissionState[] = [
   "expired",
 ];
 
-const PROVIDER_ORIGINS: Record<AiProviderSlug, string[]> = {
-  chatgpt: ["https://chatgpt.com", "https://chat.openai.com"],
-  claude: ["https://claude.ai"],
-  grok: ["https://grok.com", "https://x.com"],
-  cursor: ["https://cursor.com"],
-  gemini: ["https://gemini.google.com"],
-  paste_import: ["https://sync.local"],
-};
 
 export type ValidationResult<T> =
   | { ok: true; value: T }
@@ -143,7 +136,7 @@ export function isOriginAllowedForProvider(input: {
   captureMethod: AiCaptureMethod;
 }): boolean {
   if (input.captureMethod === "paste_import") return true;
-  return PROVIDER_ORIGINS[input.provider].includes(input.origin);
+  return AI_PROVIDER_ORIGINS[input.provider].includes(input.origin);
 }
 
 function sanitizeScalarMetadata(
