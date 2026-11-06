@@ -408,6 +408,7 @@ export default function SyncLabPage() {
             <Link href="/sync-lab">Lab</Link>
             <Link href="/sync-lab/memory">Memory</Link>
             <Link href="/sync-lab/review">Review</Link>
+            <Link href="/sync-lab/activity">Activity</Link>
           </nav>
         </header>
 

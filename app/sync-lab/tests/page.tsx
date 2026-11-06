@@ -115,6 +115,7 @@ export default async function SyncLabTestsPage({
           <Link href="/sync-lab">Lab</Link>
           <Link href="/sync-lab/memory">Memory</Link>
           <Link href="/sync-lab/review">Review</Link>
+          <Link href="/sync-lab/activity">Activity</Link>
           <Link href="/sync-lab/tests">Tests</Link>
         </nav>
       </header>
