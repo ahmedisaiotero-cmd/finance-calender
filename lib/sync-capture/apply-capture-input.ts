@@ -17,6 +17,7 @@ import {
   type PreparedCapture,
 } from "@/lib/sync-capture/save-capture";
 import type { MeaningAnalysis } from "@/lib/intelligence/meaning-engine";
+import { buildMemoryUnderstanding } from "@/lib/intelligence/memory-understanding";
 import {
   CAPTURE_CLARIFY_REMEMBER_WHAT,
   CAPTURE_CLARIFY_WHO,
@@ -30,7 +31,9 @@ import {
   isUnverifiedSettlementClaim,
   unverifiedSettlementFollowUp,
 } from "@/lib/intelligence/settlement-claim";
+import { detectVagueInput } from "@/lib/sync-engine/input/vague-input";
 import { detectContradiction } from "@/lib/sync-engine/reasoning/contradiction";
+import { detectCorrectionTarget } from "@/lib/sync-engine/reasoning/correction-target";
 import { detectAmbiguity } from "@/lib/trust/ambiguity-detection";
 import { resolveCaptureReference } from "@/lib/trust/reference-resolution";
 import type { PersistedWorkSchedule } from "@/lib/user-timeline-context";
@@ -192,6 +195,21 @@ export function applyCaptureInput(
   const trimmed = text.trim();
   if (!trimmed) return { status: "empty" };
 
+  const vagueInput = detectVagueInput(trimmed);
+  if (
+    vagueInput.detected &&
+    vagueInput.recommendedAction === "ask_follow_up"
+  ) {
+    return {
+      status: "needs_clarification",
+      draftText: trimmed,
+      message:
+        vagueInput.followUpQuestion ??
+        "What should Sync know before remembering this?",
+      suggestions: ["Add the missing person", "Add the date", "Add what changed"],
+    };
+  }
+
   if (isVagueCaptureInput(trimmed)) {
     const specific = ambiguousReferenceMessage(trimmed);
     return {
@@ -211,32 +229,70 @@ export function applyCaptureInput(
     };
   }
 
-  const moneyContradiction = detectContradiction({
+  const contradiction = detectContradiction({
     text: trimmed,
     items: context.items,
   });
-  if (
-    moneyContradiction.detected &&
-    moneyContradiction.type === "money" &&
-    moneyContradiction.recommendedAction === "update_existing" &&
-    moneyContradiction.relatedMemoryIds.length === 1
-  ) {
-    const targetId = moneyContradiction.relatedMemoryIds[0];
-    const target = context.items.find((item) => item.id === targetId);
+  const correctionTarget = detectCorrectionTarget({
+    text: trimmed,
+    items: context.items,
+    contradiction,
+  });
+  const updateTargetId =
+    correctionTarget.action === "update_existing"
+      ? correctionTarget.targetMemoryId
+      : contradiction.detected &&
+          contradiction.recommendedAction === "update_existing" &&
+          contradiction.relatedMemoryIds.length === 1
+        ? contradiction.relatedMemoryIds[0]
+        : undefined;
+  if (updateTargetId) {
+    const target = context.items.find((item) => item.id === updateTargetId);
     if (target) {
       const prepared = prepareCaptureFromText(trimmed, {
         ...pipelineContext(context),
         excludeCaptureId: target.id,
       });
       const title = prepared?.title || target.title;
+      const destinations = prepared?.destinations.length
+        ? prepared.destinations
+        : target.destinations;
+      const timeline = prepared?.plan.timeline ?? target.timeline;
+      const category = prepared?.plan.category ?? target.category;
+      const updatedUnderstanding = prepared
+        ? buildMemoryUnderstanding(
+            {
+              title,
+              prompt: prepared.plan.prompt,
+              originalPrompt: prepared.plan.originalPrompt,
+              destinations,
+              timeline,
+              category,
+              workAvailability:
+                prepared.plan.parsedInput?.workAvailability ??
+                target.workAvailability,
+              moneyType: prepared.plan.parsedInput?.moneyType ?? target.moneyType,
+            },
+            reference,
+          )
+        : target.understanding;
       handlers.updateCapturedItem(target.id, {
         prompt: trimmed,
         originalPrompt: trimmed,
         title,
         updatedAt: reference.toISOString(),
-        timeline: prepared?.plan.timeline ?? target.timeline,
-        category: prepared?.plan.category ?? target.category,
+        dateLabel: prepared?.plan.dateLabel ?? target.dateLabel,
+        timeLabel: prepared?.plan.timeLabel ?? target.timeLabel,
+        amount: prepared?.plan.parsedInput?.amount ?? target.amount,
+        frequency: prepared?.plan.parsedInput?.frequency ?? target.frequency,
+        moneyType: prepared?.plan.parsedInput?.moneyType ?? target.moneyType,
+        workAvailability:
+          prepared?.plan.parsedInput?.workAvailability ?? target.workAvailability,
+        destinations,
+        timeline,
+        category,
         meaning: prepared?.meaning ?? target.meaning,
+        understanding: updatedUnderstanding,
       });
       return {
         status: "saved",
@@ -325,7 +381,10 @@ export function applyCaptureInput(
       destinations,
       title,
     );
-    handlers.updateCapturedItem(action.primaryTarget.id, updated);
+    handlers.updateCapturedItem(action.primaryTarget.id, {
+      ...updated,
+      understanding: buildMemoryUnderstanding(updated, reference),
+    });
     return {
       status: "saved",
       kind: "edit",

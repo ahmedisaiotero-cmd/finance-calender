@@ -28,6 +28,8 @@ export type VagueInputDetection = {
 
 const DAY_OR_TIME_PATTERN =
   /\b(today|tomorrow|tonight|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next week|this week|at \d|before|after|by)\b/i;
+const DATE_OR_DAY_PATTERN =
+  /\b(today|tomorrow|tonight|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next week|this week)\b/i;
 
 function clearResult(): VagueInputDetection {
   return {
@@ -95,6 +97,44 @@ export function detectVagueInput(text: string): VagueInputDetection {
     return ask(
       ["object", "time"],
       "Reminder target is unclear.",
+      "What should I remind you about, and when?",
+    );
+  }
+
+  if (/^(it'?s|it s|it is)\s+(today|tomorrow|tonight|next week|this week)\b/i.test(compact)) {
+    return ask(
+      ["object"],
+      "Pronoun-only timing is missing the actual event or commitment.",
+      "What is happening then?",
+    );
+  }
+
+  if (
+    /^(something|stuff|things?|something important)\s+(today|tomorrow|tonight|next week|this week)\b/i.test(
+      compact,
+    )
+  ) {
+    return ask(
+      ["object"],
+      "Timed placeholder is missing the actual event or commitment.",
+      DATE_OR_DAY_PATTERN.test(compact)
+        ? "What is happening then?"
+        : "What should Sync remember?",
+    );
+  }
+
+  if (/^(move|reschedule|change)\s+(it|that|this)\s+to\b/i.test(compact)) {
+    return ask(
+      ["object"],
+      "Edit target is unclear.",
+      "What should I move?",
+    );
+  }
+
+  if (/^remind me later\b/i.test(compact)) {
+    return ask(
+      ["object", "time"],
+      "Reminder is missing the subject and useful timing.",
       "What should I remind you about, and when?",
     );
   }

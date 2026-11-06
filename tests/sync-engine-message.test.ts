@@ -50,7 +50,7 @@ const examples: MessageExample[] = [
   },
   {
     text: "I feel tired every morning before work",
-    remembered: false,
+    remembered: true,
     category: "general",
     timeframe: "unscheduled",
     destination: "Health",

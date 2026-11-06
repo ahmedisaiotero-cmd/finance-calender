@@ -94,8 +94,17 @@ export function buildEditPlanFromCommand(
   const startTime = commandIntent.toTime ?? existing.timeline?.startTime;
   const timeLabel = startTime ? formatClock(startTime) : "";
   const restated = originalCommand.replace(/^(actually|wait,)[, ]*/i, "").trim();
+  const pronounTarget = /^(it|that|this)$/i.test(commandIntent.targetText);
+  const subject = pronounTarget ? existing.title : commandIntent.targetText;
+  const planText = [
+    subject,
+    commandIntent.toDateLabel ?? (commandIntent.toTime ? existing.dateLabel : undefined),
+    commandIntent.toTime ? `at ${timeLabel}` : undefined,
+  ]
+    .filter(Boolean)
+    .join(" ");
   const plan = createPulsePlan(
-    restated || [existing.title, dateLabel, timeLabel].filter(Boolean).join(" "),
+    planText || restated || [existing.title, dateLabel, timeLabel].filter(Boolean).join(" "),
     { timeline },
   );
 

@@ -322,6 +322,44 @@ function prospectiveMemoryFromPrepared(
   };
 }
 
+function prospectiveUpdatedMemoryFromPrepared(
+  existing: CapturedSyncItem,
+  prepared: PreparedCapture,
+  response: string,
+  updatedAt: Date,
+): CapturedSyncItem {
+  const original = prepared.plan.originalPrompt ?? prepared.plan.prompt;
+  const pronounEdit = /^(move|reschedule|change)\s+(it|that|this)\b/i.test(original);
+  const destinations = pronounEdit
+    ? existing.destinations
+    : prepared.destinations.length > 0
+      ? prepared.destinations
+      : existing.destinations;
+
+  return {
+    ...existing,
+    title: pronounEdit ? existing.title : prepared.title || existing.title,
+    category: pronounEdit ? existing.category : prepared.plan.category,
+    prompt: prepared.plan.prompt,
+    originalPrompt: prepared.plan.originalPrompt,
+    normalizationCorrections: prepared.plan.normalizationCorrections,
+    destinations,
+    dateLabel: prepared.plan.dateLabel,
+    timeLabel: prepared.plan.timeLabel,
+    amount: prepared.plan.parsedInput?.amount ?? existing.amount ?? null,
+    frequency: prepared.plan.parsedInput?.frequency ?? existing.frequency,
+    moneyType: prepared.plan.parsedInput?.moneyType ?? existing.moneyType,
+    workAvailability:
+      prepared.plan.parsedInput?.workAvailability ?? existing.workAvailability,
+    timeline: prepared.plan.timeline,
+    meaning: prepared.meaning,
+    understanding: response,
+    updatedAt: updatedAt.toISOString(),
+    deletedAt: null,
+    status: "active",
+  };
+}
+
 function priorityImpactFor(input: {
   changed: boolean;
   prepared: PreparedCapture | null;
@@ -1654,7 +1692,7 @@ export function processSyncMessage(
   if (
     vagueInput.detected &&
     vagueInput.recommendedAction === "ask_follow_up" &&
-    (!preCorrectionTarget.detected || unverifiedSettlementAsk)
+    (preCorrectionTarget.action !== "update_existing" || unverifiedSettlementAsk)
   ) {
     const conversationGoal = selectConversationGoal({
       intent: conversationIntent,
@@ -1779,10 +1817,35 @@ export function processSyncMessage(
       : memoryDecision === "update_existing" && correctionTarget.targetMemoryId
         ? "Got it. I'll update that existing memory."
         : responseForPrepared(prepared, consequence, timeframe, reference);
-  const beforeItems = items;
-  const afterItems =
+  const updateTargetId =
+    correctionTarget.targetMemoryId ??
+    (contradiction.detected && contradiction.relatedMemoryIds.length === 1
+      ? contradiction.relatedMemoryIds[0]
+      : candidate?.id);
+  const updateTarget =
+    updateTargetId != null
+      ? items.find((item) => item.id === updateTargetId) ?? null
+      : null;
+  const prospectiveCreatedMemory =
     remembered && wouldCreateMemory
-      ? [prospectiveMemoryFromPrepared(prepared, preliminaryResponse, reference), ...items]
+      ? prospectiveMemoryFromPrepared(prepared, preliminaryResponse, reference)
+      : null;
+  const prospectiveUpdatedMemory =
+    remembered && wouldUpdateExistingMemory && updateTarget
+      ? prospectiveUpdatedMemoryFromPrepared(
+          updateTarget,
+          prepared,
+          preliminaryResponse,
+          reference,
+        )
+      : null;
+  const beforeItems = items;
+  const afterItems = prospectiveCreatedMemory
+    ? [prospectiveCreatedMemory, ...items]
+    : prospectiveUpdatedMemory
+      ? items.map((item) =>
+          item.id === prospectiveUpdatedMemory.id ? prospectiveUpdatedMemory : item,
+        )
       : items;
   const candidateFromCorrection =
     correctionTarget.targetMemoryId != null
@@ -1804,9 +1867,7 @@ export function processSyncMessage(
     duplicateCandidateFound: Boolean(effectiveCandidate),
   });
   const focusItem =
-    remembered && wouldCreateMemory
-      ? prospectiveMemoryFromPrepared(prepared, preliminaryResponse, reference)
-      : null;
+    prospectiveCreatedMemory ?? prospectiveUpdatedMemory ?? null;
   const runtime = buildRuntimeEvaluation({
     beforeItems,
     afterItems,

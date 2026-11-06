@@ -99,7 +99,9 @@ export function interpretChatTurn(input: {
       {
         text: trimmed,
         kind: "correction",
-        categoryHint: "Money",
+        categoryHint: /\b(paid|rent|debt|money|paycheck|bill|budget|bank)\b/i.test(trimmed)
+          ? "Money"
+          : undefined,
         captureText: trimmed.replace(/^(actually|wait,)[, ]*/i, "").trim() || trimmed,
       },
     ];
