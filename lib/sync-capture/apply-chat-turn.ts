@@ -10,12 +10,14 @@ import {
   type ChatTurnClause,
 } from "@/lib/sync-capture/interpret-chat-turn";
 import {
+  buildEditPlanFromCommand,
   buildUpdatedCaptureFromPlan,
   resolveCaptureAction,
 } from "@/lib/capture-action-resolver";
 import { compactCaptureTitle, enrichCapturePlan } from "@/lib/sync-capture/save-capture";
 import { createPulsePlan } from "@/lib/pulse/create-pulse-plan";
 import { sanitizeSyncDestinations } from "@/lib/pulse/resolve-sync-destinations";
+import { buildMemoryUnderstanding } from "@/lib/intelligence/memory-understanding";
 import { detectContradiction } from "@/lib/sync-engine/reasoning/contradiction";
 import { detectCorrectionTarget } from "@/lib/sync-engine/reasoning/correction-target";
 
@@ -53,23 +55,68 @@ function applyClause(
 
     if (existing) {
       const restated = clause.captureText;
-      const plan = createPulsePlan(restated, {
-        timeline: {
-          now: context.reference,
-          timeZone: context.timeZone,
-        },
-        categoryHint: clause.categoryHint,
-      });
-      const enriched = enrichCapturePlan(plan, context.reference ?? new Date());
-      const destinations = sanitizeSyncDestinations(
-        existing.destinations.includes("Finance")
-          ? [...existing.destinations]
-          : [...existing.destinations, "Finance"],
+      const pronounCommand =
+        action.intent === "edit" &&
+        /^(it|that|this)$/i.test(action.commandIntent.targetText);
+      const commandPlan =
+        pronounCommand
+          ? buildEditPlanFromCommand(
+              existing,
+              action.commandIntent,
+              clause.text,
+              {
+                now: context.reference,
+                timeZone: context.timeZone,
+                userContext: { workSchedule: context.workSchedule ?? undefined },
+              },
+            )
+          : null;
+      const hasDate =
+        /\b(today|tomorrow|tonight|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next\s+\w+|\d{1,2}\/\d{1,2})\b/i.test(
+          restated,
+        );
+      const hasTime = /\bat\s+\d{1,2}(?::\d{2})?\s*(am|pm)?\b/i.test(restated);
+      const planText =
+        hasTime && !hasDate && existing.dateLabel
+          ? `${existing.title} ${existing.dateLabel} ${restated.match(/\bat\s+\d{1,2}(?::\d{2})?\s*(?:am|pm)?\b/i)?.[0] ?? ""}`.trim()
+          : restated;
+      const enriched = enrichCapturePlan(
+        commandPlan ??
+          (planText === restated
+          ? createPulsePlan(restated, {
+              timeline: {
+                now: context.reference,
+                timeZone: context.timeZone,
+              },
+              categoryHint: clause.categoryHint,
+            })
+          : createPulsePlan(planText, {
+              timeline: {
+                now: context.reference,
+                timeZone: context.timeZone,
+              },
+              categoryHint: clause.categoryHint,
+            })),
+        context.reference ?? new Date(),
       );
-      const title = compactCaptureTitle(enriched);
+      const moneyRelated =
+        /\b(paid|rent|debt|money|paycheck|bill|budget|bank)\b/i.test(restated) ||
+        existing.destinations.includes("Finance");
+      const destinations = sanitizeSyncDestinations(
+        moneyRelated && !existing.destinations.includes("Finance")
+          ? [...existing.destinations, "Finance"]
+          : existing.destinations.includes("Finance")
+          ? [...existing.destinations]
+          : [...existing.destinations],
+      );
+      const title = pronounCommand ? existing.title : compactCaptureTitle(enriched);
+      const updated = buildUpdatedCaptureFromPlan(existing, enriched, destinations, title);
       handlers.updateCapturedItem(
         existing.id,
-        buildUpdatedCaptureFromPlan(existing, enriched, destinations, title),
+        {
+          ...updated,
+          understanding: buildMemoryUnderstanding(updated, context.reference),
+        },
       );
       return {
         status: "saved",

@@ -85,7 +85,7 @@ const STALE_PATTERN =
   /\b(eleven days ago|last month|three weeks ago|next year|car wash three weeks|two weeks ago|journal entry from may|old note about taxes)\b/i;
 
 const VAGUE_TOMORROW_PATTERN =
-  /\b(something important tomorrow|appointment tomorrow|something about family tomorrow|family stuff|something tomorrow|daughter school tomorrow morning)\b/i;
+  /\b(something important tomorrow|appointment tomorrow|something about family tomorrow|family stuff|something tomorrow|it'?s tomorrow|move it to friday|paid that|remind me later|daughter school tomorrow morning)\b/i;
 
 const SPECIFIC_URGENT_PATTERN =
   /\b(flight|daughter|school|payday|workout|rent|team sync|birthday|gym class|dentist|permission slip|soccer practice)\b/i;
@@ -119,6 +119,10 @@ function buildStressCorpus() {
     "todo list stuff",
     "not sure yet",
     "maybe later",
+    "it’s tomorrow",
+    "move it to Friday",
+    "paid that",
+    "remind me later",
     "thought about cleaning",
     "scrolled too long last night",
     "forgot to water plants",
@@ -144,6 +148,8 @@ function buildStressCorpus() {
     "hard to focus",
     "feeling off",
     "low energy all day",
+    "I feel off lately",
+    "chest felt tight",
     // family / school
     "take daughter to school tomorrow at 7:30am",
     "mom called today",
@@ -159,6 +165,7 @@ function buildStressCorpus() {
     "rent due friday",
     "payday tomorrow at 5am",
     "worried about money",
+    "budget felt tight",
     "bills piling up",
     "spent too much this week",
     "credit card payment due wednesday",
@@ -173,6 +180,7 @@ function buildStressCorpus() {
     "standup meeting monday 9am",
     "client call wednesday 3pm",
     "review pull requests tomorrow",
+    "bank password reset tomorrow",
     "boss asked for update",
     "need pto for july trip",
     // important timed / tomorrow load

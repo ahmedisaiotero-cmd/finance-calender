@@ -44,12 +44,12 @@ const reference = new Date("2026-06-14T18:00:00");
 {
   const store = createTestCaptureStore();
   captureFromBriefInput(
-    { text: "coffee this morning", source: "voice", transcript: "coffee this morning" },
+    { text: "rent due friday", source: "voice", transcript: "rent due friday" },
     { items: store.items, reference },
     store.handlers,
   );
   assert.equal(store.items[0]?.captureSource, "voice");
-  assert.equal(store.items[0]?.voiceTranscript, "coffee this morning");
+  assert.equal(store.items[0]?.voiceTranscript, "rent due friday");
   assert.ok(store.items[0]?.prompt);
 }
 

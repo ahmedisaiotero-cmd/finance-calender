@@ -7,7 +7,7 @@ import {
   describeMemoryWeight,
 } from "@/lib/intelligence/memory-profile";
 import { cleanMemoryTitle } from "@/lib/sync-capture/memory-title";
-import { captureFromBriefInput } from "@/lib/mobile-prototype/capture-brief-input";
+import { attemptBriefCapture } from "@/lib/mobile-prototype/capture-brief-input";
 import { createTestCaptureStore } from "@/tests/test-capture-handlers";
 import { createTestTimelineResolution } from "@/tests/test-fixtures";
 
@@ -129,14 +129,13 @@ function item(
 
 {
   const store = createTestCaptureStore();
-  const captured = captureFromBriefInput(
+  const captured = attemptBriefCapture(
     "had coffee today",
     { items: store.items, reference },
     store.handlers,
   );
-  assert.ok(captured);
-  assert.match(captured!.plan.prompt, /coffee/i);
-  assert.match(store.items[0]?.understanding ?? buildMemoryUnderstanding(store.items[0], reference), /small daily habit/i);
+  assert.equal(captured.status, "too_vague");
+  assert.equal(store.items.length, 0);
 }
 
 {

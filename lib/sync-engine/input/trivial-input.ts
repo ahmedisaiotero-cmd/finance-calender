@@ -4,6 +4,7 @@ export type TrivialInputDetection = {
 };
 
 const TRIVIAL_PATTERNS = [
+  /\b(coffee this morning|had coffee (today|this morning)|drank coffee (today|this morning))\b/i,
   /\b(i )?(saw|seen) (a|the) (red )?car\b/i,
   /\b(i )?(watched|saw) (a )?(random )?video\b/i,
   /\b(i )?(ate|had) (a )?(cereal|sandwich|soda)\b/i,
@@ -11,6 +12,7 @@ const TRIVIAL_PATTERNS = [
   /\b(i )?bought (a|some) soda\b/i,
   /\b(i )?(brushed|brush(?:ed)?) (my )?teeth\b/i,
   /\b(i )?(drank|had) (my )?coffee\b/i,
+  /\brandom thought\b.*\b(clouds?|walk home|walking home)\b/i,
 ];
 
 export function detectTrivialInput(text: string): TrivialInputDetection {

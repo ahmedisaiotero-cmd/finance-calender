@@ -33,6 +33,13 @@ export function detectPulseCategory(
 
   if (/\b(showered|shower)\b/.test(text)) return "general";
 
+  if (
+    /\b(reset|change|update)\b.*\b(bank\s+)?password\b/i.test(text) ||
+    /\b(bank\s+)?password\b.*\b(reset|change|update)\b/i.test(text)
+  ) {
+    return "reminder";
+  }
+
   if (classifyLifeNote(text)) return "general";
 
   if (/\b(school|class|homework|assignment|exam|study)\b/.test(text)) {

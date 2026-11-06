@@ -88,7 +88,7 @@ function hasTimelineDestination(plan: PulsePlan) {
 }
 
 function isFinanceLanguage(plan: PulsePlan) {
-  return /\b(rent|bill|budget|payment|pay|paid|payday|income|subscription|spent|overspend|overspending|cost|money|cash|send|debt)\b/i.test(
+  return /\b(rent|bill|budget|payment|pay|paid|payday|income|subscription|spent|overspend|overspending|cost|money|cash|send|debt|bank)\b/i.test(
     plan.prompt,
   );
 }

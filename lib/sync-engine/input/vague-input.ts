@@ -28,6 +28,10 @@ export type VagueInputDetection = {
 
 const DAY_OR_TIME_PATTERN =
   /\b(today|tomorrow|tonight|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next week|this week|at \d|before|after|by)\b/i;
+const DATE_OR_DAY_PATTERN =
+  /\b(today|tomorrow|tonight|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next week|this week|next month|january|february|march|april|may|june|july|august|september|october|november|december|\d{1,2}\/\d{1,2}|\d{4}-\d{2}-\d{2})\b/i;
+const EXACT_DATE_PATTERN =
+  /\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}\b|\b\d{1,2}\/\d{1,2}\b|\b\d{4}-\d{2}-\d{2}\b/i;
 
 function clearResult(): VagueInputDetection {
   return {
@@ -99,6 +103,53 @@ export function detectVagueInput(text: string): VagueInputDetection {
     );
   }
 
+  if (/^(it'?s|it s|it is)\s+(today|tomorrow|tonight|next week|this week)\b/i.test(compact)) {
+    return ask(
+      ["object"],
+      "Pronoun-only timing is missing the actual event or commitment.",
+      "What is happening then?",
+    );
+  }
+
+  if (/^(something|stuff|things?|something important)\s+(today|tomorrow|tonight|next week|this week)\b/i.test(compact)) {
+    return ask(
+      ["object"],
+      "Timed placeholder is missing the actual event or commitment.",
+      DATE_OR_DAY_PATTERN.test(compact)
+        ? "What is happening then?"
+        : "What should Sync remember?",
+    );
+  }
+
+  if (
+    /\bremind me about\b/i.test(compact) &&
+    /\bbirthday|bday\b/i.test(compact) &&
+    /\bnext month\b/i.test(compact) &&
+    !EXACT_DATE_PATTERN.test(compact)
+  ) {
+    return ask(
+      ["time"],
+      "Birthday reminder is missing the specific date.",
+      "What date is the birthday?",
+    );
+  }
+
+  if (/^(move|reschedule|change)\s+(it|that|this)\s+to\b/i.test(compact)) {
+    return ask(
+      ["object"],
+      "Edit target is unclear.",
+      "What should I move?",
+    );
+  }
+
+  if (/^remind me later\b/i.test(compact)) {
+    return ask(
+      ["object", "time"],
+      "Reminder is missing the subject and useful timing.",
+      "What should I remind you about, and when?",
+    );
+  }
+
   if (/\bsomething important\b/i.test(compact)) {
     return ask(
       ["object"],
@@ -109,11 +160,31 @@ export function detectVagueInput(text: string): VagueInputDetection {
     );
   }
 
+  if (/\bfollow up with (her|him|them)\b/i.test(compact)) {
+    return ask(
+      ["person", "object"],
+      "Follow-up target is unclear.",
+      "Who should you follow up with, and about what?",
+    );
+  }
+
   if (/\b(i'?m|i m|i am)\s+going somewhere\b/i.test(compact)) {
     return ask(
       ["location"],
       "Travel location is missing.",
       "Where are you going, and when?",
+    );
+  }
+
+  if (
+    /\bflight\b/i.test(compact) &&
+    /\bat\s+\d{1,2}(?::\d{2})?\s*(am|pm)?\b/i.test(compact) &&
+    !DATE_OR_DAY_PATTERN.test(compact)
+  ) {
+    return ask(
+      ["time"],
+      "Flight time is present but the travel date is missing.",
+      "What day is the flight?",
     );
   }
 

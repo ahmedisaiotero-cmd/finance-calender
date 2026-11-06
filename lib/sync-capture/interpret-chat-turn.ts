@@ -53,6 +53,12 @@ function isCorrection(text: string) {
   return /^(actually|wait,)\b/i.test(text.trim());
 }
 
+function correctionCategoryHint(text: string): CaptureCategoryHint | undefined {
+  return /\b(paid|rent|debt|money|paycheck|bill|budget|bank)\b/i.test(text)
+    ? "Money"
+    : undefined;
+}
+
 function isFinancialState(text: string) {
   return Boolean(
     classifyLifeNote(text)?.kind === "financial_state" ||
@@ -99,7 +105,7 @@ export function interpretChatTurn(input: {
       {
         text: trimmed,
         kind: "correction",
-        categoryHint: "Money",
+        categoryHint: correctionCategoryHint(trimmed),
         captureText: trimmed.replace(/^(actually|wait,)[, ]*/i, "").trim() || trimmed,
       },
     ];

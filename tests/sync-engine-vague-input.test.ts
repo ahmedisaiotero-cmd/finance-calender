@@ -79,14 +79,49 @@ assertAsksForClarification(
   /what should i remind you about|when/i,
 );
 assertAsksForClarification(
+  "remind me later",
+  /object|time/,
+  /what should i remind you about|when/i,
+);
+assertAsksForClarification(
+  "it’s tomorrow",
+  /object/,
+  /what is happening/i,
+);
+assertAsksForClarification(
+  "move it to Friday",
+  /object/,
+  /what should i move/i,
+);
+assertAsksForClarification(
   "something important is happening tomorrow.",
   /object/,
   /what is happening/i,
 );
 assertAsksForClarification(
+  "something tomorrow",
+  /object/,
+  /what is happening/i,
+);
+assertAsksForClarification(
+  "remind me about mom's birthday next month",
+  /time/,
+  /what date is the birthday/i,
+);
+assertAsksForClarification(
+  "flight at 6am and school dropoff and work standup",
+  /time/,
+  /what day is the flight/i,
+);
+assertAsksForClarification(
   "I’m going somewhere next week.",
   /location/,
   /where are you going/i,
+);
+assertAsksForClarification(
+  "follow up with them next week",
+  /person|object/,
+  /who should you follow up with/i,
 );
 assertAsksForClarification(
   "I need to talk to her.",
@@ -97,6 +132,11 @@ assertAsksForClarification(
   "I paid it.",
   /payment_target/,
   /what did you pay/i,
+);
+assertAsksForClarification(
+  "paid that",
+  /payment_target|payment_confirmation/,
+  /what was paid/i,
 );
 assertAsksForClarification(
   "it’s due Friday.",
