@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
 
+import { Button } from "@/components/ui/button";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Input } from "@/components/ui/input";
 import { AI_PROVIDER_DETAILS } from "@/lib/ai-activity/providers";
 import { buildPasteImportPayload } from "@/lib/ai-activity/paste-import";
 import { AI_PROVIDER_SLUGS, type AiProviderSlug } from "@/lib/ai-activity/types";
-
-import styles from "../page.module.css";
 
 const OWNER_SECRET_KEY = "sync-owner-secret";
 
@@ -36,11 +38,10 @@ type DeviceItem = {
 
 const PASTE_PROVIDERS = AI_PROVIDER_SLUGS.filter((slug) => slug !== "paste_import");
 
-function ownerHeaders(secret: string): HeadersInit {
-  return {
-    authorization: `Bearer ${secret}`,
-    "content-type": "application/json",
-  };
+function authHeaders(secret: string): HeadersInit {
+  const headers: HeadersInit = { "content-type": "application/json" };
+  if (secret.trim()) headers.authorization = `Bearer ${secret.trim()}`;
+  return headers;
 }
 
 function readStoredOwnerSecret() {
@@ -76,11 +77,15 @@ export default function SyncLabActivityPage() {
   }, [provider, title, transcript]);
 
   async function refresh(nextSecret = secret) {
-    const trimmed = nextSecret.trim();
-    if (!trimmed) return;
     const [timeline, pair] = await Promise.all([
-      fetch("/api/ai-activity", { headers: ownerHeaders(trimmed) }),
-      fetch("/api/ai-activity/pair", { headers: ownerHeaders(trimmed) }),
+      fetch("/api/ai-activity", {
+        credentials: "include",
+        headers: authHeaders(nextSecret),
+      }),
+      fetch("/api/ai-activity/pair", {
+        credentials: "include",
+        headers: authHeaders(nextSecret),
+      }),
     ]);
     if (timeline.ok) {
       const json = (await timeline.json()) as { items?: TimelineItem[] };
@@ -92,14 +97,8 @@ export default function SyncLabActivityPage() {
     }
   }
 
-
   async function handlePaste(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const trimmedSecret = secret.trim();
-    if (!trimmedSecret) {
-      setStatus("Enter the owner secret to save.");
-      return;
-    }
     const built = buildPasteImportPayload({
       provider,
       transcript,
@@ -115,7 +114,8 @@ export default function SyncLabActivityPage() {
     try {
       const response = await fetch("/api/ai-activity/ingest", {
         method: "POST",
-        headers: ownerHeaders(trimmedSecret),
+        credentials: "include",
+        headers: authHeaders(secret),
         body: JSON.stringify(built.payload),
       });
       const json = (await response.json()) as { error?: string; conversationId?: string };
@@ -126,7 +126,7 @@ export default function SyncLabActivityPage() {
       setTranscript("");
       setTitle("");
       setStatus(`Saved. Conversation ${json.conversationId}.`);
-      await refresh(trimmedSecret);
+      await refresh(secret);
     } catch {
       setStatus("Could not reach ingest.");
     } finally {
@@ -135,16 +135,12 @@ export default function SyncLabActivityPage() {
   }
 
   async function issuePairingCode() {
-    const trimmedSecret = secret.trim();
-    if (!trimmedSecret) {
-      setStatus("Enter the owner secret to issue a pairing code.");
-      return;
-    }
     setBusy(true);
     try {
       const response = await fetch("/api/ai-activity/pair", {
         method: "POST",
-        headers: ownerHeaders(trimmedSecret),
+        credentials: "include",
+        headers: authHeaders(secret),
       });
       const json = (await response.json()) as {
         error?: string;
@@ -152,26 +148,25 @@ export default function SyncLabActivityPage() {
         expiresAt?: string;
       };
       if (!response.ok || !json.code) {
-        setStatus(json.error ?? "Could not issue a pairing code.");
+        setStatus(json.error ?? "Could not issue a pairing code. Sign in, or use Settings.");
         return;
       }
       setPairingCode(json.code);
       setPairingExpires(json.expiresAt ?? null);
       setStatus("Pairing code issued. Enter it in the extension. It expires in 10 minutes.");
-      await refresh(trimmedSecret);
+      await refresh(secret);
     } finally {
       setBusy(false);
     }
   }
 
   async function revokeDevice(connectionId: string) {
-    const trimmedSecret = secret.trim();
-    if (!trimmedSecret) return;
     setBusy(true);
     try {
       const response = await fetch("/api/ai-activity/pair/revoke", {
         method: "POST",
-        headers: ownerHeaders(trimmedSecret),
+        credentials: "include",
+        headers: authHeaders(secret),
         body: JSON.stringify({ connectionId }),
       });
       if (!response.ok) {
@@ -180,65 +175,72 @@ export default function SyncLabActivityPage() {
         return;
       }
       setStatus("Extension access revoked.");
-      await refresh(trimmedSecret);
+      await refresh(secret);
     } finally {
       setBusy(false);
     }
   }
 
   return (
-    <main className={styles.page}>
-      <div className={styles.managementShell}>
-        <header className={styles.header}>
-          <div>
-            <p className={styles.brand}>SYNC</p>
-            <p className={styles.subtitle}>AI activity capture.</p>
-          </div>
-          <nav className={styles.labNav} aria-label="Sync lab">
-            <Link href="/sync-lab">Lab</Link>
-            <Link href="/sync-lab/memory">Memory</Link>
-            <Link href="/sync-lab/review">Review</Link>
-            <Link href="/sync-lab/activity">Activity</Link>
-          </nav>
-        </header>
-
-        <section className={styles.reviewIntro}>
-          <h1>Paste and pair</h1>
-          <p>
-            Save a cleaned AI transcript through the same ingest path as the
-            Chrome extension. The owner secret stays in this browser session
-            only. Sync stores the redacted text, not raw secrets.
+    <main className="mx-auto min-h-screen max-w-5xl px-5 py-8 sm:px-8">
+      <header className="mb-10 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-[12px] font-medium tracking-[0.08em] text-muted-foreground uppercase">
+            Sync lab
           </p>
-        </section>
+          <h1 className="mt-1 text-[1.75rem] font-medium tracking-[-0.04em]">
+            Paste and pair
+          </h1>
+          <p className="mt-2 max-w-xl text-[14px] leading-relaxed text-muted-foreground">
+            Teaching surface for capture. Sign in so activity is scoped to your
+            account. A lab owner secret is optional.
+          </p>
+        </div>
+        <nav className="flex gap-3 text-[13px] text-muted-foreground" aria-label="Sync lab">
+          <Link href="/sync-lab">Lab</Link>
+          <Link href="/sync-lab/memory">Memory</Link>
+          <Link href="/sync-lab/review">Review</Link>
+          <Link href="/sync-lab/activity">Activity</Link>
+        </nav>
+      </header>
 
-        <section className={styles.activityGrid}>
-          <form className={styles.activityCard} onSubmit={handlePaste}>
-            <h2>Paste a conversation</h2>
-            <label>
-              Owner secret
-              <input
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(280px,0.9fr)]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Paste a conversation</CardTitle>
+            <CardDescription>
+              Saved through the same ingest path as the Chrome add-on. Secrets
+              are redacted before save.
+            </CardDescription>
+          </CardHeader>
+          <form className="flex flex-col gap-4" onSubmit={handlePaste}>
+            <label className="flex flex-col gap-1.5 text-[13px]">
+              <span className="text-muted-foreground">Lab owner secret (optional)</span>
+              <Input
                 type="password"
                 autoComplete="off"
                 value={secret}
                 onChange={(event) => rememberSecret(event.target.value)}
-                placeholder="SYNC_OWNER_SECRET"
+                placeholder="Leave blank if you are signed in"
               />
             </label>
-            <button
-              className={styles.toolButton}
+            <Button
+              className="w-fit"
               type="button"
+              variant="outline"
               onClick={() => void refresh()}
-              disabled={busy || !secret.trim()}
+              disabled={busy}
             >
               Load recent activity
-            </button>
-            <label>
-              Provider
+            </Button>
+            <label className="flex flex-col gap-1.5 text-[13px]">
+              <span className="text-muted-foreground">Provider</span>
               <select
                 value={provider}
                 onChange={(event) =>
                   setProvider(event.target.value as AiProviderSlug)
                 }
+                className="h-11 rounded-xl border border-border/45 bg-background px-3.5 text-[15px]"
               >
                 {PASTE_PROVIDERS.map((slug) => (
                   <option key={slug} value={slug}>
@@ -247,118 +249,121 @@ export default function SyncLabActivityPage() {
                 ))}
               </select>
             </label>
-            <label>
-              Title
-              <input
+            <label className="flex flex-col gap-1.5 text-[13px]">
+              <span className="text-muted-foreground">Title</span>
+              <Input
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 placeholder="Optional. Sync will use the first line if empty."
               />
             </label>
-            <label>
-              Transcript
+            <label className="flex flex-col gap-1.5 text-[13px]">
+              <span className="text-muted-foreground">Transcript</span>
               <textarea
                 value={transcript}
                 onChange={(event) => setTranscript(event.target.value)}
                 placeholder="User: ...&#10;Grok: ..."
                 rows={10}
+                className="min-h-44 rounded-xl border border-border/45 bg-background px-3.5 py-3 text-[15px] outline-none focus-visible:ring-3 focus-visible:ring-ring/35"
               />
             </label>
-            <p className={styles.activityHint}>
+            <p className="text-[13px] text-muted-foreground">
               {preview
                 ? `${preview.messages.length} message${preview.messages.length === 1 ? "" : "s"} ready. Secrets are redacted before save.`
                 : "Paste a chat transcript or cleaned notes."}
             </p>
-            <button className={styles.send} type="submit" disabled={busy}>
+            <Button type="submit" disabled={busy}>
               Save to Sync
-            </button>
-            {status ? <p className={styles.activityStatus}>{status}</p> : null}
+            </Button>
+            {status ? <p className="text-[13px] text-foreground/80">{status}</p> : null}
           </form>
+        </Card>
 
-          <div className={styles.activityCard}>
-            <h2>Pair the Chrome extension</h2>
-            <p className={styles.activityHint}>
-              Issue a short-lived code, then enter the Sync site URL and code
-              in the extension options. The extension receives a device token.
-              It never needs the owner secret after that.
+        <Card>
+          <CardHeader>
+            <CardTitle>Pair the Chrome extension</CardTitle>
+            <CardDescription>
+              Prefer Settings on the signed-in site. Codes belong to the
+              signed-in account.
+            </CardDescription>
+          </CardHeader>
+          <Button type="button" disabled={busy} onClick={() => void issuePairingCode()}>
+            Issue pairing code
+          </Button>
+          {pairingCode ? (
+            <p className="mt-4 text-[22px] tracking-[0.08em]">
+              {pairingCode}
+              {pairingExpires ? (
+                <span className="ml-2 text-[13px] tracking-normal text-muted-foreground">
+                  expires {new Date(pairingExpires).toLocaleTimeString()}
+                </span>
+              ) : null}
             </p>
-            <button
-              className={styles.toolButton}
-              type="button"
-              onClick={() => void issuePairingCode()}
-              disabled={busy}
-            >
-              Issue pairing code
-            </button>
-            {pairingCode ? (
-              <p className={styles.pairingCode}>
-                <strong>{pairingCode}</strong>
-                {pairingExpires ? (
-                  <span>
-                    expires {new Date(pairingExpires).toLocaleTimeString()}
-                  </span>
-                ) : null}
-              </p>
-            ) : null}
-            <ul className={styles.deviceList}>
-              {devices.length === 0 ? (
-                <li>No paired extensions yet.</li>
-              ) : (
-                devices.map((device) => (
-                  <li key={device.connectionId}>
-                    <div>
-                      <strong>{device.label ?? device.connectionId}</strong>
-                      <em>
-                        {device.permissionState}
-                        {device.lastSeenAt
-                          ? ` · last seen ${new Date(device.lastSeenAt).toLocaleString()}`
-                          : ""}
-                      </em>
-                    </div>
-                    {device.permissionState !== "revoked" ? (
-                      <button
-                        type="button"
-                        onClick={() => void revokeDevice(device.connectionId)}
-                      >
-                        Revoke
-                      </button>
-                    ) : null}
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
-        </section>
-
-        <section className={styles.activityTimeline}>
-          <h2>Recent AI activity</h2>
-          {items.length === 0 ? (
-            <p className={styles.activityHint}>
-              Nothing captured yet. Paste a transcript or save from the
-              extension.
-            </p>
+          ) : null}
+          {devices.length === 0 ? (
+            <EmptyState className="mt-5" message="No paired extensions yet." />
           ) : (
-            <ol>
-              {items.map((item) => (
-                <li key={item.id}>
-                  <strong>{item.title || item.summary || item.providerName}</strong>
-                  <span>
-                    {item.providerName} · {item.captureMethod} ·{" "}
-                    {new Date(item.capturedAt).toLocaleString()} ·{" "}
-                    {item.messageCount} messages
-                  </span>
-                  {item.visibility === "sensitive" ||
-                  item.visibility === "summary_only" ? (
-                    <em>{item.summary}</em>
-                  ) : item.summary ? (
-                    <em>{item.summary}</em>
+            <ul className="mt-5 flex flex-col gap-3">
+              {devices.map((device) => (
+                <li
+                  key={device.connectionId}
+                  className="flex items-start justify-between gap-3 rounded-xl border border-border/35 px-3 py-3"
+                >
+                  <div>
+                    <p className="text-[14px] font-medium">
+                      {device.label ?? device.connectionId}
+                    </p>
+                    <p className="text-[12px] text-muted-foreground">
+                      {device.permissionState}
+                      {device.lastSeenAt
+                        ? ` · last seen ${new Date(device.lastSeenAt).toLocaleString()}`
+                        : ""}
+                    </p>
+                  </div>
+                  {device.permissionState !== "revoked" ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => void revokeDevice(device.connectionId)}
+                    >
+                      Revoke
+                    </Button>
                   ) : null}
                 </li>
               ))}
-            </ol>
+            </ul>
           )}
-        </section>
+        </Card>
       </div>
+
+      <section className="mt-8">
+        <h2 className="text-[17px] font-medium tracking-[-0.02em]">Recent AI activity</h2>
+        {items.length === 0 ? (
+          <EmptyState
+            className="mt-4"
+            message="Nothing captured yet. Paste a transcript or save from the extension."
+          />
+        ) : (
+          <ol className="mt-4 space-y-3">
+            {items.map((item) => (
+              <li key={item.id} className="rounded-2xl border border-border/35 px-4 py-3">
+                <p className="font-medium">
+                  {item.title || item.summary || item.providerName}
+                </p>
+                <p className="text-[13px] text-muted-foreground">
+                  {item.providerName} · {item.captureMethod} ·{" "}
+                  {new Date(item.capturedAt).toLocaleString()} · {item.messageCount}{" "}
+                  messages
+                </p>
+                {item.summary ? (
+                  <p className="mt-1 text-[13px] text-muted-foreground">{item.summary}</p>
+                ) : null}
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
     </main>
   );
 }

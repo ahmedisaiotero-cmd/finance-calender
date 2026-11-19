@@ -24,7 +24,7 @@ export const APP_SHELL_ROUTES: Record<string, AppShellRouteConfig> = {
   "/life": {
     layout: "default",
     title: "Life",
-    description: "Calendar, money, and health when you want more context.",
+    description: "What Sync knows, when you want to inspect it.",
   },
   "/calendar": WORKSPACE_LAYOUT,
   "/finance": WORKSPACE_LAYOUT,
@@ -38,7 +38,7 @@ export const APP_SHELL_ROUTES: Record<string, AppShellRouteConfig> = {
   "/settings": {
     layout: "default",
     title: "Settings",
-    description: "Manage how Sync connects to the tools you already use.",
+    description: "Account, devices, export, and deletion.",
   },
 };
 

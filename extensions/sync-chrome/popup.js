@@ -53,6 +53,7 @@ async function refresh() {
     }
   }
   renderState(state, page);
+  applyLegalLinks(state.settings?.siteUrl);
 }
 
 saveButton.addEventListener("click", async () => {
@@ -97,6 +98,19 @@ document.getElementById("clear").addEventListener("click", async () => {
   statusEl.textContent = "Queue cleared.";
   await refresh();
 });
+
+function applyLegalLinks(siteUrl) {
+  const base = (siteUrl || "").replace(/\/$/, "");
+  const links = [
+    ["privacyLink", "/privacy"],
+    ["termsLink", "/terms"],
+    ["chromePrivacyLink", "/chrome-privacy"],
+  ];
+  for (const [id, path] of links) {
+    const el = document.getElementById(id);
+    if (el && base) el.href = `${base}${path}`;
+  }
+}
 
 refresh().catch(() => {
   statusEl.textContent = "Could not read this page.";

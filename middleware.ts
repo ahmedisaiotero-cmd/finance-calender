@@ -1,7 +1,10 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { decideAppAuthGate } from "@/lib/auth/app-auth-gate";
+import {
+  decideAppAuthGate,
+  shouldRewriteRootToLanding,
+} from "@/lib/auth/app-auth-gate";
 import { isSyncDemoMode } from "@/lib/auth/demo-mode";
 import {
   getSupabaseAnonKey,
@@ -46,6 +49,22 @@ export async function middleware(request: NextRequest) {
 
     const { data } = await supabase.auth.getUser();
     hasTrustedSession = Boolean(data.user?.id);
+  }
+
+  if (
+    shouldRewriteRootToLanding({
+      pathname,
+      hasTrustedSession,
+      demoMode,
+    })
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/welcome";
+    const rewrite = NextResponse.rewrite(url);
+    for (const cookie of response.cookies.getAll()) {
+      rewrite.cookies.set(cookie);
+    }
+    return rewrite;
   }
 
   const decision = decideAppAuthGate({

@@ -57,6 +57,23 @@
 }
 
 :root {
+  /* Design tokens — colors, type, space, radius. Light/dark via .dark. */
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.9375rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-3xl: 2.75rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
   --background: #f5f2eb;
   --foreground: oklch(0.24 0.012 86);
   --card: #fbf8f0;
@@ -172,6 +189,16 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+@layer components {
+  .legal-prose a {
+    @apply underline underline-offset-2;
+  }
+
+  .legal-prose strong {
+    @apply font-medium text-foreground/85;
   }
 }
 

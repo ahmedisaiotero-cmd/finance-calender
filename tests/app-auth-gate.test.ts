@@ -6,6 +6,7 @@ import {
   localProfileImpliesAuthenticated,
   PUBLIC_AUTH_ERROR,
   publicAuthErrorMessage,
+  shouldRewriteRootToLanding,
 } from "@/lib/auth/app-auth-gate";
 import { isSyncDemoMode } from "@/lib/auth/demo-mode";
 import { chatRateLimitSubject } from "@/lib/api/chat-rate-limit-config";
@@ -28,9 +29,50 @@ import { resolveIdentityAccess } from "@/lib/auth/request-identity";
   assert.equal(isAuthPublicPath("/sync-lab"), true);
   assert.equal(isAuthPublicPath("/mobile/brief"), true);
   assert.equal(isAuthPublicPath("/api/chat"), true);
+  assert.equal(isAuthPublicPath("/privacy"), true);
+  assert.equal(isAuthPublicPath("/terms"), true);
+  assert.equal(isAuthPublicPath("/cookies"), true);
+  assert.equal(isAuthPublicPath("/chrome-privacy"), true);
+  assert.equal(isAuthPublicPath("/contact"), true);
+  assert.equal(isAuthPublicPath("/auth/callback"), true);
   assert.equal(isAuthPublicPath("/"), false);
   assert.equal(isAuthPublicPath("/settings"), false);
   assert.equal(isAuthPublicPath("/onboarding"), false);
+}
+
+{
+  assert.equal(
+    shouldRewriteRootToLanding({
+      pathname: "/",
+      hasTrustedSession: false,
+      demoMode: false,
+    }),
+    true,
+  );
+  assert.equal(
+    shouldRewriteRootToLanding({
+      pathname: "/",
+      hasTrustedSession: true,
+      demoMode: false,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldRewriteRootToLanding({
+      pathname: "/",
+      hasTrustedSession: false,
+      demoMode: true,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldRewriteRootToLanding({
+      pathname: "/settings",
+      hasTrustedSession: false,
+      demoMode: false,
+    }),
+    false,
+  );
 }
 
 {

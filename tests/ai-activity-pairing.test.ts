@@ -184,6 +184,58 @@ async function main() {
   );
   assert.equal(revoked.status, 200);
 
+  const sessionStore = createMemoryPairingStore();
+  const sessionIssued = await handleAiActivityPairIssue(
+    new Request("http://localhost/api/ai-activity/pair", { method: "POST" }),
+    {
+      pairingStore: sessionStore,
+      authenticateOwner: async () => ({
+        ok: true,
+        kind: "session",
+        owner: { ownerId: "user-42", ownerEmail: "ada@example.com" },
+      }),
+    },
+  );
+  assert.equal(sessionIssued.status, 201);
+  const sessionCode = ((await sessionIssued.json()) as { code: string }).code;
+  const sessionClaimed = await handleAiActivityPairClaim(
+    new Request("http://localhost/api/ai-activity/pair/claim", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ code: sessionCode, label: "Ada laptop" }),
+    }),
+    { pairingStore: sessionStore },
+  );
+  assert.equal(sessionClaimed.status, 201);
+  const sessionToken = ((await sessionClaimed.json()) as { token: string }).token;
+  let sessionOwner: string | undefined;
+  const sessionUpload = await handleAiActivityIngestPost(
+    new Request("http://localhost/api/ai-activity/ingest", {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${sessionToken}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(capture({ idempotencyKey: "session-user" })),
+    }),
+    {
+      env,
+      pairingStore: sessionStore,
+      persistCapture: async (input) => {
+        sessionOwner = input.owner.ownerId;
+        return {
+          providerId: "p2",
+          sourceId: "s2",
+          conversationId: "c2",
+          activityEventId: "e2",
+          messageIds: ["m2"],
+        };
+      },
+    },
+  );
+  assert.equal(sessionUpload.status, 201);
+  assert.equal(sessionOwner, "user-42");
+
   const blocked = await handleAiActivityIngestPost(
     new Request("http://localhost/api/ai-activity/ingest", {
       method: "POST",
