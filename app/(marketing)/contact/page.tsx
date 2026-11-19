@@ -19,6 +19,12 @@ export default function ContactPage() {
       </LegalSection>
       <LegalSection title="Security">
         <p>{LEGAL_OPERATOR.securityEmail}</p>
+        <p>
+          Coordinated disclosure:{" "}
+          <a href="/.well-known/security.txt" className="underline underline-offset-2">
+            /.well-known/security.txt
+          </a>
+        </p>
       </LegalSection>
       <LegalSection title="Mail">
         <p>
