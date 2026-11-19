@@ -13,11 +13,21 @@ import {
   issueAiPairingCode,
   revokeAiExtensionDevice,
 } from "@/lib/db/ai-pairing";
+import type { ChatRateLimitStore } from "@/lib/api/chat-rate-limit";
+import {
+  consumeEndpointRateLimit,
+  endpointRateLimitResponse,
+  endpointRateLimitSubject,
+  type ConsumeEndpointRateLimit,
+} from "@/lib/api/endpoint-rate-limit";
+import { requestClientIp } from "@/lib/api/endpoint-rate-limit-config";
 
 export type AiActivityPairDeps = {
   env?: NodeJS.ProcessEnv | Record<string, string | undefined>;
   pairingStore?: AiPairingStore;
   authenticateOwner?: AuthenticatePairOwner;
+  consumeRateLimit?: ConsumeEndpointRateLimit;
+  rateLimitStore?: ChatRateLimitStore;
 };
 
 function json(request: Request, body: unknown, status: number): NextResponse {
@@ -40,6 +50,18 @@ export async function handleAiActivityPairIssue(
   const authenticate = deps.authenticateOwner ?? authenticatePairOwner;
   const auth = await authenticate(request, env);
   if (!auth.ok) return json(request, { error: auth.error }, auth.status);
+
+  const consume = deps.consumeRateLimit ?? consumeEndpointRateLimit;
+  const limited = await consume({
+    bucket: "pair",
+    subjectId: endpointRateLimitSubject("pair", auth.owner.ownerId),
+    env,
+    store: deps.rateLimitStore,
+  });
+  const limitedResponse = endpointRateLimitResponse(limited);
+  if (limitedResponse) {
+    return json(request, { error: limitedResponse.error }, limitedResponse.status);
+  }
 
   const store = deps.pairingStore ?? createPrismaPairingStore();
   if (!deps.pairingStore) {
@@ -113,6 +135,19 @@ export async function handleAiActivityPairClaim(
 
   if (!code.trim()) {
     return json(request, { error: "Pairing code required" }, 400);
+  }
+
+  const env = deps.env ?? process.env;
+  const consume = deps.consumeRateLimit ?? consumeEndpointRateLimit;
+  const limited = await consume({
+    bucket: "claim",
+    subjectId: endpointRateLimitSubject("claim", requestClientIp(request)),
+    env,
+    store: deps.rateLimitStore,
+  });
+  const limitedResponse = endpointRateLimitResponse(limited);
+  if (limitedResponse) {
+    return json(request, { error: limitedResponse.error }, limitedResponse.status);
   }
 
   const store = deps.pairingStore ?? createPrismaPairingStore();

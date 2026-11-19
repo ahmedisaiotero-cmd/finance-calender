@@ -20,6 +20,13 @@ import {
   assertWritableCaptureEncryption,
   CaptureEncryptionError,
 } from "@/lib/crypto/capture-at-rest";
+import {
+  consumeEndpointRateLimit,
+  endpointRateLimitResponse,
+  endpointRateLimitSubject,
+  type ConsumeEndpointRateLimit,
+} from "@/lib/api/endpoint-rate-limit";
+import type { ChatRateLimitStore } from "@/lib/api/chat-rate-limit";
 
 export type AiActivityIngestDeps = {
   env?: NodeJS.ProcessEnv | Record<string, string | undefined>;
@@ -30,6 +37,8 @@ export type AiActivityIngestDeps = {
     payload: ValidatedAiConversationCapturePayload;
     env?: NodeJS.ProcessEnv | Record<string, string | undefined>;
   }) => Promise<PersistAiCaptureResult>;
+  consumeRateLimit?: ConsumeEndpointRateLimit;
+  rateLimitStore?: ChatRateLimitStore;
 };
 
 async function readJsonBodyWithLimit(
@@ -144,6 +153,18 @@ export async function handleAiActivityIngestPost(
   const encryption = assertWritableCaptureEncryption(env);
   if (!encryption.ok) {
     return json(request, { error: encryption.error }, 503);
+  }
+
+  const consume = deps.consumeRateLimit ?? consumeEndpointRateLimit;
+  const limited = await consume({
+    bucket: "ingest",
+    subjectId: endpointRateLimitSubject("ingest", auth.ownerId),
+    env,
+    store: deps.rateLimitStore,
+  });
+  const limitedResponse = endpointRateLimitResponse(limited);
+  if (limitedResponse) {
+    return json(request, { error: limitedResponse.error }, limitedResponse.status);
   }
 
   try {

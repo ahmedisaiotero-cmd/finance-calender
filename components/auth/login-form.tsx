@@ -8,13 +8,7 @@ import { SyncLogo } from "@/components/brand/sync-logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PUBLIC_AUTH_ERROR } from "@/lib/auth/app-auth-gate";
-import {
-  requestPasswordReset,
-  signInWithMagicLink,
-  signInWithOAuthProvider,
-  signInWithPassword,
-  signUpWithPassword,
-} from "@/lib/auth/browser-auth";
+import { signInWithOAuthProvider } from "@/lib/auth/browser-auth";
 import { evaluateLegalAcceptance } from "@/lib/auth/legal-acceptance";
 import { authCallbackUrl } from "@/lib/auth/oauth-providers";
 import { LEGAL_MINIMUM_AGE, LEGAL_PATHS, LEGAL_POLICY_VERSION } from "@/lib/site/legal";
@@ -55,6 +49,26 @@ export function LoginForm({
     return window.location.origin;
   }
 
+  async function authAttempt(body: Record<string, unknown>) {
+    const response = await fetch("/api/auth/attempt", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(body),
+    });
+    const json = (await response.json().catch(() => ({}))) as {
+      ok?: boolean;
+      error?: string;
+    };
+    if (!response.ok) {
+      return {
+        ok: false as const,
+        error: json.error || PUBLIC_AUTH_ERROR.generic,
+      };
+    }
+    return { ok: true as const };
+  }
+
   function legalResult() {
     return evaluateLegalAcceptance({
       birthYear: Number(birthYear),
@@ -81,7 +95,8 @@ export function LoginForm({
       return;
     }
     setPending(true);
-    const result = await signInWithMagicLink({
+    const result = await authAttempt({
+      action: "magic_link",
       email,
       emailRedirectTo: authCallbackUrl(origin()),
       userMetadata: {
@@ -106,9 +121,10 @@ export function LoginForm({
       return;
     }
     setPending(true);
-    const result = await requestPasswordReset({
+    const result = await authAttempt({
+      action: "reset",
       email,
-      redirectTo: `${origin()}/auth/reset-password`,
+      emailRedirectTo: `${origin()}/auth/reset-password`,
     });
     setPending(false);
     if (!result.ok) {
@@ -165,21 +181,21 @@ export function LoginForm({
     }
 
     setPending(true);
-    const result =
-      mode === "signin"
-        ? await signInWithPassword({ email, password })
-        : await signUpWithPassword({
-            email,
-            password,
-            emailRedirectTo: authCallbackUrl(origin()),
-            userMetadata: legalResult().ok
-              ? {
-                  birthYear: (legalResult() as { birthYear: number }).birthYear,
-                  legalPolicyVersion: LEGAL_POLICY_VERSION,
-                  legalAcceptedAt: new Date().toISOString(),
-                }
-              : undefined,
-          });
+    const accepted = mode === "signup" ? legalResult() : null;
+    const result = await authAttempt({
+      action: mode === "signin" ? "login" : "signup",
+      email,
+      password,
+      emailRedirectTo: authCallbackUrl(origin()),
+      userMetadata:
+        accepted && accepted.ok
+          ? {
+              birthYear: accepted.birthYear,
+              legalPolicyVersion: LEGAL_POLICY_VERSION,
+              legalAcceptedAt: accepted.acceptedAt,
+            }
+          : undefined,
+    });
     setPending(false);
 
     if (!result.ok) {
