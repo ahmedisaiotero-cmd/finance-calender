@@ -26,6 +26,7 @@ export async function exportUserData(
       privacyAcceptedAt: true,
       termsAcceptedAt: true,
       ageConfirmedAt: true,
+      llmChatConsentAt: true,
       createdAt: true,
     },
   });

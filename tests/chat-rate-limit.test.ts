@@ -297,6 +297,7 @@ async function runAsyncCases() {
       ok: true as const,
       identity: identity("user-route"),
     }),
+    loadLlmConsent: async () => true,
     consumeRateLimit: async () =>
       decideChatRateLimit({
         count: 1,

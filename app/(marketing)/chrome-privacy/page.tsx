@@ -46,8 +46,9 @@ export default function ChromePrivacyPage() {
         <p>
           Saved captures are sent only to the Sync site URL you configure
           (your own deployment). They are not sold, used for advertising, or
-          used to train third-party models unless you later give separate,
-          explicit consent for an in-app feature that requires it.
+          used to train third-party models. In-app Chat, if you turn it on in
+          Settings, is a separate feature and does not send these captures to a
+          language model.
         </p>
       </LegalSection>
 

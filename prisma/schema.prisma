@@ -45,6 +45,7 @@ model User {
   privacyAcceptedAt    DateTime?
   termsAcceptedAt      DateTime?
   ageConfirmedAt       DateTime?
+  llmChatConsentAt     DateTime?
   createdAt            DateTime            @default(now())
   workspaces           Workspace[]
   syncProfile          SyncProfile?

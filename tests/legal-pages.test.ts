@@ -39,6 +39,8 @@ import {
   assert.match(privacy, /Limited Use/);
   assert.match(privacy, /encrypted at rest/);
   assert.equal(privacy.includes("NOT LEGAL ADVICE"), false);
+  assert.match(privacy, /Captured browser/);
+  assert.match(privacy, /not sent to a language[\s\S]+model/);
 }
 
 {

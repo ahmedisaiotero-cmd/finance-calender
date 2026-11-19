@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 
 import { applyChatTurn } from "@/lib/sync-capture/apply-chat-turn";
 import {
@@ -40,6 +41,7 @@ export function ChatSurface() {
     welcomeMessage(profile.name),
   ]);
   const [pending, setPending] = useState(false);
+  const [llmChatConsent, setLlmChatConsent] = useState<boolean | null>(null);
 
   const reference = useMemo(() => new Date(), [messages.length]);
 
@@ -55,8 +57,13 @@ export function ChatSurface() {
         if (!response.ok) return;
         const data = (await response.json()) as {
           messages?: { id: string; role: "user" | "sync"; text: string }[];
+          llmChatConsent?: boolean;
         };
-        if (cancelled || !Array.isArray(data.messages) || data.messages.length === 0) {
+        if (cancelled) return;
+        if (typeof data.llmChatConsent === "boolean") {
+          setLlmChatConsent(data.llmChatConsent);
+        }
+        if (!Array.isArray(data.messages) || data.messages.length === 0) {
           return;
         }
         setMessages(data.messages);
@@ -73,7 +80,7 @@ export function ChatSurface() {
 
   const send = async () => {
     const trimmed = input.trim();
-    if (!trimmed || pending) return;
+    if (!trimmed || pending || llmChatConsent === false) return;
 
     const userMessage: ChatMessage = {
       id: `user-${Date.now()}`,
@@ -145,6 +152,16 @@ export function ChatSurface() {
       <header className="border-b border-border/40 py-6">
         <h1 className="text-2xl font-semibold tracking-tight">Chat</h1>
         <p className="mt-1 text-sm text-muted-foreground">Curious, not pushy.</p>
+        {llmChatConsent === false ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            In-app chat is off. Turn it on in{" "}
+            <Link href="/settings" className="underline underline-offset-2">
+              Settings
+            </Link>{" "}
+            if you want replies from a language model. Captured browser
+            conversations stay in your account either way.
+          </p>
+        ) : null}
       </header>
 
       <div className="flex-1 space-y-3 overflow-y-auto py-6">
@@ -183,7 +200,7 @@ export function ChatSurface() {
           />
           <button
             type="button"
-            disabled={!input.trim() || pending}
+            disabled={!input.trim() || pending || llmChatConsent === false}
             onClick={() => void send()}
             className="self-end rounded-xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-40"
           >
