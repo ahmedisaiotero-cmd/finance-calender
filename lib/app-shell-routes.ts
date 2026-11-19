@@ -40,6 +40,11 @@ export const APP_SHELL_ROUTES: Record<string, AppShellRouteConfig> = {
     title: "Settings",
     description: "Account, devices, export, and deletion.",
   },
+  "/start": {
+    layout: "default",
+    title: "Start",
+    description: "What Sync keeps, and what stays off until you choose.",
+  },
 };
 
 export function getAppShellRoute(pathname: string): AppShellRouteConfig {

@@ -16,6 +16,7 @@ export const ROBOTS_DISALLOW_PATHS = [
   "/login",
   "/settings",
   "/onboarding",
+  "/start",
   "/sync-lab",
   "/mobile",
   "/auth/",
