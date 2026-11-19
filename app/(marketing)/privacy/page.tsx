@@ -113,6 +113,7 @@ export default function PrivacyPage() {
           <li>Captures: {LEGAL_RETENTION.captures}</li>
           <li>Device tokens: {LEGAL_RETENTION.deviceTokens}</li>
           <li>Pairing codes: {LEGAL_RETENTION.pairingCodes}</li>
+          <li>Request metering: {LEGAL_RETENTION.rateLimitWindows}</li>
           <li>Auth logs: {LEGAL_RETENTION.authLogs}</li>
           <li>Backups after deletion: {LEGAL_RETENTION.backups}</li>
         </ul>
