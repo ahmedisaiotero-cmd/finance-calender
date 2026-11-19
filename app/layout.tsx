@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 
+import { OptionalAnalytics } from "@/components/site/optional-analytics";
 import { SiteFooter } from "@/components/site/site-footer";
 import { ThemeColorsProvider } from "@/components/theme-colors-provider";
 import { TransactionsProvider } from "@/components/finance/transactions-provider";
@@ -96,6 +97,7 @@ export default function RootLayout({
                   <div id="main-content" className="flex min-h-full flex-col">
                     {children}
                     <SiteFooter />
+                    <OptionalAnalytics />
                   </div>
                 </CapturedItemsProvider>
               </TransactionsProvider>

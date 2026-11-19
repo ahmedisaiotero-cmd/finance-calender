@@ -38,9 +38,11 @@ export default function CookiesPage() {
 
       <LegalSection title="Optional analytics">
         <p>
-          If privacy-preserving Vercel Analytics is enabled later, it will be
-          listed here and in the Privacy Policy. We will not add advertising
-          trackers.
+          If the operator turns on privacy-preserving Vercel Analytics, it
+          counts page views without advertising identifiers. Query strings are
+          stripped before send. It stays off unless{" "}
+          <code>NEXT_PUBLIC_VERCEL_ANALYTICS=true</code>. We do not add
+          advertising trackers.
         </p>
       </LegalSection>
 
