@@ -83,10 +83,11 @@ export const LEGAL_SUBPROCESSORS: readonly LegalSubprocessor[] = [
 export const LEGAL_RETENTION = {
   account: "Until you delete your account.",
   captures:
-    "Until you delete the conversation, revoke the device, or delete your account.",
+    "Until you delete the conversation, revoke the device, or delete your account. An operator may set a maximum age in days; otherwise captures stay until you delete them.",
   deviceTokens:
     "Until you revoke the device, the token expires, or you delete your account.",
-  pairingCodes: "Until the code is used, expires (10 minutes), or you delete your account.",
+  pairingCodes: "Until the code is used, expires (10 minutes), or you delete your account. Expired and used codes are deleted by a daily job.",
+  rateLimitWindows: "Request metering windows are deleted within 14 days.",
   authLogs: "Short-lived authentication logs retained by the auth provider as needed to operate sign-in.",
   backups: "Backups, if any, are removed on the provider’s backup cycle after deletion (typically 30 days or less).",
 } as const;
