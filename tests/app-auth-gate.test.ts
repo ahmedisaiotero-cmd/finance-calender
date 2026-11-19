@@ -34,6 +34,7 @@ import { resolveIdentityAccess } from "@/lib/auth/request-identity";
   assert.equal(isAuthPublicPath("/cookies"), true);
   assert.equal(isAuthPublicPath("/chrome-privacy"), true);
   assert.equal(isAuthPublicPath("/contact"), true);
+  assert.equal(isAuthPublicPath("/accessibility"), true);
   assert.equal(isAuthPublicPath("/auth/callback"), true);
   assert.equal(isAuthPublicPath("/"), false);
   assert.equal(isAuthPublicPath("/settings"), false);

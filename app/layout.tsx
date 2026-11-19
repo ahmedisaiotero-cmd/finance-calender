@@ -82,12 +82,18 @@ export default function RootLayout({
         </Script>
       </head>
       <body className="min-h-full font-sans">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:border focus:border-border focus:bg-background focus:px-3 focus:py-2 focus:text-sm"
+        >
+          Skip to content
+        </a>
         <ThemeProvider>
           <ThemeColorsProvider>
             <ToastProvider>
               <TransactionsProvider>
                 <CapturedItemsProvider>
-                  <div className="flex min-h-full flex-col">
+                  <div id="main-content" className="flex min-h-full flex-col">
                     {children}
                     <SiteFooter />
                   </div>

@@ -59,6 +59,13 @@ import {
   assert.equal(footer.includes("privacy"), true);
   assert.equal(footer.includes("terms"), true);
   assert.equal(footer.includes("cookies"), true);
+  assert.equal(footer.includes("accessibility"), true);
+}
+
+{
+  const layout = readFileSync(join(process.cwd(), "app/layout.tsx"), "utf8");
+  assert.match(layout, /Skip to content/);
+  assert.match(layout, /id="main-content"/);
 }
 
 {

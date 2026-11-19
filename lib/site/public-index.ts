@@ -8,6 +8,7 @@ export const PUBLIC_INDEX_PATHS = [
   LEGAL_PATHS.cookies,
   LEGAL_PATHS.chromePrivacy,
   LEGAL_PATHS.contact,
+  LEGAL_PATHS.accessibility,
 ] as const;
 
 export const ROBOTS_DISALLOW_PATHS = [

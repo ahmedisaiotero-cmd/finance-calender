@@ -9,6 +9,7 @@ const FOOTER_LINKS = [
   { href: LEGAL_PATHS.cookies, label: "Cookies" },
   { href: LEGAL_PATHS.chromePrivacy, label: "Chrome add-on privacy" },
   { href: LEGAL_PATHS.contact, label: "Contact" },
+  { href: LEGAL_PATHS.accessibility, label: "Accessibility" },
 ] as const;
 
 export function SiteFooter() {

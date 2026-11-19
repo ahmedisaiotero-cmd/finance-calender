@@ -10,6 +10,7 @@ import {
 {
   assert.ok(PUBLIC_INDEX_PATHS.includes("/privacy"));
   assert.ok(PUBLIC_INDEX_PATHS.includes("/contact"));
+  assert.ok(PUBLIC_INDEX_PATHS.includes("/accessibility"));
   assert.equal(PUBLIC_INDEX_PATHS.includes("/login" as never), false);
   assert.ok(ROBOTS_DISALLOW_PATHS.includes("/api/"));
   assert.ok(ROBOTS_DISALLOW_PATHS.includes("/sync-lab"));
