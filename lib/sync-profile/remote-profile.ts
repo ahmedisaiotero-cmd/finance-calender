@@ -1,3 +1,7 @@
+import {
+  decryptCaptureTextRequired,
+  encryptCaptureTextRequired,
+} from "@/lib/crypto/capture-at-rest";
 import { prisma, isDatabaseConfigured } from "@/lib/prisma";
 import type { SyncUserProfile } from "@/lib/sync-profile/user-profile";
 
@@ -45,7 +49,7 @@ export async function appendChatMessage(
     data: {
       userId,
       role,
-      content,
+      content: encryptCaptureTextRequired(content),
     },
   });
 }
@@ -90,7 +94,10 @@ export async function saveChatTurn(
 
   const action = resolveChatTurnPersistence({
     lastUser: lastUser
-      ? { content: lastUser.content, createdAtMs: lastUser.createdAt.getTime() }
+      ? {
+          content: decryptCaptureTextRequired(lastUser.content),
+          createdAtMs: lastUser.createdAt.getTime(),
+        }
       : null,
     lastAfterUser: lastAfterUser ? { role: lastAfterUser.role } : null,
     userText,
@@ -105,10 +112,18 @@ export async function saveChatTurn(
 
   await prisma.$transaction([
     prisma.syncChatMessage.create({
-      data: { userId, role: "user", content: userText },
+      data: {
+        userId,
+        role: "user",
+        content: encryptCaptureTextRequired(userText),
+      },
     }),
     prisma.syncChatMessage.create({
-      data: { userId, role: "sync", content: reply },
+      data: {
+        userId,
+        role: "sync",
+        content: encryptCaptureTextRequired(reply),
+      },
     }),
   ]);
 }
@@ -125,6 +140,6 @@ export async function loadChatHistory(userId: string, limit = 40) {
   return rows.reverse().map((row) => ({
     id: row.id,
     role: row.role as "user" | "sync",
-    text: row.content,
+    text: decryptCaptureTextRequired(row.content),
   }));
 }

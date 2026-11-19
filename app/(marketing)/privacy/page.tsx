@@ -120,10 +120,11 @@ export default function PrivacyPage() {
       <LegalSection title="Security">
         <p>
           Access to production systems is limited to operators who need it.
-          Device tokens are stored hashed. Transport uses HTTPS. Conversation
-          content is intended to be encrypted at rest; until that control is
-          fully enabled, treat captures as sensitive and delete anything you
-          did not mean to keep.
+          Device tokens are stored hashed. Transport uses HTTPS. Captured
+          conversation text, redacted copies, and related summaries are
+          encrypted at rest with AES-256-GCM. Operators hold the encryption
+          key outside the database. Treat captures as sensitive and delete
+          anything you did not mean to keep.
         </p>
       </LegalSection>
 

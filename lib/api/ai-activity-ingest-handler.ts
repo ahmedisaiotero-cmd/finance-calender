@@ -16,6 +16,10 @@ import {
   type PersistAiCaptureResult,
 } from "@/lib/db/ai-activity";
 import type { ValidatedAiConversationCapturePayload } from "@/lib/ai-activity/types";
+import {
+  assertWritableCaptureEncryption,
+  CaptureEncryptionError,
+} from "@/lib/crypto/capture-at-rest";
 
 export type AiActivityIngestDeps = {
   env?: NodeJS.ProcessEnv | Record<string, string | undefined>;
@@ -24,6 +28,7 @@ export type AiActivityIngestDeps = {
   persistCapture?: (input: {
     owner: AiOwnerIdentity;
     payload: ValidatedAiConversationCapturePayload;
+    env?: NodeJS.ProcessEnv | Record<string, string | undefined>;
   }) => Promise<PersistAiCaptureResult>;
 };
 
@@ -136,6 +141,11 @@ export async function handleAiActivityIngestPost(
 
   const payload = validated.value;
 
+  const encryption = assertWritableCaptureEncryption(env);
+  if (!encryption.ok) {
+    return json(request, { error: encryption.error }, 503);
+  }
+
   try {
     const persist = deps.persistCapture ?? persistAiConversationCapture;
     const result = await persist({
@@ -144,6 +154,7 @@ export async function handleAiActivityIngestPost(
         ownerEmail: auth.ownerEmail,
       },
       payload,
+      env,
     });
 
     return json(
@@ -157,6 +168,9 @@ export async function handleAiActivityIngestPost(
       201,
     );
   } catch (error) {
+    if (error instanceof CaptureEncryptionError) {
+      return json(request, { error: error.message }, 503);
+    }
     if (error instanceof Error && error.message.includes("revoked")) {
       return json(request, { error: "Capture source is revoked" }, 403);
     }

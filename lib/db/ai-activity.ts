@@ -7,6 +7,10 @@ import type {
   AiProviderSlug,
   ValidatedAiConversationCapturePayload,
 } from "@/lib/ai-activity/types";
+import {
+  decryptCaptureText,
+  encryptCaptureTextRequired,
+} from "@/lib/crypto/capture-at-rest";
 
 export type AiOwnerIdentity = {
   ownerId: string;
@@ -21,6 +25,8 @@ export type PersistAiCaptureResult = {
   messageIds: string[];
 };
 
+type CaptureEnv = NodeJS.ProcessEnv | Record<string, string | undefined>;
+
 export function aiConversationOwnerWhere(ownerId: string, conversationId: string) {
   return { id: conversationId, ownerId };
 }
@@ -29,8 +35,15 @@ export function aiActivityEventOwnerWhere(ownerId: string, eventId: string) {
   return { id: eventId, ownerId };
 }
 
-export async function listAiActivityTimelineForOwner(ownerId: string) {
-  return prisma.aiConversation.findMany({
+function decryptStored(value: string | null | undefined, env: CaptureEnv) {
+  return decryptCaptureText(value, env);
+}
+
+export async function listAiActivityTimelineForOwner(
+  ownerId: string,
+  env: CaptureEnv = process.env,
+) {
+  const rows = await prisma.aiConversation.findMany({
     where: { ownerId },
     orderBy: { capturedAt: "desc" },
     take: 40,
@@ -39,6 +52,12 @@ export async function listAiActivityTimelineForOwner(ownerId: string) {
       _count: { select: { messages: true, activityEvents: true } },
     },
   });
+
+  return rows.map((row) => ({
+    ...row,
+    title: decryptStored(row.title, env),
+    summary: decryptStored(row.summary, env),
+  }));
 }
 
 export async function ensureOwnerUser(owner: AiOwnerIdentity) {
@@ -78,10 +97,22 @@ function toDate(value: string | undefined | null) {
 export async function persistAiConversationCapture(input: {
   owner: AiOwnerIdentity;
   payload: ValidatedAiConversationCapturePayload;
+  env?: CaptureEnv;
 }): Promise<PersistAiCaptureResult> {
   await ensureOwnerUser(input.owner);
   const provider = await ensureProvider(input.payload.provider);
   const prepared = prepareAiCaptureForPersistence(input.payload);
+  const env = input.env ?? process.env;
+  const encryptedTitle = prepared.title
+    ? encryptCaptureTextRequired(prepared.title, env)
+    : prepared.title;
+  const encryptedSummary = prepared.summary
+    ? encryptCaptureTextRequired(prepared.summary, env)
+    : prepared.summary;
+  const encryptedEventSummary = encryptCaptureTextRequired(
+    prepared.activityEvent.summary,
+    env,
+  );
 
   const source = await prisma.aiCaptureSource.upsert({
     where: {
@@ -124,7 +155,7 @@ export async function persistAiConversationCapture(input: {
     update: {
       sourceId: source.id,
       idempotencyKey: prepared.idempotencyKey,
-      title: prepared.title,
+      title: encryptedTitle,
       origin: prepared.origin,
       startedAt: toDate(prepared.startedAt),
       lastMessageAt: toDate(prepared.lastMessageAt),
@@ -132,7 +163,7 @@ export async function persistAiConversationCapture(input: {
       captureMethod: prepared.captureMethod,
       visibility: prepared.visibility,
       rawTextRef: null,
-      summary: prepared.summary,
+      summary: encryptedSummary,
     },
     create: {
       ownerId: input.owner.ownerId,
@@ -140,7 +171,7 @@ export async function persistAiConversationCapture(input: {
       sourceId: source.id,
       providerConversationRef: prepared.providerConversationRef,
       idempotencyKey: prepared.idempotencyKey,
-      title: prepared.title,
+      title: encryptedTitle,
       origin: prepared.origin,
       startedAt: toDate(prepared.startedAt),
       lastMessageAt: toDate(prepared.lastMessageAt),
@@ -148,7 +179,7 @@ export async function persistAiConversationCapture(input: {
       captureMethod: prepared.captureMethod,
       visibility: prepared.visibility,
       rawTextRef: null,
-      summary: prepared.summary,
+      summary: encryptedSummary,
     },
   });
 
@@ -163,8 +194,8 @@ export async function persistAiConversationCapture(input: {
       },
       update: {
         role: message.role,
-        text: message.text,
-        redactedText: message.redactedText,
+        text: encryptCaptureTextRequired(message.text, env),
+        redactedText: encryptCaptureTextRequired(message.redactedText, env),
         redactionStatus: message.redactionStatus,
         sentAt: toDate(message.sentAt),
         capturedAt: new Date(message.capturedAt),
@@ -176,8 +207,8 @@ export async function persistAiConversationCapture(input: {
         conversationId: conversation.id,
         providerMessageRef: message.providerMessageRef,
         role: message.role,
-        text: message.text,
-        redactedText: message.redactedText,
+        text: encryptCaptureTextRequired(message.text, env),
+        redactedText: encryptCaptureTextRequired(message.redactedText, env),
         redactionStatus: message.redactionStatus,
         sentAt: toDate(message.sentAt),
         capturedAt: new Date(message.capturedAt),
@@ -206,7 +237,7 @@ export async function persistAiConversationCapture(input: {
       actorLabel: event.actor.label,
       sourceId: source.id,
       timestamp: new Date(event.timestamp),
-      summary: event.summary,
+      summary: encryptedEventSummary,
       affectedAreas: event.affectedAreas,
       evidence: event.evidence as unknown as Prisma.InputJsonValue,
       verification: event.verification,
@@ -229,7 +260,7 @@ export async function persistAiConversationCapture(input: {
       providerId: provider.id,
       sourceId: source.id,
       timestamp: new Date(event.timestamp),
-      summary: event.summary,
+      summary: encryptedEventSummary,
       affectedAreas: event.affectedAreas,
       evidence: event.evidence as unknown as Prisma.InputJsonValue,
       verification: event.verification,
@@ -256,21 +287,46 @@ export async function persistAiConversationCapture(input: {
 export async function getAiConversationForOwner(
   ownerId: string,
   conversationId: string,
+  env: CaptureEnv = process.env,
 ) {
-  return prisma.aiConversation.findFirst({
+  const row = await prisma.aiConversation.findFirst({
     where: aiConversationOwnerWhere(ownerId, conversationId),
     include: {
       messages: { orderBy: [{ sentAt: "asc" }, { capturedAt: "asc" }] },
       activityEvents: { orderBy: { timestamp: "asc" } },
     },
   });
+  if (!row) return null;
+
+  return {
+    ...row,
+    title: decryptStored(row.title, env),
+    summary: decryptStored(row.summary, env),
+    messages: row.messages.map((message) => ({
+      ...message,
+      text: decryptStored(message.text, env) ?? "",
+      redactedText: decryptStored(message.redactedText, env) ?? "",
+    })),
+    activityEvents: row.activityEvents.map((event) => ({
+      ...event,
+      summary: decryptStored(event.summary, env) ?? "",
+    })),
+  };
 }
 
-export async function listAiConversationsForOwner(ownerId: string) {
-  return prisma.aiConversation.findMany({
+export async function listAiConversationsForOwner(
+  ownerId: string,
+  env: CaptureEnv = process.env,
+) {
+  const rows = await prisma.aiConversation.findMany({
     where: { ownerId },
     orderBy: { capturedAt: "desc" },
   });
+  return rows.map((row) => ({
+    ...row,
+    title: decryptStored(row.title, env),
+    summary: decryptStored(row.summary, env),
+  }));
 }
 
 export async function deleteAiConversationForOwner(
