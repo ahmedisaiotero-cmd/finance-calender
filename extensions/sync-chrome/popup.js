@@ -3,6 +3,9 @@ const pairingEl = document.getElementById("pairing");
 const queueEl = document.getElementById("queue");
 const statusEl = document.getElementById("status");
 const saveButton = document.getElementById("save");
+const consentGate = document.getElementById("consentGate");
+const consentCheck = document.getElementById("consentCheck");
+const consentAccept = document.getElementById("consentAccept");
 
 function send(type, extra = {}) {
   return chrome.runtime.sendMessage({ type, ...extra });
@@ -26,10 +29,12 @@ function renderState(state, page) {
     saveButton.disabled = false;
   }
 
+  const consented = Boolean(state.settings.captureConsentAt);
+  if (consentGate) consentGate.hidden = consented;
+  if (saveButton) saveButton.hidden = !consented;
+
   if (state.settings.paired) {
     pairingEl.textContent = `Paired${state.settings.connectionId ? ` · ${state.settings.connectionId}` : ""}.`;
-  } else if (state.settings.hasOwnerSecret) {
-    pairingEl.textContent = "Using owner secret. Pairing is better.";
   } else {
     pairingEl.textContent = "Not paired. Open Options.";
   }
@@ -55,6 +60,20 @@ async function refresh() {
   renderState(state, page);
   applyLegalLinks(state.settings?.siteUrl);
 }
+
+consentAccept?.addEventListener("click", async () => {
+  if (!consentCheck?.checked) {
+    statusEl.textContent = "Check the box to confirm before capturing.";
+    return;
+  }
+  const result = await send("SYNC_ACCEPT_CAPTURE_CONSENT");
+  if (!result?.ok) {
+    statusEl.textContent = result?.error || "Could not save consent.";
+    return;
+  }
+  statusEl.textContent = "Consent saved. You can capture now.";
+  await refresh();
+});
 
 saveButton.addEventListener("click", async () => {
   statusEl.textContent = "Saving…";

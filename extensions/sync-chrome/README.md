@@ -27,4 +27,8 @@ Privacy, Terms, and the add-on disclosure are linked in the popup and Options (`
 
 Failed uploads stay in a local queue. Use **Retry queue** or **Clear queue** in the popup.
 
-Supported page matches: `chatgpt.com`, `chat.openai.com`, `claude.ai`, `grok.com`, Grok on `x.com`, `cursor.com`, `gemini.google.com`.
+Supported page matches: `chatgpt.com`, `chat.openai.com`, `claude.ai`, `grok.com`, Grok paths on `x.com` (`/i/grok`, `/grok`), `cursor.com`, `gemini.google.com`. There is no `https://*/*` permission.
+
+The first capture requires an in-popup disclosure and checkbox. Pairing uses a Settings code only — no owner secret in the add-on.
+
+Before Chrome Web Store upload, add the production Sync origin to `host_permissions` (for example `https://your-domain.example/*`) and set `SYNC_EXTENSION_IDS` on the server to the published extension ID.

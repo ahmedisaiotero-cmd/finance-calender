@@ -1,6 +1,5 @@
 const siteUrlEl = document.getElementById("siteUrl");
 const codeEl = document.getElementById("code");
-const ownerSecretEl = document.getElementById("ownerSecret");
 const statusEl = document.getElementById("status");
 
 function send(type, extra = {}) {
@@ -26,10 +25,8 @@ async function refresh() {
   applyLegalLinks(state.settings.siteUrl || "");
   if (state.settings.paired) {
     statusEl.textContent = `Paired as ${state.settings.connectionId}.`;
-  } else if (state.settings.hasOwnerSecret) {
-    statusEl.textContent = "Owner secret saved for this browser profile.";
   } else {
-    statusEl.textContent = "Not connected.";
+    statusEl.textContent = "Not connected. Issue a pairing code in Settings.";
   }
 }
 
@@ -46,15 +43,13 @@ document.getElementById("pair").addEventListener("click", async () => {
   if (result?.ok) codeEl.value = "";
 });
 
-document.getElementById("saveSecret").addEventListener("click", async () => {
+document.getElementById("saveSite").addEventListener("click", async () => {
   const result = await send("SYNC_SAVE_SETTINGS", {
     siteUrl: siteUrlEl.value.trim(),
-    ownerSecret: ownerSecretEl.value.trim(),
   });
   statusEl.textContent = result?.ok
-    ? "Site and owner secret saved locally."
+    ? "Site URL saved. Pair with a code from Settings."
     : result?.error || "Could not save settings.";
-  ownerSecretEl.value = "";
 });
 
 document.getElementById("unpair").addEventListener("click", async () => {

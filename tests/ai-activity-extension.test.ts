@@ -19,9 +19,11 @@ const manifest = JSON.parse(
   background?: { service_worker?: string };
   permissions?: string[];
   host_permissions?: string[];
+  optional_host_permissions?: string[];
   content_scripts?: Array<{ matches?: string[]; js?: string[] }>;
   action?: { default_popup?: string };
   options_page?: string;
+  icons?: Record<string, string>;
 };
 
 const detect = require(join(extensionRoot, "lib/detect-provider.js")) as {
@@ -45,18 +47,22 @@ const redact = require(join(extensionRoot, "lib/redact.js")) as {
   assert.ok(manifest.permissions?.includes("activeTab"));
   assert.equal(manifest.permissions?.includes("webRequest"), false);
   assert.equal(manifest.host_permissions?.includes("<all_urls>"), false);
+  assert.equal(manifest.optional_host_permissions?.includes("https://*/*") ?? false, false);
+  assert.equal(manifest.optional_host_permissions?.includes("<all_urls>") ?? false, false);
+  assert.ok(manifest.icons?.["128"]?.includes("icon-128"));
 
   const matches = manifest.content_scripts?.flatMap((script) => script.matches ?? []) ?? [];
   for (const expected of [
     "https://chatgpt.com/*",
     "https://claude.ai/*",
     "https://grok.com/*",
-    "https://x.com/*",
+    "https://x.com/i/grok/*",
     "https://cursor.com/*",
     "https://gemini.google.com/*",
   ]) {
     assert.ok(matches.includes(expected), `missing content script match ${expected}`);
   }
+  assert.equal(matches.includes("https://x.com/*"), false);
 }
 
 {
@@ -93,7 +99,18 @@ const redact = require(join(extensionRoot, "lib/redact.js")) as {
     assert.match(html, /id="privacyLink"/);
     assert.match(html, /id="termsLink"/);
     assert.match(html, /chrome-privacy/);
+    assert.equal(html.includes("ownerSecret"), false);
+    assert.equal(html.includes("Owner secret"), false);
   }
+  assert.match(popup, /consentGate/);
+  assert.match(popup, /consentCheck/);
+
+  const popupJs = readFileSync(join(extensionRoot, "popup.js"), "utf8");
+  const background = readFileSync(join(extensionRoot, "background.js"), "utf8");
+  assert.match(popupJs, /SYNC_ACCEPT_CAPTURE_CONSENT/);
+  assert.match(background, /captureConsentAt/);
+  assert.match(background, /Pair the extension from Options/);
+  assert.equal(background.includes("settings.ownerSecret"), false);
 }
 
 console.log("ai-activity-extension tests passed");

@@ -11,6 +11,19 @@
       <p id="provider">Checking this page…</p>
       <p id="pairing" class="muted"></p>
       <p id="queue" class="muted"></p>
+      <section id="consentGate" hidden>
+        <p>
+          Before the first save: this add-on sends the conversation you choose
+          to your Sync account. Capture only chats you own. Transcripts are not
+          sent to OpenAI or another language model unless you separately turn
+          that on in Sync Settings.
+        </p>
+        <label class="consent">
+          <input id="consentCheck" type="checkbox" />
+          I understand and want to save my own conversations.
+        </label>
+        <button id="consentAccept" type="button">Continue</button>
+      </section>
       <button id="save" type="button" disabled>Save this conversation</button>
       <div class="row">
         <button id="flush" type="button">Retry queue</button>

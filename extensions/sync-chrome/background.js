@@ -97,13 +97,13 @@ async function uploadPayload(payload, settings) {
   if (!settings.siteUrl) {
     return { ok: false, error: "Set the Sync site URL in the extension options." };
   }
-  if (!settings.token && !settings.ownerSecret) {
-    return { ok: false, error: "Pair the extension or save an owner secret." };
+  if (!settings.token) {
+    return { ok: false, error: "Pair the extension from Options using a pairing code." };
   }
   const response = await fetch(`${settings.siteUrl.replace(/\/$/, "")}/api/ai-activity/ingest`, {
     method: "POST",
     headers: {
-      authorization: `Bearer ${settings.token || settings.ownerSecret}`,
+      authorization: `Bearer ${settings.token}`,
       "content-type": "application/json",
     },
     body: JSON.stringify(payload),
@@ -168,7 +168,7 @@ function publicSettings(settings) {
     siteUrl: settings.siteUrl || "",
     connectionId: settings.connectionId || null,
     paired: Boolean(settings.token),
-    hasOwnerSecret: Boolean(settings.ownerSecret),
+    captureConsentAt: settings.captureConsentAt || null,
     pairedAt: settings.pairedAt || null,
   };
 }
@@ -187,7 +187,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       }
       const settings = await setSettings({
         siteUrl: message.siteUrl,
-        ownerSecret: message.ownerSecret || null,
+        ownerSecret: null,
+      });
+      return { ok: true, settings: publicSettings(settings) };
+    }
+    if (message?.type === "SYNC_ACCEPT_CAPTURE_CONSENT") {
+      const settings = await setSettings({
+        captureConsentAt: nowIso(),
       });
       return { ok: true, settings: publicSettings(settings) };
     }
@@ -204,6 +210,15 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     }
     if (message?.type === "SYNC_QUEUE_CAPTURE") {
       const settings = await getSettings();
+      if (!settings.captureConsentAt) {
+        return {
+          ok: false,
+          error: "Read the capture disclosure and confirm before saving.",
+        };
+      }
+      if (!settings.token) {
+        return { ok: false, error: "Pair the extension from Options first." };
+      }
       const payload = buildPayload(message.extracted, settings);
       await globalThis.SyncCaptureQueue.enqueue({
         id: payload.idempotencyKey,

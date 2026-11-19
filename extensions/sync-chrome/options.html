@@ -28,7 +28,7 @@
   <body>
     <main>
       <p class="brand">SYNC</p>
-      <p>Connect this unpacked extension to your Sync site. Prefer a pairing code from Settings after you sign in.</p>
+      <p>Connect this add-on with a pairing code from Sync Settings after you sign in. Capture is manual and only for conversations you own.</p>
       <label>
         Sync site URL
         <input id="siteUrl" type="url" placeholder="http://localhost:3000" />
@@ -38,11 +38,7 @@
         <input id="code" type="text" placeholder="ABCD-EFGH" autocomplete="off" />
       </label>
       <button id="pair" type="button">Claim pairing code</button>
-      <label>
-        Owner secret fallback
-        <input id="ownerSecret" type="password" autocomplete="off" />
-      </label>
-      <button id="saveSecret" type="button">Save site and secret</button>
+      <button id="saveSite" type="button">Save site URL</button>
       <button id="unpair" type="button">Clear pairing</button>
       <p id="status" class="status"></p>
       <p class="legal">
