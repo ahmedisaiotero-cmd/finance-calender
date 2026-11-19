@@ -37,6 +37,7 @@ import {
   );
   assert.match(privacy, /Chrome Web Store User Data Policy/);
   assert.match(privacy, /Limited Use/);
+  assert.match(privacy, /encrypted at rest/);
   assert.equal(privacy.includes("NOT LEGAL ADVICE"), false);
 }
 

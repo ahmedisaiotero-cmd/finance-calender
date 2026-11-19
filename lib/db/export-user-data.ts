@@ -1,10 +1,17 @@
 import type { PrismaClient } from "@prisma/client";
 
+import {
+  decryptCaptureText,
+  decryptCaptureTextRequired,
+} from "@/lib/crypto/capture-at-rest";
 import { prisma } from "@/lib/prisma";
+
+type CaptureEnv = NodeJS.ProcessEnv | Record<string, string | undefined>;
 
 export async function exportUserData(
   userId: string,
   db: PrismaClient = prisma,
+  env: CaptureEnv = process.env,
 ) {
   const user = await db.user.findUnique({
     where: { id: userId },
@@ -100,7 +107,24 @@ export async function exportUserData(
     profile: profile?.data ?? null,
     devices,
     pairingCodes,
-    conversations,
-    inAppChat: chatMessages,
+    conversations: conversations.map((conversation) => ({
+      ...conversation,
+      title: decryptCaptureText(conversation.title, env),
+      summary: decryptCaptureText(conversation.summary, env),
+      messages: conversation.messages.map((message) => ({
+        role: message.role,
+        redactedText: decryptCaptureTextRequired(message.redactedText, env),
+        sentAt: message.sentAt,
+        capturedAt: message.capturedAt,
+      })),
+      activityEvents: conversation.activityEvents.map((event) => ({
+        ...event,
+        summary: decryptCaptureTextRequired(event.summary, env),
+      })),
+    })),
+    inAppChat: chatMessages.map((message) => ({
+      ...message,
+      content: decryptCaptureTextRequired(message.content, env),
+    })),
   };
 }
