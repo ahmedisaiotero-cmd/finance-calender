@@ -12,6 +12,7 @@ import {
   ACCOUNT_DELETION_RETAINED,
   deleteUserAccount,
 } from "@/lib/db/delete-user-account";
+import { sendTransactionalEmail } from "@/lib/email/transactional";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
@@ -94,6 +95,15 @@ export async function DELETE(request: Request) {
   }
 
   const userId = loaded.identity.user.id;
+  const notifyEmail =
+    loaded.identity.user.email?.trim() ||
+    (
+      await prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true },
+      })
+    )?.email?.trim() ||
+    "";
 
   const result = await deleteUserAccount(userId, {
     revokeAppleTokens: async () => {
@@ -118,6 +128,17 @@ export async function DELETE(request: Request) {
 
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 500 });
+  }
+
+  if (notifyEmail) {
+    try {
+      await sendTransactionalEmail({
+        template: "account_deleted",
+        to: notifyEmail,
+      });
+    } catch {
+      // Deletion already succeeded; mail is best-effort.
+    }
   }
 
   return NextResponse.json({
