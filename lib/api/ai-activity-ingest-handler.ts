@@ -5,7 +5,10 @@ import {
   AI_CAPTURE_MAX_BODY_BYTES,
   validateAiConversationCapturePayload,
 } from "@/lib/ai-activity/validation";
-import { authenticateAiActivityRequest } from "@/lib/auth/ai-activity-auth";
+import {
+  authenticateAiActivityRequest,
+  type AiActivityAuthOptions,
+} from "@/lib/auth/ai-activity-auth";
 import type { AiPairingStore } from "@/lib/ai-activity/pairing";
 import {
   persistAiConversationCapture,
@@ -17,6 +20,7 @@ import type { ValidatedAiConversationCapturePayload } from "@/lib/ai-activity/ty
 export type AiActivityIngestDeps = {
   env?: NodeJS.ProcessEnv | Record<string, string | undefined>;
   pairingStore?: AiPairingStore;
+  getSessionOwner?: AiActivityAuthOptions["getSessionOwner"];
   persistCapture?: (input: {
     owner: AiOwnerIdentity;
     payload: ValidatedAiConversationCapturePayload;
@@ -92,6 +96,7 @@ export async function handleAiActivityIngestPost(
     request,
     env,
     deps.pairingStore,
+    { getSessionOwner: deps.getSessionOwner },
   );
   if (!auth.ok) {
     return json(request, { error: auth.error }, auth.status);

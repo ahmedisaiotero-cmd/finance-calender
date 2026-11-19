@@ -8,6 +8,7 @@ import {
 } from "@/lib/auth/app-auth-gate";
 import {
   getBrowserSessionUser,
+  signInWithMagicLink,
   signInWithPassword,
   signOutBrowserSession,
   signUpWithPassword,
@@ -25,6 +26,10 @@ function mockClient(handlers: {
   signUp?: BrowserAuthClient["auth"]["signUp"];
   signOut?: BrowserAuthClient["auth"]["signOut"];
   getUser?: BrowserAuthClient["auth"]["getUser"];
+  signInWithOtp?: BrowserAuthClient["auth"]["signInWithOtp"];
+  signInWithOAuth?: BrowserAuthClient["auth"]["signInWithOAuth"];
+  resetPasswordForEmail?: BrowserAuthClient["auth"]["resetPasswordForEmail"];
+  updateUser?: BrowserAuthClient["auth"]["updateUser"];
 }): BrowserAuthClient {
   return {
     auth: {
@@ -34,6 +39,24 @@ function mockClient(handlers: {
           data: { user: null, session: null },
           error: { message: "unmocked signIn" },
         })),
+      signInWithOtp:
+        handlers.signInWithOtp ??
+        (async () => ({
+          data: { user: null, session: null },
+          error: { message: "unmocked otp" },
+        })),
+      signInWithOAuth:
+        handlers.signInWithOAuth ??
+        (async () => ({
+          data: { url: null, provider: "google" },
+          error: { message: "unmocked oauth" },
+        })),
+      resetPasswordForEmail:
+        handlers.resetPasswordForEmail ??
+        (async () => ({ error: null })),
+      updateUser:
+        handlers.updateUser ??
+        (async () => ({ error: null })),
       signUp:
         handlers.signUp ??
         (async () => ({
@@ -231,6 +254,29 @@ async function run() {
     assert.equal(needsConfirm.error, PUBLIC_AUTH_ERROR.confirmEmail);
   }
 
+{
+  let otpCalls = 0;
+  const magic = await signInWithMagicLink(
+    {
+      email: "d@example.com",
+      emailRedirectTo: "https://example.com/auth/callback",
+      userMetadata: { legalPolicyVersion: "2026-11-19" },
+    },
+    {
+      isConfigured: () => true,
+      createClient: () =>
+        mockClient({
+          signInWithOtp: async () => {
+            otpCalls += 1;
+            return { data: { user: null, session: null }, error: null };
+          },
+        }),
+    },
+  );
+  assert.equal(magic.ok, true);
+  assert.equal(otpCalls, 1);
+}
+
   const signedOut = await signOutBrowserSession({
     isConfigured: () => true,
     createClient: () =>
@@ -260,6 +306,9 @@ console.log("browser-auth tests passed");
   assert.match(source, /event\?\.preventDefault\?\.\(\)/);
   assert.match(source, /signInWithPassword/);
   assert.match(source, /signUpWithPassword/);
+  assert.match(source, /By continuing you agree/);
+  assert.match(source, /Terms of Service/);
+  assert.match(source, /Privacy Policy/);
 }
 
 {

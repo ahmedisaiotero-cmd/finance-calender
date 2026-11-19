@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 
 import { withAiActivityCors } from "@/lib/api/ai-activity-cors";
 import type { AiPairingStore } from "@/lib/ai-activity/pairing";
-import { authenticateOwnerSecret } from "@/lib/auth/owner-secret";
+import {
+  authenticatePairOwner,
+  type AuthenticatePairOwner,
+} from "@/lib/auth/owner-identity";
 import { ensureOwnerUser } from "@/lib/db/ai-activity";
 import {
   claimAiPairingCode,
@@ -14,6 +17,7 @@ import {
 export type AiActivityPairDeps = {
   env?: NodeJS.ProcessEnv | Record<string, string | undefined>;
   pairingStore?: AiPairingStore;
+  authenticateOwner?: AuthenticatePairOwner;
 };
 
 function json(request: Request, body: unknown, status: number): NextResponse {
@@ -33,18 +37,19 @@ export async function handleAiActivityPairIssue(
   deps: AiActivityPairDeps = {},
 ): Promise<NextResponse> {
   const env = deps.env ?? process.env;
-  const auth = authenticateOwnerSecret(request, env);
+  const authenticate = deps.authenticateOwner ?? authenticatePairOwner;
+  const auth = await authenticate(request, env);
   if (!auth.ok) return json(request, { error: auth.error }, auth.status);
 
   const store = deps.pairingStore ?? createPrismaPairingStore();
   if (!deps.pairingStore) {
     await ensureOwnerUser({
-      ownerId: auth.ownerId,
-      ownerEmail: auth.ownerEmail,
+      ownerId: auth.owner.ownerId,
+      ownerEmail: auth.owner.ownerEmail,
     });
   }
   const issued = await issueAiPairingCode(
-    { ownerId: auth.ownerId, ownerEmail: auth.ownerEmail },
+    { ownerId: auth.owner.ownerId, ownerEmail: auth.owner.ownerEmail },
     store,
   );
   return json(
@@ -63,11 +68,12 @@ export async function handleAiActivityPairList(
   deps: AiActivityPairDeps = {},
 ): Promise<NextResponse> {
   const env = deps.env ?? process.env;
-  const auth = authenticateOwnerSecret(request, env);
+  const authenticate = deps.authenticateOwner ?? authenticatePairOwner;
+  const auth = await authenticate(request, env);
   if (!auth.ok) return json(request, { error: auth.error }, auth.status);
 
   const store = deps.pairingStore ?? createPrismaPairingStore();
-  const devices = await store.listDevices(auth.ownerId);
+  const devices = await store.listDevices(auth.owner.ownerId);
   return json(
     request,
     {
@@ -132,7 +138,8 @@ export async function handleAiActivityPairRevoke(
   deps: AiActivityPairDeps = {},
 ): Promise<NextResponse> {
   const env = deps.env ?? process.env;
-  const auth = authenticateOwnerSecret(request, env);
+  const authenticate = deps.authenticateOwner ?? authenticatePairOwner;
+  const auth = await authenticate(request, env);
   if (!auth.ok) return json(request, { error: auth.error }, auth.status);
 
   let body: unknown;
@@ -152,7 +159,7 @@ export async function handleAiActivityPairRevoke(
 
   const store = deps.pairingStore ?? createPrismaPairingStore();
   const revoked = await revokeAiExtensionDevice(
-    auth.ownerId,
+    auth.owner.ownerId,
     connectionId,
     store,
   );

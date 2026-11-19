@@ -86,4 +86,14 @@ const redact = require(join(extensionRoot, "lib/redact.js")) as {
   assert.equal(redacted.text.includes("4242"), false);
 }
 
+{
+  const popup = readFileSync(join(extensionRoot, "popup.html"), "utf8");
+  const options = readFileSync(join(extensionRoot, "options.html"), "utf8");
+  for (const html of [popup, options]) {
+    assert.match(html, /id="privacyLink"/);
+    assert.match(html, /id="termsLink"/);
+    assert.match(html, /chrome-privacy/);
+  }
+}
+
 console.log("ai-activity-extension tests passed");

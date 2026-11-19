@@ -4,6 +4,7 @@ import {
   type AiExtensionDeviceRecord,
   type AiPairingStore,
 } from "@/lib/ai-activity/pairing";
+import type { PairOwnerIdentity } from "@/lib/auth/owner-identity";
 import {
   SYNC_OWNER_EMAIL_ENV,
   authenticateOwnerSecret,
@@ -15,7 +16,7 @@ export type AiActivityAuthSuccess = {
   ownerId: string;
   ownerEmail: string;
   connectionId: string;
-  authKind: "owner_secret" | "device_token";
+  authKind: "owner_secret" | "device_token" | "session";
   device?: AiExtensionDeviceRecord;
 };
 
@@ -27,11 +28,32 @@ export type AiActivityAuthFailure = {
 
 export type AiActivityAuthResult = AiActivityAuthSuccess | AiActivityAuthFailure;
 
+export type AiActivityAuthOptions = {
+  getSessionOwner?: () => Promise<PairOwnerIdentity | null>;
+};
+
 export async function authenticateAiActivityRequest(
   request: Request,
   env: NodeJS.ProcessEnv | Record<string, string | undefined> = process.env,
   store?: AiPairingStore,
+  options: AiActivityAuthOptions = {},
 ): Promise<AiActivityAuthResult> {
+  const presented = readPresentedSecret(request);
+  if (!presented) {
+    const session = options.getSessionOwner
+      ? await options.getSessionOwner()
+      : null;
+    if (session) {
+      return {
+        ok: true,
+        ownerId: session.ownerId,
+        ownerEmail: session.ownerEmail,
+        connectionId: "session",
+        authKind: "session",
+      };
+    }
+  }
+
   const owner = authenticateOwnerSecret(request, env);
   if (owner.ok) {
     return {
@@ -43,7 +65,6 @@ export async function authenticateAiActivityRequest(
     };
   }
 
-  const presented = readPresentedSecret(request);
   if (store && presented) {
     const device = await authenticateDeviceToken(presented, store);
     if (device.ok) {

@@ -5,16 +5,53 @@
 
 export const AUTH_PUBLIC_PATH_PREFIXES = [
   "/login",
+  "/welcome",
+  "/privacy",
+  "/terms",
+  "/cookies",
+  "/chrome-privacy",
+  "/contact",
+  "/accessibility",
+  "/auth",
   "/sync-lab",
   "/mobile",
 ] as const;
 
 export function isAuthPublicPath(pathname: string): boolean {
   if (pathname === "/login" || pathname.startsWith("/login/")) return true;
+  if (pathname === "/welcome" || pathname.startsWith("/welcome/")) return true;
+  if (pathname === "/privacy" || pathname.startsWith("/privacy/")) return true;
+  if (pathname === "/terms" || pathname.startsWith("/terms/")) return true;
+  if (pathname === "/cookies" || pathname.startsWith("/cookies/")) return true;
+  if (pathname === "/chrome-privacy" || pathname.startsWith("/chrome-privacy/")) {
+    return true;
+  }
+  if (pathname === "/contact" || pathname.startsWith("/contact/")) return true;
+  if (pathname === "/accessibility" || pathname.startsWith("/accessibility/")) {
+    return true;
+  }
+  if (pathname.startsWith("/auth")) return true;
   if (pathname.startsWith("/sync-lab")) return true;
   if (pathname.startsWith("/mobile")) return true;
   if (pathname.startsWith("/api/")) return true;
+  if (pathname === "/.well-known/security.txt") return true;
   return false;
+}
+
+/**
+ * Logged-out visitors hitting `/` see the marketing landing (middleware rewrite
+ * to `/welcome`). Signed-in and demo sessions keep the existing Brief at `/`.
+ */
+export function shouldRewriteRootToLanding(input: {
+  pathname: string;
+  hasTrustedSession: boolean;
+  demoMode: boolean;
+}): boolean {
+  const path = input.pathname || "/";
+  if (path !== "/") return false;
+  if (input.hasTrustedSession) return false;
+  if (input.demoMode) return false;
+  return true;
 }
 
 /**

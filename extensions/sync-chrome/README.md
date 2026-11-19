@@ -11,13 +11,13 @@ Manifest V3 click-to-save capture for Ahmed's Sync instance. It does not auto-ca
 
 ## Pair
 
-1. On the Sync site, open `/sync-lab/activity`
-2. Enter `SYNC_OWNER_SECRET` and click **Issue pairing code**
+1. Sign in on the Sync site
+2. Open **Settings** and click **Issue pairing code**
 3. In the extension Options, set the Sync site URL (`http://localhost:3000` or the Vercel URL)
 4. Paste the pairing code and click **Claim pairing code**
 5. Chrome may ask for permission to reach that site — allow it
 
-Owner-secret fallback is supported in Options if you do not want to pair yet.
+Privacy, Terms, and the add-on disclosure are linked in the popup and Options (`/privacy`, `/terms`, `/chrome-privacy`).
 
 ## Capture
 

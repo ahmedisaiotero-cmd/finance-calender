@@ -1,17 +1,6 @@
 "use client";
 
-import {
-  CalendarDays,
-  Dumbbell,
-  Home,
-  Menu,
-  Settings,
-  Target,
-  Users,
-  Wallet,
-  Briefcase,
-  type LucideIcon,
-} from "lucide-react";
+import { Home, Menu, Settings, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -30,44 +19,9 @@ type DockItem = {
   disabled?: boolean;
 };
 
+/** Consumer chrome is SyncCenteredNav. Leftover finance/calendar/health dashboards stay out of navigation. */
 const MENU_ITEMS: DockItem[] = [
   { id: "home", label: "Home", href: "/", icon: Home, destination: null },
-  {
-    id: "calendar",
-    label: "Calendar",
-    href: "/calendar",
-    icon: CalendarDays,
-    destination: "Calendar",
-  },
-  {
-    id: "finance",
-    label: "Finance",
-    href: "/finance",
-    icon: Wallet,
-    destination: "Finance",
-  },
-  {
-    id: "health",
-    label: "Health",
-    href: "/health",
-    icon: Dumbbell,
-    destination: "Health",
-  },
-  {
-    id: "goals",
-    label: "Goals",
-    href: "/goals",
-    icon: Target,
-    destination: "Goals",
-  },
-  { id: "work", label: "Work", href: "/work", icon: Briefcase, destination: "Work" },
-  {
-    id: "relationships",
-    label: "Relationships",
-    href: "/relationships",
-    icon: Users,
-    destination: "Relationships",
-  },
 ];
 
 function destinationForNav(id: string): DockItem["destination"] {
@@ -110,13 +64,15 @@ export function Sidebar() {
 
   const dockItems = useMemo<DockItem[]>(
     () =>
-      primary.map((item) => ({
-        id: item.id,
-        label: item.id === "finance" ? "Finance" : item.label,
-        href: item.href,
-        icon: item.icon,
-        destination: destinationForNav(item.id),
-      })),
+      primary
+        .filter((item) => item.id === "home")
+        .map((item) => ({
+          id: item.id,
+          label: item.label,
+          href: item.href,
+          icon: item.icon,
+          destination: destinationForNav(item.id),
+        })),
     [primary],
   );
 

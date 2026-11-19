@@ -34,13 +34,21 @@ enum RecurringRuleType {
 }
 
 model User {
-  id               String            @id @default(uuid())
-  email            String            @unique
-  name             String?
-  timezone         String            @default("UTC")
-  createdAt        DateTime          @default(now())
-  workspaces       Workspace[]
-  syncProfile      SyncProfile?
+  id                   String              @id @default(uuid())
+  email                String              @unique
+  name                 String?
+  timezone             String              @default("UTC")
+  birthYear            Int?
+  appleSubject         String?             @unique
+  legalPolicyVersion   String?
+  legalAcceptedAt      DateTime?
+  privacyAcceptedAt    DateTime?
+  termsAcceptedAt      DateTime?
+  ageConfirmedAt       DateTime?
+  createdAt            DateTime            @default(now())
+  workspaces           Workspace[]
+  syncProfile          SyncProfile?
+  chatMessages         SyncChatMessage[]
   aiCaptureSources     AiCaptureSource[]
   aiConversations      AiConversation[]
   aiActivityEvents     AiActivityEvent[]
@@ -61,6 +69,7 @@ model SyncProfile {
 model SyncChatMessage {
   id        String   @id @default(uuid())
   userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   role      String
   content   String
   createdAt DateTime @default(now())
@@ -252,7 +261,7 @@ model AiConversation {
   providerId              String
   provider                AiProvider        @relation(fields: [providerId], references: [id], onDelete: Cascade)
   sourceId                String
-  source                  AiCaptureSource   @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  source                  AiCaptureSource   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
   providerConversationRef String
   idempotencyKey          String?
   title                   String?
@@ -310,7 +319,7 @@ model AiActivityEvent {
   providerId      String
   provider        AiProvider      @relation(fields: [providerId], references: [id], onDelete: Cascade)
   sourceId        String
-  source          AiCaptureSource @relation(fields: [sourceId], references: [id], onDelete: Restrict)
+  source          AiCaptureSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
   timestamp       DateTime
   summary         String
   affectedAreas   Json

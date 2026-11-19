@@ -28,7 +28,7 @@
   <body>
     <main>
       <p class="brand">SYNC</p>
-      <p>Connect this unpacked extension to your Sync site. Prefer a pairing code from /sync-lab/activity.</p>
+      <p>Connect this unpacked extension to your Sync site. Prefer a pairing code from Settings after you sign in.</p>
       <label>
         Sync site URL
         <input id="siteUrl" type="url" placeholder="http://localhost:3000" />
@@ -45,6 +45,13 @@
       <button id="saveSecret" type="button">Save site and secret</button>
       <button id="unpair" type="button">Clear pairing</button>
       <p id="status" class="status"></p>
+      <p class="legal">
+        <a id="privacyLink" href="/privacy" target="_blank" rel="noreferrer">Privacy</a>
+        ·
+        <a id="termsLink" href="/terms" target="_blank" rel="noreferrer">Terms</a>
+        ·
+        <a id="chromePrivacyLink" href="/chrome-privacy" target="_blank" rel="noreferrer">Add-on privacy</a>
+      </p>
     </main>
     <script src="options.js"></script>
   </body>

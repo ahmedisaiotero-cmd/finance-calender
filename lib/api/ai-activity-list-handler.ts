@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 
 import { withAiActivityCors } from "@/lib/api/ai-activity-cors";
-import { authenticateOwnerSecret } from "@/lib/auth/owner-secret";
+import {
+  authenticatePairOwner,
+  type AuthenticatePairOwner,
+} from "@/lib/auth/owner-identity";
 import { listAiActivityTimelineForOwner } from "@/lib/db/ai-activity";
 
 export type AiActivityListDeps = {
   env?: NodeJS.ProcessEnv | Record<string, string | undefined>;
   listTimeline?: typeof listAiActivityTimelineForOwner;
+  authenticateOwner?: AuthenticatePairOwner;
 };
 
 function json(request: Request, body: unknown, status: number): NextResponse {
@@ -19,13 +23,14 @@ export async function handleAiActivityListGet(
   deps: AiActivityListDeps = {},
 ): Promise<NextResponse> {
   const env = deps.env ?? process.env;
-  const auth = authenticateOwnerSecret(request, env);
+  const authenticate = deps.authenticateOwner ?? authenticatePairOwner;
+  const auth = await authenticate(request, env);
   if (!auth.ok) {
     return json(request, { error: auth.error }, auth.status);
   }
 
   const list = deps.listTimeline ?? listAiActivityTimelineForOwner;
-  const rows = await list(auth.ownerId);
+  const rows = await list(auth.owner.ownerId);
 
   return json(
     request,
