@@ -6,6 +6,7 @@ import {
   revokeAppleTokensForUser,
 } from "@/lib/auth/apple-notifications";
 import { loadRequestIdentity } from "@/lib/auth/load-request-identity";
+import { completeConsumerFirstRun } from "@/lib/auth/consumer-first-run";
 import { setLlmChatConsent } from "@/lib/auth/llm-chat-consent";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -30,6 +31,7 @@ export async function GET() {
       legalPolicyVersion: true,
       legalAcceptedAt: true,
       llmChatConsentAt: true,
+      consumerFirstRunAt: true,
       createdAt: true,
     },
   });
@@ -44,11 +46,24 @@ export async function PATCH(request: Request) {
   const loaded = await loadRequestIdentity();
   if (!loaded.ok) return loaded.response;
 
-  let body: { llmChatConsent?: unknown } = {};
+  let body: { llmChatConsent?: unknown; consumerFirstRun?: unknown } = {};
   try {
-    body = (await request.json()) as { llmChatConsent?: unknown };
+    body = (await request.json()) as {
+      llmChatConsent?: unknown;
+      consumerFirstRun?: unknown;
+    };
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+
+  if (body.consumerFirstRun === true) {
+    const result = await completeConsumerFirstRun({
+      userId: loaded.identity.user.id,
+    });
+    return NextResponse.json({
+      ok: true,
+      consumerFirstRunAt: result.consumerFirstRunAt,
+    });
   }
 
   if (typeof body.llmChatConsent !== "boolean") {
