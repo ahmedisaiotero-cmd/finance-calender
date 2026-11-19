@@ -75,9 +75,10 @@ export default function PrivacyPage() {
         <p>
           To create and secure your account, save captures you send, show you
           what was stored, export or delete that data on request, and operate
-          the service. Optional in-app chat, if enabled, uses a language model
-          only after separate explicit consent. Captured transcripts are not
-          sent to a language model unless you give that consent.
+          the service. Optional in-app chat, if you turn it on in Settings,
+          sends those chat messages to a language model. Captured browser
+          conversations stay in your account and are not sent to a language
+          model.
         </p>
       </LegalSection>
 

@@ -76,7 +76,7 @@ export const LEGAL_SUBPROCESSORS: readonly LegalSubprocessor[] = [
     region: "United States",
     alwaysOn: false,
     notes:
-      "Used only when in-app chat is enabled and the signed-in person has given separate, explicit consent. Captured browser conversations are not sent to OpenAI by default.",
+      "Used only when in-app chat is enabled and the signed-in person has given separate, explicit consent in Settings. Captured browser conversations are not sent to OpenAI.",
   },
 ];
 

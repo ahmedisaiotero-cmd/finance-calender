@@ -119,6 +119,7 @@ async function run() {
       ok: true as const,
       identity: identity("user-owned", "Session Name"),
     }),
+    loadLlmConsent: async () => true,
     consumeRateLimit: async () => ({
       ok: true as const,
       limit: 30,
@@ -240,6 +241,7 @@ async function run() {
       ok: true as const,
       identity: identity("user-owned"),
     }),
+    loadLlmConsent: async () => true,
     loadHistory: async (userId) => {
       assert.equal(userId, "user-owned");
       return [{ role: "user", text: "Rent is due Friday." }];
@@ -248,6 +250,7 @@ async function run() {
   assert.equal(getOwned.status, 200);
   const historyBody = await getOwned.json();
   assert.equal(historyBody.messages[0].text, "Rent is due Friday.");
+  assert.equal(historyBody.llmChatConsent, true);
 
   const histories: Record<string, { role: string; text: string }[]> = {
     "user-a": [{ role: "user", text: "A's secret rent." }],
@@ -258,6 +261,7 @@ async function run() {
       ok: true as const,
       identity: identity("user-a"),
     }),
+    loadLlmConsent: async () => false,
     loadHistory: async (userId) => histories[userId] ?? [],
   });
   const getB = await handleChatGet(new Request("http://localhost/api/chat"), {
@@ -265,6 +269,7 @@ async function run() {
       ok: true as const,
       identity: identity("user-b"),
     }),
+    loadLlmConsent: async () => true,
     loadHistory: async (userId) => histories[userId] ?? [],
   });
   const bodyA = await getA.json();

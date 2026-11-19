@@ -23,6 +23,11 @@ import {
   SYNC_CHAT_CONVERSATION_POLICY,
 } from "@/lib/api/openai-chat-config";
 import { loadRequestIdentity } from "@/lib/auth/load-request-identity";
+import {
+  LLM_CHAT_CONSENT_CODE,
+  LLM_CHAT_CONSENT_ERROR,
+  loadLlmChatConsent,
+} from "@/lib/auth/llm-chat-consent";
 import type { RequestIdentity } from "@/lib/auth/request-identity";
 import {
   loadChatHistory,
@@ -124,6 +129,7 @@ export type ChatDownstreamResult =
 
 export type ChatHandlerDeps = {
   loadIdentity: () => ReturnType<typeof loadRequestIdentity>;
+  loadLlmConsent?: (userId: string) => Promise<boolean>;
   consumeRateLimit: (input: {
     subjectId: string;
   }) => Promise<ChatRateLimitDecision>;
@@ -206,6 +212,7 @@ async function defaultSaveTurn(
 
 export const defaultChatHandlerDeps: ChatHandlerDeps = {
   loadIdentity: loadRequestIdentity,
+  loadLlmConsent: loadLlmChatConsent,
   consumeRateLimit: ({ subjectId }) => consumeChatRateLimit({ subjectId }),
   loadProfile: loadRemoteProfile,
   loadHistory: (userId) => loadChatHistory(userId, CHAT_MAX_HISTORY_ENTRIES),
@@ -215,7 +222,7 @@ export const defaultChatHandlerDeps: ChatHandlerDeps = {
 
 /**
  * Authenticated, rate-limited chat handling.
- * Order: identity → payload validation → rate limit → context → downstream → save.
+ * Order: identity → payload validation → LLM consent → rate limit → context → downstream → save.
  */
 export async function handleChatPost(
   request: Request,
@@ -223,12 +230,14 @@ export async function handleChatPost(
 ): Promise<NextResponse> {
   const {
     loadIdentity,
+    loadLlmConsent,
     consumeRateLimit,
     loadProfile,
     loadHistory,
     saveTurn,
     callChatDownstream,
   } = { ...defaultChatHandlerDeps, ...deps };
+  const loadLlmConsentFn = loadLlmConsent ?? loadLlmChatConsent;
   const loadProfileFn = loadProfile ?? loadRemoteProfile;
   const loadHistoryFn =
     loadHistory ??
@@ -252,6 +261,28 @@ export async function handleChatPost(
     return NextResponse.json(
       { error: validated.error },
       { status: validated.status },
+    );
+  }
+
+  let consented = false;
+  try {
+    consented = await loadLlmConsentFn(identity.user.id);
+  } catch (error) {
+    console.error("POST /api/chat consent", {
+      name:
+        error && typeof error === "object" && "name" in error
+          ? String((error as { name?: unknown }).name ?? "Error")
+          : "Error",
+    });
+    return NextResponse.json(
+      { error: "Chat temporarily unavailable" },
+      { status: 503 },
+    );
+  }
+  if (!consented) {
+    return NextResponse.json(
+      { error: LLM_CHAT_CONSENT_ERROR, code: LLM_CHAT_CONSENT_CODE },
+      { status: 403 },
     );
   }
 
@@ -348,18 +379,24 @@ export async function handleChatPost(
 
 export async function handleChatGet(
   _request: Request,
-  deps: Partial<Pick<ChatHandlerDeps, "loadIdentity" | "loadHistory">> = {},
+  deps: Partial<
+    Pick<ChatHandlerDeps, "loadIdentity" | "loadHistory" | "loadLlmConsent">
+  > = {},
 ): Promise<NextResponse> {
   const loadIdentity = deps.loadIdentity ?? defaultChatHandlerDeps.loadIdentity;
   const loadHistory =
     deps.loadHistory ?? ((userId: string) => loadChatHistory(userId, 40));
+  const loadLlmConsentFn = deps.loadLlmConsent ?? loadLlmChatConsent;
 
   const loaded = await loadIdentity();
   if (!loaded.ok) return loaded.response;
 
   try {
-    const messages = await loadHistory(loaded.identity.user.id);
-    return NextResponse.json({ messages });
+    const [messages, llmChatConsent] = await Promise.all([
+      loadHistory(loaded.identity.user.id),
+      loadLlmConsentFn(loaded.identity.user.id),
+    ]);
+    return NextResponse.json({ messages, llmChatConsent });
   } catch (error) {
     console.error("GET /api/chat history", {
       name:

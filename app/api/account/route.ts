@@ -6,6 +6,7 @@ import {
   revokeAppleTokensForUser,
 } from "@/lib/auth/apple-notifications";
 import { loadRequestIdentity } from "@/lib/auth/load-request-identity";
+import { setLlmChatConsent } from "@/lib/auth/llm-chat-consent";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   ACCOUNT_DELETION_RETAINED,
@@ -27,6 +28,7 @@ export async function GET() {
       birthYear: true,
       legalPolicyVersion: true,
       legalAcceptedAt: true,
+      llmChatConsentAt: true,
       createdAt: true,
     },
   });
@@ -34,6 +36,36 @@ export async function GET() {
   return NextResponse.json({
     user: user ?? loaded.identity.user,
     retainedAfterDeletion: ACCOUNT_DELETION_RETAINED,
+  });
+}
+
+export async function PATCH(request: Request) {
+  const loaded = await loadRequestIdentity();
+  if (!loaded.ok) return loaded.response;
+
+  let body: { llmChatConsent?: unknown } = {};
+  try {
+    body = (await request.json()) as { llmChatConsent?: unknown };
+  } catch {
+    return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+  }
+
+  if (typeof body.llmChatConsent !== "boolean") {
+    return NextResponse.json(
+      { error: "llmChatConsent must be true or false." },
+      { status: 400 },
+    );
+  }
+
+  const result = await setLlmChatConsent({
+    userId: loaded.identity.user.id,
+    consented: body.llmChatConsent,
+  });
+
+  return NextResponse.json({
+    ok: true,
+    llmChatConsent: Boolean(result.llmChatConsentAt),
+    llmChatConsentAt: result.llmChatConsentAt,
   });
 }
 
